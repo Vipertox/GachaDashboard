@@ -10,6 +10,7 @@ In Version 1 enthalten:
 
 - Dashboard mit einer Karte pro Spiel: Stand, Maximum, Zeit bis voll
 - Zusatzinfos pro Spiel: Dailies, Expeditionen bzw. Aufträge, Wochenbosse
+- Figurenübersicht pro Spiel: Waffe, Ausrüstung, Talente und Werte jeder Figur, siehe "Figurenübersicht"
 - Manuelles Aktualisieren (Pull-to-Refresh) und automatisches Neuladen im Vordergrund
 - Mehrere Profile mit eigenen HoYoLAB-Tokens und Kuro-Code und Wechsel per Tipp
 
@@ -45,6 +46,22 @@ Alle Endpunkte sind inoffiziell. Maximalwerte und Endpunkte stammen aus dem Stan
 Mögliche Server sind `America`, `Asia`, `Europe`, `HMT` und `SEA`. Schritt 1 läuft nur beim Anlegen des Profils, danach stehen Spieler-ID und Server im Profil. Der Wert von `data.<region>` muss ein zweites Mal geparst werden.
 
 Belegt ist der Ablauf durch die Logs des Launchers 3.0.1.0 und zwei Community-Quellen ([Feldbeschreibung](https://blog.3irun.moe/2025/11/10/wuwa_api_document/), [Haiyu #69](https://github.com/HaiyuGame/Haiyu/issues/69)). Die Schnittstelle ist inoffiziell und kann sich mit jedem Launcher-Update ändern.
+
+**Verfügbare Daten der Kuro-Schnittstelle** (ausgelesen am 1. November 2026 mit einem echten Konto):
+
+| Aufruf | Block | Felder | Genutzt |
+| --- | --- | --- | --- |
+| `queryPlayerInfo` | `data.<region>` | `roleId`, `roleName`, `level`, `sex`, `headPhoto` | Spieler-ID beim Anlegen des Profils |
+| `queryRole` | `Base` | `Name`, `Id`, `Level` (Union-Stufe), `WorldLevel`, `CreatTime`, `ActiveDays`, `RoleNum`, `ChapterId`, `SoundBox`, `BirthMon`, `BirthDay`, `serverTimezone` | `Name`, `RoleNum` |
+| `queryRole` | `Base` | `Energy`, `MaxEnergy`, `EnergyRecoverTime`, `StoreEnergy`, `MaxStoreEnergy`, `StoreEnergyRecoverTime` | Waveplates und Crystal |
+| `queryRole` | `Base` | `Liveness`, `LivenessMaxCount`, `LivenessUnlock`, `WeeklyInstCount` | Tagesaktivität, Wochenboss |
+| `queryRole` | `Base` | `Boxes`, `BasicBoxes`, `PhantomBoxes` jeweils als Zählung pro Stufe 1–4 | Nein, gesammelte Truhen |
+| `queryRole` | `BattlePass` | `Level`, `Exp`, `ExpLimit`, `WeekExp`, `WeekMaxExp`, `IsUnlock`, `IsOpen` | Pioneer Podcast |
+| `queryRole` | `MotorData` | `Level`, `Exp`, `NextExp`, `Skins[]`, `Stickers[]`, `Decorations[]`, `Frames[]`, `EquipSkin` mit `Id` und `Quality` | Nein, Fahrzeug und Anpassungen |
+| `queryRole` | `MusicData` | `Albums[]` mit `Id`, `Count`, `TotalCount` | Nein, gesammelte Alben |
+| `queryRole` | `DecorationData` | `Datas[]` mit `Id`, `Quality`, `SkinOwner[]`, `OrGroupId` | Nein, Dekorationen |
+
+Figuren, Waffen, Echos und Resonanzketten liefert die Schnittstelle nicht. Für Figuren gibt es nur die Anzahl `Base.RoleNum`. Naheliegende weitere Endpunkte wie `queryRoleList`, `queryRoleDetail` oder `queryRoleInfo` antworten mit HTTP 404. Die Figurenübersicht zeigt für Wuthering Waves deshalb nur die Anzahl der Resonatoren.
 
 ## Architektur
 
@@ -101,7 +118,8 @@ Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Ak
 | Screen | Inhalt |
 | --- | --- |
 | Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
-| Spieldetail | Alle Live-Werte des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel" |
+| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht" |
+| Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Konten | Profile anlegen, bearbeiten und löschen; pro Profil Token-Eingabe, Spiele ein- und ausblenden |
 | Einstellungen | Aktualisierungsintervall, helles oder dunkles Design, Sprache |
 
@@ -210,7 +228,164 @@ interface GameStatus {
 
 Star Rail, ZZZ und Wuthering Waves folgen demselben Aufbau mit ihren eigenen Feldern aus den Tabellen oben.
 
-Eine Figurenübersicht mit Waffen und Ausrüstung als zweiter Tab der Detailseite ist in [Konzept-Figuren.md](Konzept-Figuren.md) beschrieben.
+## Figurenübersicht
+
+Die Detailseite hat zwei Tabs: **Übersicht** mit den Live-Werten und **Figuren** mit allen Figuren des Kontos. Der Figuren-Tab zeigt auf einen Blick, welche Waffe und welche Ausrüstung jede Figur trägt, und bei Bedarf alle Details dazu. Es gelten dieselben Grundsätze wie bei den Live-Werten: Figurendaten werden zur Laufzeit geladen und nur im Arbeitsspeicher gehalten, Bilder kommen als URL aus der API.
+
+Nicht enthalten sind Schadensrechner, Bewertung der Ausrüstung mit Punktzahl, Vergleich mit Builds aus Guides und Planung von Materialien. Sie bleiben spätere Ausbaustufen.
+
+**Begriffe pro Spiel**
+
+Die Spiele nennen dieselben Konzepte unterschiedlich. Die Oberfläche nutzt die Begriffe des jeweiligen Spiels aus `GAME_TERMS` in `model/games.ts`, das Datenmodell ist für alle gleich.
+
+| Konzept | Genshin Impact | Honkai: Star Rail | Zenless Zone Zero | Wuthering Waves |
+| --- | --- | --- | --- | --- |
+| Figur | Charakter | Charakter | Agent | Resonator |
+| Duplikate | Konstellation C0–C6 | Eidolon E0–E6 | Mindscape M0–M6 | Resonanzkette S0–S6 |
+| Waffe | Waffe | Lichtkegel | W-Engine | Waffe |
+| Waffen-Duplikate | Veredelung R1–R5 | Überlagerung S1–S5 | Stufe R1–R5 | Syntonisierung R1–R5 |
+| Ausrüstung | 5 Artefakte | 4 Relikte + 2 Planar-Ornamente | 6 Drive Discs | 5 Echos |
+| Talente | 3 Talente | 4 Fähigkeiten | 6 Fertigkeiten | – |
+| Filter neben Element | – | Pfad | Rolle | – |
+
+**Datenquellen**
+
+Die Hoyoverse-Spiele haben eigene Endpunkte der Battle Chronicle mit derselben Authentifizierung wie die Notizen. Wuthering Waves liefert keine Figurendaten, siehe "Verfügbare Daten der Kuro-Schnittstelle".
+
+| Spiel | Liste | Details | Laden der Details |
+| --- | --- | --- | --- |
+| Genshin Impact | `POST bbs-api-os.hoyolab.com/game_record/genshin/api/character/list` mit `{ role_id, server }` | `POST …/genshin/api/character/detail` mit `{ role_id, server, character_ids }` | Vorladen in Blöcken zu je 10 Figuren |
+| Honkai: Star Rail | `GET bbs-api-os.hoyolab.com/game_record/hkrpg/api/avatar/info?server=&role_id=&need_wiki=true` | Gleiche Antwort | Ein Aufruf liefert alles |
+| Zenless Zone Zero | `GET sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz/avatar/basic?server=&role_id=` | `GET …/zzz/avatar/info?server=&role_id=&id_list[]=<id>&need_wiki=true` | Beim Antippen, eine Figur pro Aufruf |
+| Wuthering Waves | Nur `Base.RoleNum` aus `queryRole` | – | – |
+
+Pfade und Feldnamen stammen aus der Community-Bibliothek genshin.py und sind am 1. November 2026 mit echten Antworten geprüft worden. Dabei hat sich gezeigt:
+
+- **ZZZ:** `avatar/info` nimmt nur eine ID pro Aufruf, bei mehreren meldet es `retcode` -400005 ("Parameter Error"). Seltenheiten kommen als Buchstaben (`S`, `A`, `B`).
+- **Erhöhungen der Nebenwerte:** Genshin liefert in `times` nur die Erhöhungen. Star Rail zählt in `times` den Startwert mit, angezeigt wird `times - 1`. ZZZ liefert die Erhöhungen im Feld `add` der Disc-Werte.
+- **Sprache:** Genshin und Star Rail liefern mit `x-rpc-language: de-de` deutsche Namen. ZZZ liefert Werte und Set-Namen trotzdem auf Englisch.
+- **Star Rail:** Die Antwort enthält keine Set-Namen, nur die Namen der einzelnen Relikte. Set-Boni und der Hinweis "Set unvollständig" entfallen dort.
+- **Wertenamen:** Genshin liefert sie in `property_map`, Star Rail in `property_info`, ZZZ direkt im Wert als `property_name`.
+
+| Spiel | Waffe | Ausrüstung | Talente | Werte |
+| --- | --- | --- | --- | --- |
+| Genshin Impact | `weapon` mit `affix_level`, `main_property`, `sub_property` | `relics[]` mit `pos`, `set.name`, `set.affixes`, `main_property`, `sub_property_list` | `skills[]` mit `skill_type` 1 | `base_properties`, `extra_properties`, `element_properties` |
+| Honkai: Star Rail | `equip` mit `rank` | `relics[]` (`pos` 1–4), `ornaments[]` (`pos` 5–6) mit `main_property`, `properties` | `skills[]` mit `point_type` 2, `anchor` Point01–04 | `properties[]`, dazu `servant_detail` für Memosprites |
+| Zenless Zone Zero | `weapon` mit `star`, `main_properties`, `properties` | `equip[]` mit `equipment_type` 1–6, `equip_suit` mit `desc1`, `desc2` | `skills[]` mit `skill_type` 0–6 | `properties[]` |
+
+**Datenmodell**
+
+Ein Adapter pro Spiel in `api/characters/` bildet die Antworten auf gemeinsame Typen ab. Werte kommen als fertig formatierter Text aus dem Adapter, weil jedes Spiel Prozente und Ganzzahlen anders liefert.
+
+```typescript
+interface Stat {
+  key: string;            // property_type-ID oder Name
+  label: string;          // "Krit. Rate"
+  value: string;          // "62,4%"
+  rolls?: number;         // Anzahl der Erhöhungen bei Nebenwerten
+}
+
+interface GearPiece {
+  slot: number;           // 1-basiert, Platzname aus GAME_TERMS
+  name: string;
+  setName?: string;
+  rarity: number;
+  level: number;
+  maxLevel: number;       // aus der Seltenheit, z. B. +20 bei 5-Sterne-Artefakten
+  mainStat?: Stat;
+  subStats: Stat[];
+}
+
+interface CharacterSummary {
+  id: string;
+  name: string;
+  element: string;        // "pyro", für Farbe und Filter
+  role?: string;          // Pfad (Star Rail), Rolle (ZZZ)
+  rarity: number;
+  level: number;
+  dupes: number;          // 0–6
+  iconUrl?: string;
+  weapon?: { name: string; iconUrl?: string; rarity: number; refinement: number };
+}
+
+interface Character extends CharacterSummary {
+  weapon?: Weapon;        // mit Stufe, Haupt- und Nebenwert
+  gear: GearPiece[];
+  sets: GearSet[];        // Name, angelegte Teile, Boni mit Text
+  skills: Skill[];
+  stats: Stat[];          // wichtigste Werte
+  moreStats: Stat[];      // erst nach "Alle Werte"
+  companion?: { name: string; iconUrl?: string };
+}
+
+interface CharacterAdapter {
+  game: GameId;
+  prefetchDetails: boolean;
+  fetchRoster(account: Account, signal?: AbortSignal): Promise<Roster>;
+  fetchDetails(account: Account, ids: string[], signal?: AbortSignal): Promise<Character[]>;
+}
+```
+
+**Laden und Aktualisieren**
+
+Figurendaten ändern sich selten und sind deutlich größer als die Notizen. Sie werden deshalb getrennt und sparsam geladen.
+
+- Die Liste wird erst geladen, wenn der Figuren-Tab geöffnet wird. Query-Schlüssel `["roster", profileId, game, uid]`, 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus.
+- Bei Genshin lädt die App danach die Details aller Figuren in Blöcken zu je 10 nach. Bricht ein Block ab, z. B. wegen des Rate-Limits, bleiben die bereits geladenen Details erhalten.
+- Bei ZZZ werden Details erst beim Antippen einer Figur geladen (`["character", profileId, game, uid, id]`).
+- "Neu laden" über dem Raster lädt Liste und Details neu. Das automatische Neuladen der Notizen berührt die Figurendaten nicht.
+
+**Figurenliste**
+
+```
+┌──────────────────────────────────┐
+│ ← Dashboard                      │
+│ [Resin ▓▓▓▓▓░ 162/200 voll in …] │
+│ ┌ Übersicht ┐┌ Charaktere ┐      │
+│ 95 Charaktere · 58 auf Stufe 90  │
+│ [Alle][Pyro][Hydro][…]           │
+│ [Sortiert nach Stufe        ▾]   │
+│ ┌──────┐ ┌──────┐ ┌──────┐       │
+│ │P   C1│ │H   C0│ │E   C6│       │
+│ │ Bild │ │ Bild │ │ Bild │       │
+│ │Lv 90⚠│ │Lv 90 │ │Lv 90 │       │
+│ │    R1│ │    R1│ │    R5│       │
+│ └──────┘ └──────┘ └──────┘       │
+│ Hu Tao   Furina   Fischl         │
+└──────────────────────────────────┘
+```
+
+- Die Hauptressource bleibt im Figuren-Tab als eine Zeile sichtbar. Der Tab steht in der URL (`?tab=figuren`), damit der Zurück-Knopf unter Android wie erwartet funktioniert.
+- Raster mit drei Spalten auf dem Smartphone, ab `md` sechs Spalten.
+- Jede Kachel: Porträt auf Hintergrund in Seltenheitsfarbe, Element oben links, Duplikate oben rechts, Stufe unten links, Waffe mit Veredelung unten rechts, Name darunter. Ein ⚠ markiert eine Ausrüstungslücke, sobald die Details geladen sind.
+- Filter als Chips nach Element, bei Star Rail zusätzlich nach Pfad und bei ZZZ nach Rolle. Sortierung nach Stufe, Seltenheit, Duplikaten oder Name. Filter und Sortierung merkt sich die App pro Spiel im `localStorage`, es sind reine Anzeige-Einstellungen.
+- Elemente erscheinen als farbige Plakette mit Anfangsbuchstaben. Neuere ZZZ-Elementtypen wie `300` sind noch nicht zugeordnet und erscheinen ohne Plakette.
+
+**Figur-Detail**
+
+Ein Tipp auf eine Kachel öffnet die Route `/game/:game/:uid/figur/:id`. Aufbau von oben nach unten:
+
+1. **Kopf:** Bild, Name, Element und Pfad bzw. Rolle, Seltenheit, Stufe, Duplikate als sechs Punkte.
+2. **Hinweise:** Ausrüstungslücken, siehe unten.
+3. **Waffe:** Symbol, Name, Stufe, Veredelung, Haupt- und Nebenwert.
+4. **Ausrüstung:** Eine Zeile pro Platz in Spielreihenfolge mit Set-Name, Stufe, Hauptwert groß und Nebenwerten als Chips. Erhöhungen erscheinen als Punkte am Chip, z. B. "Krit. Schaden 14,0% ••". Leere Plätze erscheinen gestrichelt.
+5. **Sets:** Chips mit Set-Name und Teilezahl, ein Tipp zeigt die Bonustexte.
+6. **Talente:** Stufen nebeneinander.
+7. **Werte:** Die wichtigsten Werte, darunter "Alle Werte" zum Aufklappen.
+8. **Memosprite:** Nur bei Star Rail auf dem Pfad der Erinnerung.
+
+Pfeile oben und Wischen nach links oder rechts wechseln zur nächsten Figur in der Reihenfolge des Rasters.
+
+**Hinweise auf Ausrüstungslücken**
+
+Die App prüft nur eindeutige Regeln in `gearHints.ts` und gibt keine Build-Empfehlungen.
+
+| Hinweis | Regel |
+| --- | --- |
+| Platz leer | Ein Platz aus `GAME_TERMS.slots` ist nicht belegt |
+| Set unvollständig | Ein Set mit 3 Teilen, also ein knapp verpasster 4er-Bonus. Ein einzelnes Teil gilt nicht als Lücke, weil 4+1-Kombinationen üblich sind |
+| Teile nicht ausgebaut | Teil unter Maximalstufe, z. B. Artefakt unter +20 |
+| Waffe unter Figurenstufe | Waffenstufe kleiner als Figurenstufe, oder keine Waffe angelegt |
 
 ## Visuelle Gestaltung
 
@@ -407,15 +582,16 @@ gacha-dashboard/
 │  ├─ app/            # Routing, Layout, Provider
 │  ├─ features/
 │  │  ├─ dashboard/   # Karten, Fortschrittsbalken
-│  │  ├─ game-detail/ # Detailansicht pro Spiel
+│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken
 │  │  └─ accounts/    # Einrichtung, Token-Eingabe
 │  ├─ api/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
-│  │  ├─ hoyolab.ts   # DS-Header, Konten-Endpunkt
+│  │  ├─ hoyolab.ts   # DS-Header, GET/POST, Konten-Endpunkt
 │  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
-│  │  └─ adapters/    # genshin.ts, starrail.ts, zzz.ts, wuwa.ts
+│  │  ├─ adapters/    # Live-Werte: genshin.ts, starrail.ts, zzz.ts, wuwa.ts
+│  │  └─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
-│  └─ model/          # GameStatus, Resource, Task
+│  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
 └─ src-tauri/         # Tauri-Konfiguration, Rust-Befehle (u. a. Kuro-Code aus dem Launcher-Cache)
 ```
@@ -443,6 +619,11 @@ Die App fragt die Server sparsam an und rechnet dazwischen lokal weiter. Fehler 
 | Zu viele Anfragen | `retcode` 10101 | Letzten Stand behalten, später erneut versuchen |
 | Netzwerkfehler | Exception | Letzten Stand grau markieren mit Zeitpunkt des Abrufs |
 | Unbekannte Antwort | Schema-Prüfung schlägt fehl | Karte zeigt "Schnittstelle geändert" |
+| Figurendaten nicht öffentlich | `retcode` 10102 im Figuren-Tab | Hinweis, in HoYoLAB unter Datenschutz die Charakterdetails freizugeben |
+| Figurendetails abgebrochen | Fehler beim Vorladen eines Blocks | Bereits geladene Details behalten, Hinweis über dem Raster |
+| Unbekannter Wert | ID fehlt in `property_map` bzw. `property_info` | Wert mit roher ID anzeigen statt abzubrechen |
+
+Fehler im Figuren-Tab betreffen nie den Übersicht-Tab und die Dashboard-Karte.
 
 Die Retcodes entsprechen den Werten, die Community-Bibliotheken und die Community-Doku zur Kuro-Schnittstelle nennen. Sie müssen bei der Umsetzung geprüft werden. Für die Schema-Prüfung der Antworten eignet sich `zod`, damit Änderungen der inoffiziellen APIs sofort auffallen.
 
@@ -455,6 +636,8 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Genshin-Adapter und Dashboard-Karte als erster durchgehender Durchstich
 - [x] Adapter für Star Rail und ZZZ ergänzen
 - [x] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
+- [x] Figurenübersicht für Genshin, Star Rail und ZZZ, für Wuthering Waves nur die Anzahl
+- [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
 - [ ] Windows-Build mit `npm run tauri build`

@@ -39,7 +39,7 @@ export const GAME_ACCENT: Record<GameId, string> = {
   wuwa: "#4fd1c5",
 };
 
-/** Begriffe pro Spiel, siehe docs/Konzept-Figuren.md. Das Datenmodell ist für alle Spiele gleich. */
+/** Begriffe pro Spiel, siehe docs/Konzept.md, Abschnitt "Figurenübersicht". Das Datenmodell ist für alle Spiele gleich. */
 export const GAME_TERMS: Record<GameId, GameTerms> = {
   genshin: {
     character: "Charakter",
