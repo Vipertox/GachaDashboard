@@ -2,6 +2,7 @@ import { QueryClient, useQueries, useQuery, useQueryClient, type UseQueryOptions
 import { useSyncExternalStore } from "react";
 import { ADAPTERS } from "../api/adapters";
 import { CHARACTER_ADAPTERS, DETAIL_CHUNK } from "../api/characters";
+import { EVENT_ADAPTERS } from "../api/events";
 import { chunk } from "../api/characters/util";
 import { ApiError } from "../api/errors";
 import { loadSecrets } from "../credentials";
@@ -11,6 +12,7 @@ import type {
   ChallengeMode,
   ChallengePeriod,
   Character,
+  EventCalendar,
   GameAccountRef,
   GameStatus,
   Profile,
@@ -221,6 +223,26 @@ export function useChallenge(profile: Profile, ref: GameAccountRef, mode: Challe
         throw asApiError(e);
       }
     },
+    staleTime: CHARACTER_STALE,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
+}
+
+/** Event-Kalender: ein Aufruf pro Spiel, wie Figuren und Herausforderungen 30 Minuten frisch. */
+export function useEvents(profile: Profile, ref: GameAccountRef) {
+  const qc = useQueryClient();
+  const adapter = EVENT_ADAPTERS[ref.game];
+  return useQuery<EventCalendar, ApiError>({
+    queryKey: ["events", profile.id, ref.game, ref.uid],
+    queryFn: async ({ signal }) => {
+      try {
+        return await adapter!.fetchCalendar(await loadAccount(qc, profile, ref), signal);
+      } catch (e) {
+        throw asApiError(e);
+      }
+    },
+    enabled: !!adapter,
     staleTime: CHARACTER_STALE,
     refetchOnWindowFocus: false,
     retry: false,
