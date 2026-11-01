@@ -2,7 +2,8 @@ name: Release
 
 # Neue Version veröffentlichen: Version in tauri.conf.json, package.json und Cargo.toml erhöhen,
 # per PR nach main mergen, dann auf main `git tag vX.Y.Z && git push origin vX.Y.Z`.
-# Der Job wartet anschließend auf die Freigabe im Environment "release".
+# Die Jobs windows und android warten anschließend auf die Freigabe im Environment "release".
+# Das Release enthält danach die Windows-Installer, latest.json für den Updater und die signierte APK.
 on:
   push:
     tags: ["v*"]
@@ -11,7 +12,31 @@ permissions:
   contents: read
 
 jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+      # Nur Stände, die über einen PR in main gelandet sind, dürfen ausgeliefert werden
+      - name: Tag liegt auf main prüfen
+        run: |
+          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
+            echo "Tag $GITHUB_REF_NAME zeigt auf keinen Commit in main"
+            exit 1
+          fi
+      # Tag und App-Version müssen übereinstimmen, sonst erkennt der Updater kein Update
+      - name: Version prüfen
+        run: |
+          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
+          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
+            echo "Tag $GITHUB_REF_NAME passt nicht zur Version $version in tauri.conf.json"
+            exit 1
+          fi
+
   windows:
+    needs: verify
     runs-on: windows-latest
     # Signierschlüssel liegen nur als Environment-Secrets vor und erfordern eine manuelle Freigabe
     environment: release
@@ -20,29 +45,11 @@ jobs:
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
-          fetch-depth: 0
           persist-credentials: false
-      # Nur Stände, die über einen PR in main gelandet sind, dürfen ausgeliefert werden
-      - name: Tag liegt auf main prüfen
-        shell: bash
-        run: |
-          if ! git merge-base --is-ancestor "$GITHUB_SHA" origin/main; then
-            echo "Tag $GITHUB_REF_NAME zeigt auf keinen Commit in main"
-            exit 1
-          fi
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: npm
-      # Tag und App-Version müssen übereinstimmen, sonst erkennt der Updater kein Update
-      - name: Version prüfen
-        shell: bash
-        run: |
-          version=$(node -p "require('./src-tauri/tauri.conf.json').version")
-          if [ "v$version" != "$GITHUB_REF_NAME" ]; then
-            echo "Tag $GITHUB_REF_NAME passt nicht zur Version $version in tauri.conf.json"
-            exit 1
-          fi
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
@@ -61,3 +68,81 @@ jobs:
           releaseDraft: false
           # erzeugt latest.json, die der Updater in der App abfragt
           includeUpdaterJson: true
+
+  android:
+    needs: verify
+    runs-on: ubuntu-latest
+    # Der Android-Signierschlüssel liegt nur als Environment-Secret vor
+    environment: release
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: 22
+          cache: npm
+      - uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: 17
+      - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
+        with:
+          # build-tools liefern zipalign und apksigner
+          packages: platform-tools build-tools;36.0.0 ndk;29.0.14206865
+      # Runner-Variablen wie ANDROID_HOME stehen nicht im env-Kontext, daher per Shell setzen
+      - run: |
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
+      - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
+        with:
+          toolchain: stable
+          targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
+      - uses: swatinem/rust-cache@d1527c8f67ef9af357290475d4af4b0fab8f12e0 # v2.9.3
+        with:
+          workspaces: src-tauri
+      - run: npm ci
+      - run: npx tauri android init --ci
+      - run: npx tauri android build --apk
+      # Gradle erzeugt die Release-APK unsigniert, Android installiert sie aber nur mit Signatur.
+      # Der Keystore liegt nur im Runner-Temp und nie im Checkout.
+      - name: APK signieren
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+        run: |
+          keystore="$RUNNER_TEMP/release.jks"
+          echo "$ANDROID_KEYSTORE_BASE64" | base64 -d > "$keystore"
+          unsigned=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          out="$RUNNER_TEMP/apk"
+          mkdir -p "$out"
+          signed="$out/Gacha.Dashboard_${GITHUB_REF_NAME#v}_android.apk"
+          zipalign -P 16 -f 4 "$unsigned" "$RUNNER_TEMP/aligned.apk"
+          apksigner sign --ks "$keystore" --ks-pass env:ANDROID_KEYSTORE_PASSWORD \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" --v4-signing-enabled false \
+            --out "$signed" "$RUNNER_TEMP/aligned.apk"
+          apksigner verify --print-certs "$signed"
+      - name: Keystore entfernen
+        if: always()
+        run: rm -f "$RUNNER_TEMP/release.jks"
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: android
+          path: ${{ runner.temp }}/apk/*.apk
+          if-no-files-found: error
+
+  # Das Release legt der Windows-Job über tauri-action an, die APK kommt danach dazu
+  android-publish:
+    needs: [windows, android]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: android
+          path: apk
+      - run: gh release upload "$GITHUB_REF_NAME" apk/*.apk --clobber --repo "$GITHUB_REPOSITORY"
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}

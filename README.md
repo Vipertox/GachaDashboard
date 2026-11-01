@@ -27,6 +27,13 @@ React + TypeScript, Vite, Tailwind CSS, TanStack Query, Tauri 2
 
 Version 1 ist implementiert (Konzept: [docs/Konzept.md](docs/Konzept.md)). Der Browser-Modus ist getestet, der Tauri-Teil (Windows, Android) ist geschrieben, aber noch nicht gebaut oder auf einem Gerät geprüft.
 
+## Installation
+
+Fertige Builds liegen unter [Releases](https://github.com/Vipertox/GachaDashboard/releases).
+
+- **Windows:** `…_x64-setup.exe` oder `…_x64_en-US.msi` installieren. Neue Versionen bietet die App selbst an.
+- **Android:** `…_android.apk` auf dem Handy herunterladen und öffnen. Beim ersten Mal die Installation aus unbekannten Quellen für Browser oder Dateimanager erlauben. Warnt Google Play Protect, mit „Trotzdem installieren“ bestätigen. Für ein Update die neue APK über die vorhandene App installieren, die Daten bleiben erhalten.
+
 ## Starten
 
 Voraussetzung: Node 22.
@@ -44,7 +51,7 @@ npm start        # http://127.0.0.1:8787
 
 Weitere Befehle: `npm test`, `npm run typecheck`, `npm run build`.
 
-Für die Tauri-App werden zusätzlich Rust und die [Tauri-Voraussetzungen](https://v2.tauri.app/start/prerequisites/) benötigt: `npm run tauri dev` bzw. `npm run tauri build`. Die Builds für Windows und Android laufen auch über GitHub Actions (`.github/workflows/build.yml`).
+Für die Tauri-App werden zusätzlich Rust und die [Tauri-Voraussetzungen](https://v2.tauri.app/start/prerequisites/) benötigt: `npm run tauri dev` bzw. `npm run tauri build`. Die Builds für Windows und Android laufen auch über GitHub Actions (`.github/workflows/build.yml`). Die APK aus diesem Workflow ist unsigniert und lässt sich nicht installieren. Signiert wird nur im Release-Workflow (`.github/workflows/release.yml`) mit dem Schlüssel aus dem Environment `release`.
 
 ## Einrichtung
 
