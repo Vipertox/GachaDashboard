@@ -44,3 +44,9 @@ Bilder für Spiele und Ressourcen sind nicht eingecheckt, siehe [src/assets/READ
 ## Hinweis
 
 Rein private App ohne eigenen Server und ohne Store-Veröffentlichung. Gespeichert werden nur HoYoLAB-Tokens (im sicheren Speicher des Betriebssystems) und Profil-Einstellungen, keine Spieldaten.
+
+## Mitwirken & Lizenz
+
+Beiträge sind willkommen, siehe [CONTRIBUTING.md](CONTRIBUTING.md). Sicherheitsprobleme bitte wie in [SECURITY.md](SECURITY.md) beschrieben vertraulich melden.
+
+Veröffentlicht unter der [MIT-Lizenz](LICENSE).
