@@ -57,7 +57,9 @@ jobs:
       - uses: android-actions/setup-android@v3
         with:
           # Standard ist "tools platform-tools"; das Paket "tools" gibt es nicht mehr
-          packages: platform-tools
+          packages: platform-tools ndk;29.0.14206865
+      # Runner-Variablen wie ANDROID_HOME stehen nicht im env-Kontext, daher per Shell setzen
+      - run: echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
@@ -66,11 +68,7 @@ jobs:
           workspaces: src-tauri
       - run: npm ci
       - run: npx tauri android init --ci
-        env:
-          NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
       - run: npx tauri android build --apk
-        env:
-          NDK_HOME: ${{ env.ANDROID_NDK_HOME }}
       - uses: actions/upload-artifact@v4
         with:
           name: android
