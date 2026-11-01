@@ -24,6 +24,13 @@
             </intent-filter>
         </activity>
 
+        <!-- HoYoLAB-Anmeldung, wird nur aus der App heraus geöffnet (hoyolab_login.rs) -->
+        <activity
+            android:configChanges="orientation|keyboardHidden|keyboard|screenSize|locale|smallestScreenSize|screenLayout|uiMode"
+            android:label="@string/main_activity_title"
+            android:name=".HoyolabLoginActivity"
+            android:exported="false" />
+
         <provider
           android:name="androidx.core.content.FileProvider"
           android:authorities="${applicationId}.fileprovider"

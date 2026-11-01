@@ -2,7 +2,11 @@
 //! `ltuid_v2` und `ltoken_v2` aus den Cookies und schließt das Fenster wieder.
 //!
 //! Hinweis: `cookies_for_url` wird erst aufgerufen, nachdem eine hoyolab.com-Seite
-//! fertig geladen wurde. Für URLs ohne Cookies stürzt wry 0.57 sonst ab (wry #1837).
+//! fertig geladen wurde und danach mindestens eine Abfragerunde vergangen ist.
+//! Für URLs ohne Cookies stürzt wry 0.57 unter Android sonst ab (wry #1837).
+//!
+//! Unter Android braucht das Fenster eine eigene Activity (`HoyolabLoginActivity`
+//! in `gen/android`). Ohne sie bricht wry beim Anlegen der Webview ab.
 
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
@@ -38,6 +42,10 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
     // Fenstertitel gibt es nur auf dem Desktop; unter Android fehlt die Methode.
     #[cfg(desktop)]
     let builder = builder.title("Bei HoYoLAB anmelden");
+    #[cfg(target_os = "android")]
+    let builder = builder
+        .activity_name("HoyolabLoginActivity")
+        .created_by_activity_name("MainActivity");
     let window = builder
         .on_page_load(move |_, payload| {
             if matches!(payload.event(), PageLoadEvent::Finished)
@@ -54,6 +62,8 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
 
     let cookie_url = url::Url::parse("https://www.hoyolab.com").map_err(|e| e.to_string())?;
 
+    // Erst in der Runde nach dem ersten Laden auslesen, damit die Seite ihre Cookies gesetzt hat
+    let mut seen_loaded = false;
     for _ in 0..TIMEOUT_SECS {
         tokio::time::sleep(Duration::from_secs(1)).await;
 
@@ -61,6 +71,10 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
             return Err("Anmeldefenster wurde geschlossen".to_string());
         }
         if !loaded.load(Ordering::SeqCst) {
+            continue;
+        }
+        if !seen_loaded {
+            seen_loaded = true;
             continue;
         }
 

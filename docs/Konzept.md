@@ -708,8 +708,8 @@ Grundlage ist die Cookie-API von Tauri, die seit Version 2.4 auch HTTP-only-Cook
 
 Ablauf des Webview-Logins:
 
-1. Ein `WebviewWindow` öffnet die HoYoLAB-Anmeldeseite.
-2. Nach jedem Seitenwechsel auf eine hoyolab.com-Adresse ruft der Rust-Teil `cookies_for_url("https://www.hoyolab.com")` auf. Die Domain hat nach dem Laden immer Cookies, dadurch wird der Absturz-Bug vermieden.
+1. Ein `WebviewWindow` öffnet die HoYoLAB-Anmeldeseite. Unter Android ist jedes weitere Fenster eine eigene Activity. Das Login-Fenster läuft deshalb in `HoyolabLoginActivity` (Klasse und Manifest-Eintrag in `src-tauri/gen/android`), der Rust-Teil fordert sie mit `activity_name` an. Fehlt sie, beendet sich die App beim Öffnen. Die Workflows prüfen darum, ob die Activity im Manifest der APK steht.
+2. Sobald eine hoyolab.com-Seite fertig geladen ist, ruft der Rust-Teil einmal pro Sekunde `cookies_for_url("https://www.hoyolab.com")` auf, das erste Mal eine Runde nach dem Laden. Die Seite setzt beim Laden eigene Cookies, die Domain hat dann also welche. So wird der Absturz-Bug vermieden.
 3. Sobald `ltuid_v2` und `ltoken_v2` vorhanden sind, werden sie in die Token-Felder des Profils übernommen und das Fenster geschlossen. Gespeichert wird erst mit "Profil speichern".
 4. Danach entfernt `delete_cookie()` die HoYoLAB-Cookies, damit der nächste Profil-Login nicht im alten Konto landet. Ob das auf Android greift, ist beim Durchstich zu testen.
 

@@ -104,6 +104,11 @@ jobs:
       - run: npm ci
       - run: npx tauri android init --ci
       - run: npx tauri android build --apk
+      # Ohne diese Activity stürzt die App beim HoYoLAB-Login ab (hoyolab_login.rs)
+      - name: Login-Activity im Manifest prüfen
+        run: |
+          apk=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          aapt2 dump xmltree --file AndroidManifest.xml "$apk" | grep -q HoyolabLoginActivity
       # Gradle erzeugt die Release-APK unsigniert, Android installiert sie aber nur mit Signatur.
       # Der Keystore liegt nur im Runner-Temp und nie im Checkout.
       - name: APK signieren
