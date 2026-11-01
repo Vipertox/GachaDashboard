@@ -90,9 +90,17 @@ describe("Star Rail", () => {
         avatar_card_pool_list: [
           {
             id: 7,
-            name: "Charakter-Sprung",
+            name: "Sprung",
             time_info: { start_ts: ts(-1), end_ts: ts(20) },
             avatar_list: [{ item_name: "Firefly", icon_url: "ff.png", rarity: "5" }],
+          },
+        ],
+        equip_card_pool_list: [
+          {
+            id: 7,
+            name: "",
+            time_info: { start_ts: ts(-1), end_ts: ts(20) },
+            equip_list: [{ item_name: "Wiedersehen am Abend", item_url: "lc.png", rarity: 5 }],
           },
         ],
       },
@@ -105,6 +113,11 @@ describe("Star Rail", () => {
     ]);
     expect(c.events[0].progress).toEqual({ current: 3, max: 5 });
     expect(c.banners[0].items).toEqual([{ name: "Firefly", iconUrl: "ff.png", rarity: 5 }]);
+    // Allgemeiner oder fehlender Name wird durch den Typ ersetzt; gleiche IDs in beiden Listen bleiben unterscheidbar.
+    expect(c.banners.map((b) => [b.id, b.name])).toEqual([
+      ["character-7", "Charakter-Aktionssprung"],
+      ["lightCone-7", "Lichtkegel-Aktionssprung"],
+    ]);
   });
 });
 

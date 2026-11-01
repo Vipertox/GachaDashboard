@@ -63,11 +63,16 @@ function toEvent(a: z.infer<typeof act>, now: Date): GameEvent {
   return e;
 }
 
-function toBanner(w: z.infer<typeof warp>, now: Date): Banner {
+const WARP_NAME = { character: "Charakter-Aktionssprung", lightCone: "Lichtkegel-Aktionssprung" };
+// Die API liefert als Namen oft nur den allgemeinen Begriff oder nichts; dann zählt die Liste, aus der das Banner kommt.
+const GENERIC_NAMES = new Set(["", "sprung", "warp"]);
+
+function toBanner(w: z.infer<typeof warp>, kind: keyof typeof WARP_NAME, now: Date): Banner {
   const start = unixDate(w.time_info?.start_ts);
+  const name = plain(w.name);
   return {
-    id: w.id,
-    name: plain(w.name) || "Sprung",
+    id: `${kind}-${w.id}`,
+    name: GENERIC_NAMES.has(name.toLowerCase()) ? WARP_NAME[kind] : name,
     start,
     end: unixDate(w.time_info?.end_ts),
     status: bannerStatus(start, now),
@@ -84,9 +89,10 @@ export function parseStarRailEvents(data: unknown, now = new Date()): EventCalen
   const d = parseOrThrow(schema, data);
   return {
     events: (d.act_list ?? []).map((a) => toEvent(a, now)).filter((e) => isCurrent(e, now)),
-    banners: [...(d.avatar_card_pool_list ?? []), ...(d.equip_card_pool_list ?? [])]
-      .map((w) => toBanner(w, now))
-      .filter((b) => isCurrent(b, now)),
+    banners: [
+      ...(d.avatar_card_pool_list ?? []).map((w) => toBanner(w, "character", now)),
+      ...(d.equip_card_pool_list ?? []).map((w) => toBanner(w, "lightCone", now)),
+    ].filter((b) => isCurrent(b, now)),
   };
 }
 
