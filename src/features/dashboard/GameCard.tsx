@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { useGameStatus, useNow } from "../../app/hooks";
+import { useGameArt, useGameStatus, useNow } from "../../app/hooks";
 import { ERROR_TEXT } from "../../api/errors";
 import { artworkStyle, Card, Chip, GameIcon, OverflowDot, ResourceBar, Skeleton, ValueText } from "../../components/ui";
 import { formatClock, formatDuration, isFull } from "../../lib/time";
@@ -11,13 +11,14 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
   const meta = GAME_META[gameRef.game];
   const accent = GAME_ACCENT[gameRef.game];
   const q = useGameStatus(profile, gameRef);
+  const art = useGameArt(profile).data?.[gameRef.game];
   const now = useNow();
   const status = q.data;
   const stale = q.isError && !!status;
 
   const header = (
-    <div className="flex items-center gap-3 px-4 py-3" style={artworkStyle(meta.artworkKey, accent)}>
-      <GameIcon iconKey={meta.iconKey} size={36} label={meta.name} />
+    <div className="flex items-center gap-3 px-4 py-3" style={artworkStyle(meta.artworkKey, accent, 90, art?.artworkUrl)}>
+      <GameIcon iconKey={meta.iconKey} url={art?.iconUrl} size={36} label={meta.name} />
       <div className="min-w-0">
         <div className="font-semibold leading-tight truncate">{meta.name}</div>
         <div className="text-xs truncate" style={{ color: "var(--muted)" }}>

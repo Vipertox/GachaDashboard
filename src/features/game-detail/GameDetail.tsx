@@ -2,7 +2,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
 import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "../../app/state";
-import { statusKey, useGameStatus, useNow } from "../../app/hooks";
+import { statusKey, useGameArt, useGameStatus, useNow } from "../../app/hooks";
 import { ERROR_TEXT } from "../../api/errors";
 import {
   artworkStyle,
@@ -140,12 +140,14 @@ function Head({
   now,
   accent,
   artworkKey,
+  artworkUrl,
   gameName,
 }: {
   s: GameStatus;
   now: number;
   accent: string;
   artworkKey: string;
+  artworkUrl?: string;
   gameName: string;
 }) {
   const p = s.primary;
@@ -153,7 +155,10 @@ function Head({
   // Reserve bzw. Waveplate Crystal gehören laut Konzept in den Kopf, nicht in einen Abschnitt.
   const extras = s.secondary.filter((r) => !s.sections.some((sec) => sec.resources.includes(r)));
   return (
-    <div className="rounded-2xl p-4 space-y-3" style={{ ...artworkStyle(artworkKey, accent, 135), border: "1px solid var(--border)" }}>
+    <div
+      className="rounded-2xl p-4 space-y-3"
+      style={{ ...artworkStyle(artworkKey, accent, 135, artworkUrl), border: "1px solid var(--border)" }}
+    >
       <div className="flex items-center gap-4">
         <Ring frac={fraction(p, now)} accent={accent}>
           <GameIcon iconKey={p.iconKey} size={44} label={p.label} />
@@ -216,6 +221,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
   const now = useNow();
   const accent = GAME_ACCENT[gameRef.game];
   const meta = GAME_META[gameRef.game];
+  const art = useGameArt(profile).data?.[gameRef.game];
   const { game, uid } = gameRef;
 
   // Die Detailseite lädt beim Öffnen neu, nutzt sonst dieselbe Antwort wie das Dashboard.
@@ -283,7 +289,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
   const summaryAt = weekly >= 0 ? weekly + 1 : s.sections.filter((sec) => sec.kind === "daily").length;
   return (
     <div className={`space-y-5 ${q.isError ? "opacity-70" : ""}`}>
-      <Head s={s} now={now} accent={accent} artworkKey={meta.artworkKey} gameName={meta.name} />
+      <Head s={s} now={now} accent={accent} artworkKey={meta.artworkKey} artworkUrl={art?.artworkUrl} gameName={meta.name} />
       {tabs}
       {s.sections.slice(0, summaryAt).map((sec) => (
         <Section key={sec.kind} s={sec} now={now} accent={accent} />

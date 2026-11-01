@@ -3,7 +3,7 @@ import { imageFor } from "../assets/registry";
 import { fraction, isFull, liveValue } from "../lib/time";
 import type { Resource } from "../model/types";
 
-/** Spiel-, Ressourcen- oder Figurenbild; ohne Datei ein neutrales Ersatzsymbol. */
+/** Spiel-, Ressourcen- oder Figurenbild; eine Datei zum Schlüssel geht vor der URL, ohne beides ein neutrales Ersatzsymbol. */
 export function GameIcon({
   iconKey,
   url,
@@ -17,7 +17,7 @@ export function GameIcon({
   round?: boolean;
   label?: string;
 }) {
-  const src = url ?? (iconKey ? imageFor(iconKey) : undefined);
+  const src = (iconKey ? imageFor(iconKey) : undefined) ?? url;
   const style = { width: size, height: size };
   const shape = round ? "rounded-full" : "rounded-xl";
   if (src) {
@@ -46,11 +46,11 @@ export function GameIcon({
 export type BarMode = "overflow" | "progress";
 
 /**
- * Hintergrund für Kartenkopf und Detailkopf: abgedunkeltes Spiel-Artwork, ohne Bild ein
- * Verlauf in der Akzentfarbe. Mit Artwork steht der Text immer hell.
+ * Hintergrund für Kartenkopf und Detailkopf: abgedunkeltes Spiel-Artwork (lokale Datei, sonst
+ * `url` aus der API), ohne Bild ein Verlauf in der Akzentfarbe. Mit Artwork steht der Text immer hell.
  */
-export function artworkStyle(artworkKey: string, accent: string, angle = 90): CSSProperties {
-  const art = imageFor(artworkKey);
+export function artworkStyle(artworkKey: string, accent: string, angle = 90, url?: string): CSSProperties {
+  const art = imageFor(artworkKey) ?? url;
   if (art) {
     return {
       backgroundImage: `linear-gradient(${angle}deg, rgba(0,0,0,0.75), rgba(0,0,0,0.35)), url("${art}")`,
