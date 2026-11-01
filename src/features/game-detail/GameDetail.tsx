@@ -1,6 +1,6 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 import { useApp } from "../../app/state";
 import { statusKey, useGameStatus, useNow } from "../../app/hooks";
 import { ERROR_TEXT } from "../../api/errors";
@@ -19,14 +19,17 @@ import {
   type BarMode,
 } from "../../components/ui";
 import { formatClock, formatCountdown, formatDuration, fraction, isFull, liveValue } from "../../lib/time";
-import { GAME_ACCENT, GAME_META } from "../../model/games";
+import { GAME_ACCENT, GAME_META, GAME_TERMS } from "../../model/games";
 import type { DetailSection, GameAccountRef, GameId, GameStatus, Profile, Resource } from "../../model/types";
+import { Roster } from "./Roster";
 
 const TITLES: Record<DetailSection["kind"], string> = {
   daily: "Täglich",
   weekly: "Wöchentlich",
   running: "Laufend",
   other: "Weitere Ressourcen",
+  collection: "Sammlung",
+  account: "Konto",
 };
 
 function ResourceRow({ r, now, accent, mode }: { r: Resource; now: number; accent: string; mode: BarMode }) {
@@ -38,7 +41,7 @@ function ResourceRow({ r, now, accent, mode }: { r: Resource; now: number; accen
           <GameIcon iconKey={r.iconKey} size={28} label={r.label} />
           <span className="truncate">{r.label}</span>
         </div>
-        <ValueText r={r} now={now} className="font-semibold" />
+        <ValueText r={r} now={now} className="font-semibold shrink-0 whitespace-nowrap" />
       </div>
       <ResourceBar r={r} now={now} accent={accent} mode={mode} />
       {mode === "overflow" && full && (
@@ -95,6 +98,16 @@ function Section({ s, now, accent }: { s: DetailSection; now: number; accent: st
           {s.resources.map((r) => (
             <ResourceRow key={r.label} r={r} now={now} accent={accent} mode={s.kind === "other" ? "overflow" : "progress"} />
           ))}
+          {s.facts.length > 0 && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {s.facts.map((f) => (
+                <div key={f.label} className={f.value.length > 14 ? "col-span-2" : ""}>
+                  <dt style={{ color: "var(--muted)" }}>{f.label}</dt>
+                  <dd className="font-semibold">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           {timers.length > 0 && (
             <ul className="space-y-3">
               {timers.map((t, i) => {
@@ -163,7 +176,7 @@ function Head({
         <div key={r.label} className="flex items-center gap-2 text-sm">
           <GameIcon iconKey={r.iconKey} size={24} label={r.label} />
           <span className="flex-1 truncate">{r.label}</span>
-          <ValueText r={r} now={now} className="font-semibold" />
+          <ValueText r={r} now={now} className="font-semibold shrink-0 whitespace-nowrap" />
           {isFull(r, now) && (
             <span className="text-xs font-semibold" style={{ color: "var(--color-danger)" }}>
               Voll
@@ -171,6 +184,23 @@ function Head({
           )}
         </div>
       ))}
+    </div>
+  );
+}
+
+/** Im Figuren-Tab bleibt die Hauptressource als eine Zeile sichtbar. */
+function CompactHead({ s, now, accent }: { s: GameStatus; now: number; accent: string }) {
+  const p = s.primary;
+  return (
+    <div className="flex items-center gap-3 rounded-xl px-3 py-2" style={{ background: "var(--surface)", border: "1px solid var(--border)" }}>
+      <GameIcon iconKey={p.iconKey} size={24} label={p.label} />
+      <div className="flex-1 min-w-0">
+        <ResourceBar r={p} now={now} accent={accent} />
+      </div>
+      <ValueText r={p} now={now} className="text-sm font-semibold" />
+      <span className="text-xs" style={{ color: "var(--muted)" }}>
+        {isFull(p, now) || !p.fullAt ? "Voll" : `voll in ${formatCountdown(p.fullAt.getTime() - now)}`}
+      </span>
     </div>
   );
 }
@@ -188,7 +218,41 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
     void qc.invalidateQueries({ queryKey: statusKey(profile.id, { game, uid }) });
   }, [qc, profile.id, game, uid]);
 
+  // Der Tab steht in der URL, damit der Zurück-Knopf unter Android wie erwartet funktioniert.
+  const [params, setParams] = useSearchParams();
+  const tab = params.get("tab") === "figuren" ? "figuren" : "uebersicht";
+  const tabs = (
+    <div className="flex rounded-xl p-1 gap-1" role="tablist" style={{ background: "var(--surface-2)" }}>
+      {(
+        [
+          ["uebersicht", "Übersicht"],
+          ["figuren", GAME_TERMS[game].characters],
+        ] as const
+      ).map(([key, label]) => (
+        <button
+          key={key}
+          role="tab"
+          aria-selected={tab === key}
+          className="flex-1 min-h-10 rounded-lg text-sm font-medium"
+          style={tab === key ? { background: "var(--surface)", boxShadow: `inset 0 -2px 0 ${accent}` } : { color: "var(--muted)" }}
+          onClick={() => setParams(key === "figuren" ? { tab: key } : {}, { replace: true })}
+        >
+          {label}
+        </button>
+      ))}
+    </div>
+  );
+
   const s = q.data;
+  if (tab === "figuren") {
+    return (
+      <div className="space-y-4">
+        {s && <CompactHead s={s} now={now} accent={accent} />}
+        {tabs}
+        <Roster profile={profile} gameRef={gameRef} status={s} />
+      </div>
+    );
+  }
   if (!s) {
     return q.isError ? (
       <p style={{ color: "var(--color-danger)" }}>{ERROR_TEXT[q.error.kind]}: {q.error.message}</p>
@@ -202,6 +266,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
   return (
     <div className={`space-y-5 ${q.isError ? "opacity-70" : ""}`}>
       <Head s={s} now={now} accent={accent} artworkKey={meta.artworkKey} gameName={meta.name} />
+      {tabs}
       {s.sections.map((sec) => (
         <Section key={sec.kind} s={sec} now={now} accent={accent} />
       ))}

@@ -4,6 +4,8 @@ import { queryRole } from "../kuro";
 import { makeResource, nonEmpty, num, optNum, parseOrThrow, section } from "./util";
 import type { Account, GameAdapter, GameStatus } from "../../model/types";
 
+const counts = z.record(z.string(), num).optional().nullable();
+
 const schema = z.object({
   Base: z.object({
     Name: z.string().optional(),
@@ -17,6 +19,15 @@ const schema = z.object({
     LivenessMaxCount: optNum,
     LivenessUnlock: z.boolean().optional(),
     WeeklyInstCount: optNum,
+    RoleNum: optNum,
+    StoreEnergyRecoverTime: optNum,
+    Level: optNum,
+    WorldLevel: optNum,
+    ActiveDays: optNum,
+    // Unix-Millisekunden der Kontoerstellung
+    CreatTime: optNum,
+    // Geöffnete Schatztruhen pro Stufe 1–4. BasicBoxes und PhantomBoxes sind nicht eindeutig belegt.
+    Boxes: counts,
   }),
   BattlePass: z
     .object({
@@ -27,7 +38,25 @@ const schema = z.object({
     })
     .optional()
     .nullable(),
+  MotorData: z
+    .object({
+      Level: optNum,
+      Exp: optNum,
+      NextExp: optNum,
+      Skins: z.array(z.unknown()).optional().nullable(),
+      Stickers: z.array(z.unknown()).optional().nullable(),
+    })
+    .optional()
+    .nullable(),
+  MusicData: z
+    .object({
+      Albums: z.array(z.object({ Count: optNum, TotalCount: optNum })).optional().nullable(),
+    })
+    .optional()
+    .nullable(),
 });
+
+const fmt = (n: number) => n.toLocaleString("de-DE");
 
 export function parseWuwa(data: unknown, account: Account, now = new Date()): GameStatus {
   const d = parseOrThrow(schema, data);
@@ -51,6 +80,7 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
             iconKey: "wuwa/crystal",
             current: b.StoreEnergy,
             max: b.MaxStoreEnergy,
+            fullAtMs: b.StoreEnergyRecoverTime,
             now,
           }),
         ]
@@ -89,6 +119,64 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
         : [],
   });
 
+  const motor = d.MotorData;
+  const albums = d.MusicData?.Albums ?? [];
+  const albumTotal = albums.reduce((s, a) => s + (a.TotalCount ?? 0), 0);
+  const boxes = Object.entries(b.Boxes ?? {}).sort(([x], [y]) => Number(x) - Number(y));
+  const collection = section("collection", {
+    resources: [
+      ...(albumTotal
+        ? [
+            makeResource({
+              label: "Musiktitel",
+              iconKey: "wuwa/album",
+              current: albums.reduce((s, a) => s + (a.Count ?? 0), 0),
+              max: albumTotal,
+              now,
+            }),
+          ]
+        : []),
+      ...(motor?.NextExp
+        ? [
+            makeResource({
+              label: `Fahrzeug bis Stufe ${(motor.Level ?? 0) + 1}`,
+              iconKey: "wuwa/vehicle",
+              current: motor.Exp ?? 0,
+              max: motor.NextExp,
+              now,
+            }),
+          ]
+        : []),
+    ],
+    facts: [
+      ...(boxes.length
+        ? [
+            {
+              label: "Geöffnete Schatztruhen",
+              value: `${fmt(boxes.reduce((s, [, n]) => s + n, 0))} (Stufe 1–4: ${boxes.map(([, n]) => fmt(n)).join(" · ")})`,
+            },
+          ]
+        : []),
+      ...(albums.length
+        ? [{ label: "Vollständige Alben", value: `${albums.filter((a) => a.Count === a.TotalCount).length} / ${albums.length}` }]
+        : []),
+      ...(motor?.Stickers ? [{ label: "Fahrzeug-Sticker", value: fmt(motor.Stickers.length) }] : []),
+      ...(motor?.Skins ? [{ label: "Fahrzeug-Skins", value: fmt(motor.Skins.length) }] : []),
+    ],
+  });
+
+  const accountInfo = section("account", {
+    facts: [
+      ...(b.Level !== undefined ? [{ label: "Union-Stufe", value: String(b.Level) }] : []),
+      ...(b.WorldLevel !== undefined ? [{ label: "Weltstufe", value: String(b.WorldLevel) }] : []),
+      ...(b.RoleNum !== undefined ? [{ label: "Resonatoren", value: String(b.RoleNum) }] : []),
+      ...(b.ActiveDays !== undefined ? [{ label: "Aktive Tage", value: fmt(b.ActiveDays) }] : []),
+      ...(b.CreatTime
+        ? [{ label: "Dabei seit", value: new Date(b.CreatTime).toLocaleDateString("de-DE") }]
+        : []),
+    ],
+  });
+
   // Der Waveplate Crystal steht laut Konzept im Kopf der Detailseite (über `secondary`).
   return {
     game: "wuwa",
@@ -97,7 +185,8 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
     primary: waveplates,
     secondary: crystal,
     tasks: daily.tasks,
-    sections: [daily, weekly].filter(nonEmpty),
+    sections: [daily, weekly, collection, accountInfo].filter(nonEmpty),
+    characterCount: b.RoleNum,
     fetchedAt: now,
   };
 }

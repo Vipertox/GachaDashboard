@@ -43,12 +43,38 @@ export function mapRetcode(retcode: number, message: string): ApiError {
 }
 
 /** Ruft einen HoYoLAB-Endpunkt auf und gibt `data` zurück. */
-export async function hoyoGet(
+export function hoyoGet(url: string, creds: HoyoCredentials, signal?: AbortSignal): Promise<unknown> {
+  return hoyoRequest(url, creds, undefined, signal);
+}
+
+/** Wie `hoyoGet`, aber als POST mit JSON-Body (z. B. Genshin-Figurendetails). */
+export function hoyoPost(
   url: string,
   creds: HoyoCredentials,
+  body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<unknown> {
-  const json = (await httpJson({ url, headers: hoyoHeaders(creds), signal })) as {
+  return hoyoRequest(url, creds, body, signal);
+}
+
+async function hoyoRequest(
+  url: string,
+  creds: HoyoCredentials,
+  body: Record<string, unknown> | undefined,
+  signal?: AbortSignal,
+): Promise<unknown> {
+  const headers = hoyoHeaders(creds);
+  const json = (await httpJson(
+    body
+      ? {
+          url,
+          method: "POST",
+          headers: { ...headers, "content-type": "application/json" },
+          body: JSON.stringify(body),
+          signal,
+        }
+      : { url, headers, signal },
+  )) as {
     retcode?: number;
     message?: string;
     data?: unknown;

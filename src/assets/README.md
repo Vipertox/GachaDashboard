@@ -15,6 +15,8 @@ Von den Adaptern verwendete Schlüssel:
 | Genshin Impact | `genshin/resin`, `genshin/realm`, `genshin/commission` |
 | Honkai: Star Rail | `starrail/power`, `starrail/reserve`, `starrail/training`, `starrail/rogue`, `starrail/divergent` |
 | Zenless Zone Zero | `zzz/battery`, `zzz/engagement`, `zzz/survey` |
-| Wuthering Waves | `wuwa/waveplate`, `wuwa/crystal`, `wuwa/activity`, `wuwa/podcast` |
+| Wuthering Waves | `wuwa/waveplate`, `wuwa/crystal`, `wuwa/activity`, `wuwa/podcast`, `wuwa/album`, `wuwa/vehicle` |
 
 Das Artwork erscheint abgedunkelt als Band im Kartenkopf und als Hintergrund des Detailkopfs.
+
+Für den Figuren-Tab sind keine Dateien nötig. Bilder von Figuren, Waffen und Ausrüstung kommen als URL aus der API und liegen nur im Bild-Cache des Webviews. Elemente erscheinen als farbige Plaketten mit Anfangsbuchstaben, die Farben stehen in `GAME_TERMS` in `src/model/games.ts`.

@@ -4,6 +4,20 @@ Cross-Platform Gacha Dashboard: zeigt auf einen Blick, wie voll die regenerieren
 
 Eine Codebasis für Android, Windows und den lokalen Browser.
 
+## Funktionen
+
+- **Dashboard:** Eine Karte pro Spiel mit Hauptressource, Zeit bis voll und wichtigster Tagesaufgabe
+- **Detailseite, Tab Übersicht:** Alle Live-Werte des Spiels, gruppiert nach Täglich, Wöchentlich, Laufend und Weitere
+- **Detailseite, Tab Figuren:** Raster aller Figuren mit Element, Duplikaten, Stufe und Waffe, filter- und sortierbar. Ein Tipp öffnet Waffe, Ausrüstung mit Haupt- und Nebenwerten, Sets, Talente und Werte. Hinweise zeigen Lücken in der Ausrüstung
+- **Profile:** Mehrere HoYoLAB-Logins mit Wechsel per Tipp
+
+| Spiel | Live-Werte | Figuren |
+| --- | --- | --- |
+| Genshin Impact | ✓ | ✓ |
+| Honkai: Star Rail | ✓ | ✓ |
+| Zenless Zone Zero | ✓ | ✓, Details beim Antippen |
+| Wuthering Waves | ✓, dazu Sammlung (Musikalben, Fahrzeug, Schatztruhen) und Konto (Union-Stufe, Weltstufe, aktive Tage) | Nur Anzahl der Resonatoren, die Kuro-Schnittstelle liefert keine Figurendaten |
+
 ## Stack
 
 React + TypeScript, Vite, Tailwind CSS, TanStack Query, Tauri 2
@@ -36,14 +50,14 @@ Für die Tauri-App werden zusätzlich Rust und die [Tauri-Voraussetzungen](https
 1. **Konten** > **Profil anlegen**
 2. HoYoLAB-Cookies `ltuid_v2` und `ltoken_v2` nach der Anmeldung auf hoyolab.com eintragen (in der App alternativ „Mit HoYoLAB anmelden“) und **Prüfen**
 3. Optional für Wuthering Waves den Kuro-`oauthCode` eintragen (unter Windows „Aus Launcher übernehmen“)
-4. In HoYoLAB die Echtzeit-Notizen aktivieren
+4. In HoYoLAB die Echtzeit-Notizen aktivieren und für den Figuren-Tab unter Datenschutz die Charakterdetails freigeben
 5. **Profil speichern**
 
-Bilder für Spiele und Ressourcen sind nicht eingecheckt, siehe [src/assets/README.md](src/assets/README.md). Ohne sie zeigt die App Ersatzsymbole.
+Bilder für Spiele und Ressourcen sind nicht eingecheckt, siehe [src/assets/README.md](src/assets/README.md). Ohne sie zeigt die App Ersatzsymbole. Bilder von Figuren, Waffen und Ausrüstung kommen direkt aus der API.
 
 ## Hinweis
 
-Rein private App ohne eigenen Server und ohne Store-Veröffentlichung. Gespeichert werden nur HoYoLAB-Tokens (im sicheren Speicher des Betriebssystems) und Profil-Einstellungen, keine Spieldaten.
+Rein private App ohne eigenen Server und ohne Store-Veröffentlichung. Gespeichert werden nur HoYoLAB-Tokens und der Kuro-Code (im sicheren Speicher des Betriebssystems) sowie Profil-Einstellungen, keine Spieldaten. Filter und Sortierung des Figurenrasters merkt sich der Browser bzw. Webview im `localStorage`.
 
 ## Mitwirken & Lizenz
 
