@@ -21,7 +21,11 @@ import {
 import { formatClock, formatCountdown, formatDuration, fraction, isFull, liveValue } from "../../lib/time";
 import { GAME_ACCENT, GAME_META, GAME_TERMS } from "../../model/games";
 import type { DetailSection, GameAccountRef, GameId, GameStatus, Profile, Resource } from "../../model/types";
+import { CHALLENGE_MODES } from "../../api/challenges";
+import { ChallengeSummary, Challenges } from "./Challenges";
 import { Roster } from "./Roster";
+
+type Tab = "uebersicht" | "figuren" | "herausforderungen";
 
 const TITLES: Record<DetailSection["kind"], string> = {
   daily: "Täglich",
@@ -220,22 +224,23 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
 
   // Der Tab steht in der URL, damit der Zurück-Knopf unter Android wie erwartet funktioniert.
   const [params, setParams] = useSearchParams();
-  const tab = params.get("tab") === "figuren" ? "figuren" : "uebersicht";
+  const tabList: [Tab, string][] = [
+    ["uebersicht", "Übersicht"],
+    ["figuren", GAME_TERMS[game].characters],
+  ];
+  if (CHALLENGE_MODES[game]) tabList.push(["herausforderungen", "Herausforderungen"]);
+  const tab = tabList.find(([key]) => key === params.get("tab"))?.[0] ?? "uebersicht";
+  const openTab = (key: Tab) => setParams(key === "uebersicht" ? {} : { tab: key }, { replace: true });
   const tabs = (
     <div className="flex rounded-xl p-1 gap-1" role="tablist" style={{ background: "var(--surface-2)" }}>
-      {(
-        [
-          ["uebersicht", "Übersicht"],
-          ["figuren", GAME_TERMS[game].characters],
-        ] as const
-      ).map(([key, label]) => (
+      {tabList.map(([key, label]) => (
         <button
           key={key}
           role="tab"
           aria-selected={tab === key}
-          className="flex-1 min-h-10 rounded-lg text-sm font-medium"
+          className="flex-1 min-w-0 min-h-10 px-1 rounded-lg text-sm font-medium truncate"
           style={tab === key ? { background: "var(--surface)", boxShadow: `inset 0 -2px 0 ${accent}` } : { color: "var(--muted)" }}
-          onClick={() => setParams(key === "figuren" ? { tab: key } : {}, { replace: true })}
+          onClick={() => openTab(key)}
         >
           {label}
         </button>
@@ -253,6 +258,15 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
       </div>
     );
   }
+  if (tab === "herausforderungen") {
+    return (
+      <div className="space-y-4">
+        {s && <CompactHead s={s} now={now} accent={accent} />}
+        {tabs}
+        <Challenges profile={profile} gameRef={gameRef} accent={accent} />
+      </div>
+    );
+  }
   if (!s) {
     return q.isError ? (
       <p style={{ color: "var(--color-danger)" }}>{ERROR_TEXT[q.error.kind]}: {q.error.message}</p>
@@ -263,11 +277,18 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
       </div>
     );
   }
+  // Die Herausforderungen stehen direkt unter Wöchentlich, ohne diesen Abschnitt nach Täglich.
+  const weekly = s.sections.findIndex((sec) => sec.kind === "weekly");
+  const summaryAt = weekly >= 0 ? weekly + 1 : s.sections.filter((sec) => sec.kind === "daily").length;
   return (
     <div className={`space-y-5 ${q.isError ? "opacity-70" : ""}`}>
       <Head s={s} now={now} accent={accent} artworkKey={meta.artworkKey} gameName={meta.name} />
       {tabs}
-      {s.sections.map((sec) => (
+      {s.sections.slice(0, summaryAt).map((sec) => (
+        <Section key={sec.kind} s={sec} now={now} accent={accent} />
+      ))}
+      <ChallengeSummary profile={profile} gameRef={gameRef} onOpen={() => openTab("herausforderungen")} />
+      {s.sections.slice(summaryAt).map((sec) => (
         <Section key={sec.kind} s={sec} now={now} accent={accent} />
       ))}
       <p className="text-xs text-center" style={{ color: "var(--muted)" }}>
