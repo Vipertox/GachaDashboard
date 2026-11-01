@@ -32,8 +32,15 @@ export function useNow(): number {
   return useSyncExternalStore(subscribe, () => tick);
 }
 
-export function statusKey(profileId: string, ref: GameAccountRef) {
+export function statusKey(profileId: string, ref: Pick<GameAccountRef, "game" | "uid">) {
   return ["status", profileId, ref.game, ref.uid] as const;
+}
+
+/** Fehler aus Schlüsselspeicher oder Plugins haben keine `kind`; die Karten brauchen eine. */
+function asApiError(e: unknown): unknown {
+  if (e instanceof ApiError) return e;
+  if (e instanceof DOMException && e.name === "AbortError") return e;
+  return new ApiError("unknown", e instanceof Error ? e.message : String(e));
 }
 
 function useStatusOptions() {
@@ -42,24 +49,28 @@ function useStatusOptions() {
   return (profile: Profile, ref: GameAccountRef): UseQueryOptions<GameStatus, ApiError> => ({
     queryKey: statusKey(profile.id, ref),
     queryFn: async ({ signal }) => {
-      const secrets = await qc.ensureQueryData({
-        queryKey: ["secrets", profile.id],
-        queryFn: () => loadSecrets(profile.id),
-        staleTime: Infinity,
-      });
-      return ADAPTERS[ref.game].fetchStatus(
-        {
-          profileId: profile.id,
-          game: ref.game,
-          uid: ref.uid,
-          region: ref.region,
-          nickname: ref.nickname,
-          ltuid: secrets.ltuid || undefined,
-          ltoken: secrets.ltoken || undefined,
-          oauthCode: secrets.kuroOauth || undefined,
-        },
-        signal,
-      );
+      try {
+        const secrets = await qc.ensureQueryData({
+          queryKey: ["secrets", profile.id],
+          queryFn: () => loadSecrets(profile.id),
+          staleTime: Infinity,
+        });
+        return await ADAPTERS[ref.game].fetchStatus(
+          {
+            profileId: profile.id,
+            game: ref.game,
+            uid: ref.uid,
+            region: ref.region,
+            nickname: ref.nickname,
+            ltuid: secrets.ltuid || undefined,
+            ltoken: secrets.ltoken || undefined,
+            oauthCode: secrets.kuroOauth || undefined,
+          },
+          signal,
+        );
+      } catch (e) {
+        throw asApiError(e);
+      }
     },
     staleTime: 60_000,
     refetchInterval: settings.refreshMinutes * 60_000,

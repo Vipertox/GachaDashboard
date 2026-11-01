@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useEffect, useReducer, useState, type CSSProperties, type ReactNode } from "react";
 import { imageFor } from "../assets/registry";
 import { fraction, isFull, liveValue } from "../lib/time";
 import type { Resource } from "../model/types";
@@ -39,13 +39,48 @@ export function GameIcon({
   );
 }
 
-export function barColor(frac: number, accent: string): string {
+/**
+ * "overflow": regenerierende Ressource, voll heißt Verlust (Warnfarbe ab 90 %, Rot bei voll).
+ * "progress": Aufgabe oder Wochenfortschritt, voll heißt erledigt (Grün).
+ */
+export type BarMode = "overflow" | "progress";
+
+/**
+ * Hintergrund für Kartenkopf und Detailkopf: abgedunkeltes Spiel-Artwork, ohne Bild ein
+ * Verlauf in der Akzentfarbe. Mit Artwork steht der Text immer hell.
+ */
+export function artworkStyle(artworkKey: string, accent: string, angle = 90): CSSProperties {
+  const art = imageFor(artworkKey);
+  if (art) {
+    return {
+      backgroundImage: `linear-gradient(${angle}deg, rgba(0,0,0,0.75), rgba(0,0,0,0.35)), url("${art}")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      color: "#fff",
+      "--muted": "rgba(255,255,255,0.75)",
+    } as CSSProperties;
+  }
+  return { background: `linear-gradient(${angle}deg, color-mix(in srgb, ${accent} 30%, var(--surface)), var(--surface))` };
+}
+
+export function barColor(frac: number, accent: string, mode: BarMode = "overflow"): string {
+  if (mode === "progress") return frac >= 1 ? "var(--color-ok)" : accent;
   if (frac >= 1) return "var(--color-danger)";
   if (frac >= 0.9) return "var(--color-warn)";
   return accent;
 }
 
-export function ProgressBar({ frac, accent, height = 10 }: { frac: number; accent: string; height?: number }) {
+export function ProgressBar({
+  frac,
+  accent,
+  height = 10,
+  mode = "overflow",
+}: {
+  frac: number;
+  accent: string;
+  height?: number;
+  mode?: BarMode;
+}) {
   return (
     <div
       className="w-full rounded-full overflow-hidden"
@@ -55,13 +90,13 @@ export function ProgressBar({ frac, accent, height = 10 }: { frac: number; accen
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="bar-fill h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent) }} />
+      <div className="bar-fill h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent, mode) }} />
     </div>
   );
 }
 
-export function ResourceBar({ r, now, accent }: { r: Resource; now: number; accent: string }) {
-  return <ProgressBar frac={fraction(r, now)} accent={accent} />;
+export function ResourceBar({ r, now, accent, mode }: { r: Resource; now: number; accent: string; mode?: BarMode }) {
+  return <ProgressBar frac={fraction(r, now)} accent={accent} mode={mode} />;
 }
 
 export function Ring({ frac, accent, size = 88, children }: { frac: number; accent: string; size?: number; children?: ReactNode }) {
@@ -82,8 +117,8 @@ export function Ring({ frac, accent, size = 88, children }: { frac: number; acce
           strokeLinecap="round"
           strokeDasharray={circ}
           strokeDashoffset={circ * (1 - frac)}
-          className="bar-fill"
-          style={{ transition: "stroke-dashoffset 0.8s cubic-bezier(0.2,0.8,0.2,1)" }}
+          className="ring-fill"
+          style={{ "--circ": circ } as CSSProperties}
         />
       </svg>
       <div className="absolute inset-0 flex items-center justify-center">{children}</div>
@@ -96,16 +131,32 @@ export function OverflowDot({ r, now }: { r: Resource; now: number }) {
   return <span className="pulse-dot inline-block w-2 h-2 rounded-full" style={{ background: "var(--color-danger)" }} aria-label="läuft über" />;
 }
 
+const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/** Zählt beim ersten Anzeigen kurz von 0 auf den Zielwert hoch und folgt ihm danach direkt. */
+export function useCountUp(target: number, ms = 600): number {
+  const [start] = useState(() => (reducedMotion() ? -Infinity : performance.now()));
+  const [, rerender] = useReducer((x: number) => x + 1, 0);
+  const t = Math.min(1, (performance.now() - start) / ms);
+  useEffect(() => {
+    if (t >= 1) return;
+    const id = requestAnimationFrame(rerender);
+    return () => cancelAnimationFrame(id);
+  });
+  return t >= 1 ? target : Math.round(target * (1 - (1 - t) ** 3));
+}
+
 export function ValueText({ r, now, className = "" }: { r: Resource; now: number; className?: string }) {
+  const value = useCountUp(liveValue(r, now));
   return (
     <span className={className}>
-      {liveValue(r, now)}
+      {value}
       <span style={{ color: "var(--muted)" }}> / {r.max}</span>
     </span>
   );
 }
 
-export function Chip({ done, children }: { done: boolean; children: ReactNode }) {
+export function Chip({ done, iconKey, children }: { done: boolean; iconKey?: string; children: ReactNode }) {
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-3 text-sm min-h-8"
@@ -114,7 +165,7 @@ export function Chip({ done, children }: { done: boolean; children: ReactNode })
         color: done ? "var(--color-ok)" : "var(--text)",
       }}
     >
-      {done && <span aria-hidden>✓</span>}
+      {done ? <span aria-hidden>✓</span> : iconKey && imageFor(iconKey) && <GameIcon iconKey={iconKey} size={18} round />}
       {children}
     </span>
   );

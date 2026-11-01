@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useApp } from "../../app/state";
-import { btn, btnPrimary, Card } from "../../components/ui";
+import { BottomSheet, btn, btnPrimary, Card } from "../../components/ui";
 import { GAME_META } from "../../model/games";
 import type { Profile } from "../../model/types";
 import { ProfileEditor } from "./ProfileEditor";
@@ -11,6 +11,9 @@ export function Accounts() {
   const [params, setParams] = useSearchParams();
   const navigate = useNavigate();
   const [editing, setEditing] = useState<Profile | "new" | null>(params.get("new") ? "new" : null);
+  // Eigene Bestätigung statt window.confirm, das die Android-WebView nicht zuverlässig anzeigt.
+  const [deleting, setDeleting] = useState<Profile | null>(null);
+  const [deleteError, setDeleteError] = useState<string>();
 
   const close = () => {
     setEditing(null);
@@ -62,7 +65,8 @@ export function Accounts() {
                 className={btn}
                 style={{ color: "var(--color-danger)" }}
                 onClick={() => {
-                  if (confirm(`Profil „${p.name}“ und seine Tokens löschen?`)) void deleteProfile(p.id);
+                  setDeleteError(undefined);
+                  setDeleting(p);
                 }}
               >
                 Löschen
@@ -74,6 +78,31 @@ export function Accounts() {
       <button className={btnPrimary} onClick={() => setEditing("new")}>
         Profil anlegen
       </button>
+      <BottomSheet open={!!deleting} onClose={() => setDeleting(null)} title="Profil löschen">
+        <p className="mb-4">Profil „{deleting?.name}“ und seine Tokens löschen?</p>
+        {deleteError && (
+          <p className="mb-4 text-sm" style={{ color: "var(--color-danger)" }}>
+            {deleteError}
+          </p>
+        )}
+        <div className="flex gap-2">
+          <button
+            className={btn}
+            style={{ background: "var(--color-danger)", color: "#fff" }}
+            onClick={() => {
+              if (!deleting) return;
+              deleteProfile(deleting.id)
+                .then(() => setDeleting(null))
+                .catch((e) => setDeleteError(e instanceof Error ? e.message : String(e)));
+            }}
+          >
+            Löschen
+          </button>
+          <button className={btn} style={{ background: "var(--surface-2)" }} onClick={() => setDeleting(null)}>
+            Abbrechen
+          </button>
+        </div>
+      </BottomSheet>
     </div>
   );
 }

@@ -72,28 +72,42 @@ export interface GameRole {
   level: number;
 }
 
-/** Alle mit dem HoYoLAB-Konto verknüpften Spielkonten, pro Spiel das erste. */
-export async function fetchGameRoles(
-  creds: HoyoCredentials,
-  signal?: AbortSignal,
-): Promise<GameRole[]> {
+interface RawRole {
+  game_biz?: string;
+  game_uid?: string | number;
+  region?: string;
+  nickname?: string;
+  level?: number;
+}
+
+/** Pro Spiel das erste Konto; mehrere Server je Spiel sind in Version 1 nicht vorgesehen. */
+export function pickRoles(list: RawRole[]): GameRole[] {
   const out: GameRole[] = [];
   for (const [game, biz] of Object.entries(GAME_BIZ) as [GameId, string][]) {
-    const data = (await hoyoGet(
-      `https://api-account-os.hoyolab.com/account/binding/api/getUserGameRolesByCookie?game_biz=${biz}`,
-      creds,
-      signal,
-    )) as { list?: { game_uid: string; region: string; nickname: string; level: number }[] };
-    const first = data?.list?.[0];
+    const first = list.find((r) => r.game_biz === biz && r.game_uid && r.region);
     if (first) {
       out.push({
         game,
         uid: String(first.game_uid),
-        region: first.region,
-        nickname: first.nickname,
-        level: first.level,
+        region: first.region!,
+        nickname: first.nickname ?? "",
+        level: first.level ?? 0,
       });
     }
   }
   return out;
+}
+
+/** Alle mit dem HoYoLAB-Konto verknüpften Spielkonten, in einem einzigen Aufruf. */
+export async function fetchGameRoles(
+  creds: HoyoCredentials,
+  signal?: AbortSignal,
+): Promise<GameRole[]> {
+  const data = (await hoyoGet(
+    "https://api-account-os.hoyolab.com/account/binding/api/getUserGameRolesByCookie",
+    creds,
+    signal,
+  )) as { list?: RawRole[] } | null;
+  if (!Array.isArray(data?.list)) throw new ApiError("schema", "Schnittstelle geändert: list");
+  return pickRoles(data.list);
 }

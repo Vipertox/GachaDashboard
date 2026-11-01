@@ -1,6 +1,6 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { dirname, extname, join, resolve } from "node:path";
+import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Entry } from "@napi-rs/keyring";
@@ -95,7 +95,7 @@ export function createApp(token: string): Hono {
     }
   });
 
-  const keyOf =(c: Context): string | null => {
+  const keyOf = (c: Context): string | null => {
     const key = c.req.param("key") ?? "";
     return KEY_PATTERN.test(key) ? key : null;
   };
@@ -145,13 +145,17 @@ export function createApp(token: string): Hono {
     ".svg": "image/svg+xml",
     ".webp": "image/webp",
     ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".ico": "image/x-icon",
+    ".woff2": "font/woff2",
     ".json": "application/json",
   };
 
   app.get("*", (c) => {
     const path = c.req.path === "/" ? "/index.html" : c.req.path;
     const file = resolve(DIST, "." + path);
-    if (path !== "/index.html" && file.startsWith(DIST) && existsSync(file)) {
+    const isAsset = file.startsWith(DIST + sep) && existsSync(file) && statSync(file).isFile();
+    if (path !== "/index.html" && isAsset) {
       return c.body(readFileSync(file), 200, {
         "content-type": MIME[extname(file)] ?? "application/octet-stream",
       });

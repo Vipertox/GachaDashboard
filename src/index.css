@@ -55,8 +55,26 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
 }
 
+/* Balken und Ring füllen sich beim ersten Anzeigen von 0 aus, danach gleiten sie. */
+@keyframes bar-grow {
+  from {
+    transform: scaleX(0);
+  }
+}
 .bar-fill {
+  transform-origin: left;
   transition: width 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: bar-grow 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes ring-grow {
+  from {
+    stroke-dashoffset: var(--circ);
+  }
+}
+.ring-fill {
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
+  animation: ring-grow 0.8s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 @keyframes pulse-dot {
@@ -101,8 +119,10 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .bar-fill {
+  .bar-fill,
+  .ring-fill {
     transition: none;
+    animation: none;
   }
   .pulse-dot,
   .skeleton,

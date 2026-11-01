@@ -1,11 +1,10 @@
 import { Link } from "react-router-dom";
 import { useGameStatus, useNow } from "../../app/hooks";
 import { ERROR_TEXT } from "../../api/errors";
-import { Card, GameIcon, OverflowDot, ResourceBar, Skeleton, ValueText, Chip } from "../../components/ui";
+import { artworkStyle, Card, Chip, GameIcon, OverflowDot, ResourceBar, Skeleton, ValueText } from "../../components/ui";
 import { formatClock, formatDuration, isFull } from "../../lib/time";
 import { haptic } from "../../lib/native";
-import { GAME_ACCENT } from "../../model/games";
-import { GAME_META } from "../../model/games";
+import { GAME_ACCENT, GAME_META } from "../../model/games";
 import type { GameAccountRef, Profile } from "../../model/types";
 
 export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef }) {
@@ -17,10 +16,7 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
   const stale = q.isError && !!status;
 
   const header = (
-    <div
-      className="flex items-center gap-3 px-4 py-3"
-      style={{ background: `linear-gradient(90deg, color-mix(in srgb, ${accent} 28%, var(--surface)), var(--surface))` }}
-    >
+    <div className="flex items-center gap-3 px-4 py-3" style={artworkStyle(meta.artworkKey, accent)}>
       <GameIcon iconKey={meta.iconKey} size={36} label={meta.name} />
       <div className="min-w-0">
         <div className="font-semibold leading-tight truncate">{meta.name}</div>
@@ -79,10 +75,10 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
             ? "Voll"
             : `Voll um ${formatClock(p.fullAt, now)} · in ${formatDuration(p.fullAt.getTime() - now)}`}
         </div>
-        {daily && daily.tasks.length + daily.flags.length > 0 && (
+        {daily && daily.tasks.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {daily.tasks.map((t) => (
-              <Chip key={t.label} done={t.done >= t.total}>
+              <Chip key={t.label} done={t.done >= t.total} iconKey={t.iconKey}>
                 {t.label} {t.done}/{t.total}
               </Chip>
             ))}

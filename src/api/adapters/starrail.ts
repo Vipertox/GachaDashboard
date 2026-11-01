@@ -56,7 +56,8 @@ export function parseStarRail(data: unknown, account: Account, now = new Date())
             label: "Reserved Trailblaze Power",
             iconKey: "starrail/reserve",
             current: d.current_reserve_stamina,
-            max: 2400,
+            // Die API liefert kein Maximum, nur ob die Reserve voll ist.
+            max: d.is_reserve_stamina_full ? d.current_reserve_stamina : 2400,
             now,
           }),
         ]
@@ -125,8 +126,7 @@ export function parseStarRail(data: unknown, account: Account, now = new Date())
     ),
   });
 
-  const other = section("other", { resources: reserve });
-
+  // Die Reserve steht laut Konzept im Kopf der Detailseite (über `secondary`).
   return {
     game: "starrail",
     uid: account.uid,
@@ -134,7 +134,7 @@ export function parseStarRail(data: unknown, account: Account, now = new Date())
     primary: power,
     secondary: reserve,
     tasks: daily.tasks,
-    sections: [daily, weekly, running, other].filter(nonEmpty),
+    sections: [daily, weekly, running].filter(nonEmpty),
     fetchedAt: now,
   };
 }

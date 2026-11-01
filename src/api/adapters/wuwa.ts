@@ -89,8 +89,7 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
         : [],
   });
 
-  const other = section("other", { resources: crystal });
-
+  // Der Waveplate Crystal steht laut Konzept im Kopf der Detailseite (über `secondary`).
   return {
     game: "wuwa",
     uid: account.uid,
@@ -98,7 +97,7 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
     primary: waveplates,
     secondary: crystal,
     tasks: daily.tasks,
-    sections: [daily, weekly, other].filter(nonEmpty),
+    sections: [daily, weekly].filter(nonEmpty),
     fetchedAt: now,
   };
 }

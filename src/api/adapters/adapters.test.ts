@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { generateDs } from "../hoyolab";
+import { generateDs, pickRoles } from "../hoyolab";
 import { findPlayerId } from "../kuro";
 import { liveValue } from "../../lib/time";
 import { parseGenshin } from "./genshin";
@@ -101,12 +101,28 @@ describe("Wuthering Waves", () => {
     const s = parseWuwa({ Base: { ...base, EnergyRecoverTime: at }, BattlePass: { IsOpen: true, Level: 5, WeekExp: 10, WeekMaxExp: 100 } }, acc("wuwa"), now);
     expect(s.primary.fullAt?.getTime()).toBe(at);
     expect(liveValue(s.primary, now.getTime())).toBe(200);
-    expect(s.sections.map((x) => x.kind)).toEqual(["daily", "weekly", "other"]);
+    expect(s.sections.map((x) => x.kind)).toEqual(["daily", "weekly"]);
+    expect(s.secondary.map((r) => r.label)).toEqual(["Waveplate Crystal"]);
   });
   it("0 bedeutet voll", () => {
     const s = parseWuwa({ Base: { ...base, Energy: 240, EnergyRecoverTime: 0 } }, acc("wuwa"), now);
     expect(s.primary.fullAt).toBeUndefined();
     expect(liveValue(s.primary, now.getTime())).toBe(240);
+  });
+});
+
+describe("HoYoLAB-Spielkonten", () => {
+  it("nimmt pro Spiel das erste Konto und ignoriert fremde Spiele", () => {
+    const roles = pickRoles([
+      { game_biz: "bh3_global", game_uid: "9", region: "x" },
+      { game_biz: "hk4e_global", game_uid: 700000001, region: "os_euro", nickname: "A", level: 60 },
+      { game_biz: "hk4e_global", game_uid: "800000001", region: "os_asia" },
+      { game_biz: "nap_global", game_uid: "1500000001", region: "prod_gf_eu" },
+    ]);
+    expect(roles.map((r) => [r.game, r.uid, r.region])).toEqual([
+      ["genshin", "700000001", "os_euro"],
+      ["zzz", "1500000001", "prod_gf_eu"],
+    ]);
   });
 });
 

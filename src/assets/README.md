@@ -6,4 +6,15 @@ Die App erwartet ihre Bilder als WebP-Dateien in diesem Ordner. Sie sind nicht e
 | --- | --- |
 | Spiel-Icon | `games/<spiel>.webp` (`genshin`, `starrail`, `zzz`, `wuwa`) |
 | Artwork | `artwork/<spiel>.webp` |
-| Ressourcen | `<spiel>/<ressource>.webp`, z. B. `genshin/resin.webp`, `genshin/realm.webp`, `starrail/power.webp`, `starrail/reserve.webp`, `zzz/battery.webp`, `wuwa/waveplate.webp`, `wuwa/crystal.webp` |
+| Ressourcen und Aufgaben | `<spiel>/<name>.webp`, siehe Liste unten |
+
+Von den Adaptern verwendete Schlüssel:
+
+| Spiel | Dateien |
+| --- | --- |
+| Genshin Impact | `genshin/resin`, `genshin/realm`, `genshin/commission` |
+| Honkai: Star Rail | `starrail/power`, `starrail/reserve`, `starrail/training`, `starrail/rogue`, `starrail/divergent` |
+| Zenless Zone Zero | `zzz/battery`, `zzz/engagement`, `zzz/survey` |
+| Wuthering Waves | `wuwa/waveplate`, `wuwa/crystal`, `wuwa/activity`, `wuwa/podcast` |
+
+Das Artwork erscheint abgedunkelt als Band im Kartenkopf und als Hintergrund des Detailkopfs.

@@ -30,24 +30,27 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
 
     let loaded = Arc::new(AtomicBool::new(false));
     let flag = loaded.clone();
-    let window = WebviewWindowBuilder::new(
+    let builder = WebviewWindowBuilder::new(
         &app,
         LABEL,
         WebviewUrl::External(LOGIN_URL.parse().map_err(|_| "Ungültige URL".to_string())?),
-    )
-    .title("Bei HoYoLAB anmelden")
-    .on_page_load(move |_, payload| {
-        if matches!(payload.event(), PageLoadEvent::Finished)
-            && payload
-                .url()
-                .host_str()
-                .is_some_and(|h| h.ends_with("hoyolab.com"))
-        {
-            flag.store(true, Ordering::SeqCst);
-        }
-    })
-    .build()
-    .map_err(|e| e.to_string())?;
+    );
+    // Fenstertitel gibt es nur auf dem Desktop; unter Android fehlt die Methode.
+    #[cfg(desktop)]
+    let builder = builder.title("Bei HoYoLAB anmelden");
+    let window = builder
+        .on_page_load(move |_, payload| {
+            if matches!(payload.event(), PageLoadEvent::Finished)
+                && payload
+                    .url()
+                    .host_str()
+                    .is_some_and(|h| h.ends_with("hoyolab.com"))
+            {
+                flag.store(true, Ordering::SeqCst);
+            }
+        })
+        .build()
+        .map_err(|e| e.to_string())?;
 
     let cookie_url = url::Url::parse("https://www.hoyolab.com").map_err(|e| e.to_string())?;
 

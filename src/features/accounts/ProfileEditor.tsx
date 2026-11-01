@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { ApiError, ERROR_TEXT } from "../../api/errors";
-import { fetchGameRoles, type GameRole } from "../../api/hoyolab";
-import { queryPlayerInfo, type KuroPlayer } from "../../api/kuro";
+import { fetchGameRoles } from "../../api/hoyolab";
+import { queryPlayerInfo } from "../../api/kuro";
 import { loadSecrets } from "../../credentials";
 import { btn, btnPrimary, fieldCls, fieldStyle } from "../../components/ui";
 import { hoyolabWebviewLogin, isWindowsApp, readLauncherCode } from "../../lib/native";
@@ -10,6 +10,24 @@ import type { GameAccountRef, GameId, Profile } from "../../model/types";
 import { useApp } from "../../app/state";
 
 const COLORS = ["#6366f1", "#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#ec4899"];
+
+const HOYO_GAMES: GameId[] = ["genshin", "starrail", "zzz"];
+
+type FoundAccount = { game: GameId; uid: string; region: string; nickname?: string };
+
+/** Ersetzt die Konten der Spiele in `replace` durch die gefundenen; Sichtbarkeit und Reihenfolge bleiben erhalten. */
+export function mergeGames(cur: GameAccountRef[], found: FoundAccount[], replace: GameId[]): GameAccountRef[] {
+  const kept = cur.filter((g) => !replace.includes(g.game));
+  const added = found.map((f, i): GameAccountRef => {
+    const old = cur.find((g) => g.game === f.game && g.uid === f.uid);
+    return old
+      ? { ...old, region: f.region, nickname: f.nickname ?? old.nickname }
+      : { game: f.game, uid: f.uid, region: f.region, nickname: f.nickname, visible: true, order: cur.length + i };
+  });
+  return [...kept, ...added].sort((a, b) => a.order - b.order).map((g, i) => ({ ...g, order: i }));
+}
+
+const sameAccount = (a: GameAccountRef, b: GameAccountRef) => a.game === b.game && a.uid === b.uid;
 
 function describe(e: unknown): string {
   if (e instanceof ApiError) return `${ERROR_TEXT[e.kind]}: ${e.message}`;
@@ -57,6 +75,9 @@ export function ProfileEditor({
   const [ltuid, setLtuid] = useState("");
   const [ltoken, setLtoken] = useState("");
   const [kuro, setKuro] = useState("");
+  // Zuletzt erfolgreich geprüfte Werte; "Profil speichern" prüft nur, was sich seitdem geändert hat.
+  const [checkedHoyo, setCheckedHoyo] = useState("");
+  const [checkedKuro, setCheckedKuro] = useState("");
   const [games, setGames] = useState<GameAccountRef[]>(profile?.games ?? []);
   const [loading, setLoading] = useState(!!profile);
   const [busy, setBusy] = useState<string>();
@@ -69,84 +90,75 @@ export function ProfileEditor({
         setLtuid(s.ltuid);
         setLtoken(s.ltoken);
         setKuro(s.kuroOauth);
+        setCheckedHoyo(`${s.ltuid}|${s.ltoken}`);
+        setCheckedKuro(s.kuroOauth);
       })
       .catch((e) => setMessage({ ok: false, text: describe(e) }))
       .finally(() => setLoading(false));
   }, [profile]);
 
-  const mergeGames = (found: { game: GameId; uid: string; region: string; nickname?: string }[], replace: GameId[]) => {
-    setGames((cur) => {
-      const kept = cur.filter((g) => !replace.includes(g.game));
-      const added = found.map((f, i): GameAccountRef => {
-        const old = cur.find((g) => g.game === f.game && g.uid === f.uid);
-        return old
-          ? { ...old, region: f.region, nickname: f.nickname ?? old.nickname }
-          : { game: f.game, uid: f.uid, region: f.region, nickname: f.nickname, visible: true, order: kept.length + i };
-      });
-      return [...kept, ...added].map((g, i) => ({ ...g, order: i }));
+  const hoyoKey = `${ltuid}|${ltoken}`;
+  const hasHoyo = !!ltuid && !!ltoken;
+
+  /** Busy-Anzeige, Meldung und Fehlertext für alle Schaltflächen gleich. */
+  const run = async (what: string, action: () => Promise<string | void>) => {
+    setBusy(what);
+    setMessage(undefined);
+    try {
+      const text = await action();
+      if (text) setMessage({ ok: true, text });
+    } catch (e) {
+      setMessage({ ok: false, text: describe(e) });
+    } finally {
+      setBusy(undefined);
+    }
+  };
+
+  const verifyHoyo = async (cur: GameAccountRef[]) => {
+    const roles = await fetchGameRoles({ ltuid, ltoken });
+    setCheckedHoyo(hoyoKey);
+    const text = roles.length
+      ? `Gefunden: ${roles.map((r) => `${GAME_META[r.game].name} (${r.nickname}, ${r.uid})`).join(", ")}`
+      : "Anmeldung gültig, aber keine Spielkonten verknüpft.";
+    return { games: mergeGames(cur, roles, HOYO_GAMES), text };
+  };
+
+  const verifyKuro = async (cur: GameAccountRef[]) => {
+    const player = await queryPlayerInfo(kuro);
+    setCheckedKuro(kuro);
+    return {
+      games: mergeGames(cur, [{ game: "wuwa", uid: player.playerId, region: player.region }], ["wuwa"]),
+      text: `Wuthering Waves: Spieler-ID ${player.playerId}, Server ${player.region}`,
+    };
+  };
+
+  const checkHoyo = () =>
+    run("hoyo", async () => {
+      const r = await verifyHoyo(games);
+      setGames(r.games);
+      return r.text;
     });
-  };
 
-  const checkHoyo = async () => {
-    setBusy("hoyo");
-    setMessage(undefined);
-    try {
-      const roles: GameRole[] = await fetchGameRoles({ ltuid, ltoken });
-      mergeGames(roles, ["genshin", "starrail", "zzz"]);
-      setMessage({
-        ok: true,
-        text: roles.length
-          ? `Gefunden: ${roles.map((r) => `${GAME_META[r.game].name} (${r.nickname}, ${r.uid})`).join(", ")}`
-          : "Anmeldung gültig, aber keine Spielkonten verknüpft.",
-      });
-    } catch (e) {
-      setMessage({ ok: false, text: describe(e) });
-    } finally {
-      setBusy(undefined);
-    }
-  };
+  const checkKuro = () =>
+    run("kuro", async () => {
+      const r = await verifyKuro(games);
+      setGames(r.games);
+      return r.text;
+    });
 
-  const checkKuro = async () => {
-    setBusy("kuro");
-    setMessage(undefined);
-    try {
-      const player: KuroPlayer = await queryPlayerInfo(kuro);
-      mergeGames([{ game: "wuwa", uid: player.playerId, region: player.region }], ["wuwa"]);
-      setMessage({ ok: true, text: `Wuthering Waves: Spieler-ID ${player.playerId}, Server ${player.region}` });
-    } catch (e) {
-      setMessage({ ok: false, text: describe(e) });
-    } finally {
-      setBusy(undefined);
-    }
-  };
-
-  const webviewLogin = async () => {
-    setBusy("login");
-    setMessage(undefined);
-    try {
+  const webviewLogin = () =>
+    run("login", async () => {
       const t = await hoyolabWebviewLogin();
       setLtuid(t.ltuid);
       setLtoken(t.ltoken);
-      setMessage({ ok: true, text: "Tokens übernommen. Jetzt prüfen und speichern." });
-    } catch (e) {
-      setMessage({ ok: false, text: describe(e) });
-    } finally {
-      setBusy(undefined);
-    }
-  };
+      return "Tokens übernommen. Jetzt prüfen und speichern.";
+    });
 
-  const fromLauncher = async () => {
-    setBusy("launcher");
-    setMessage(undefined);
-    try {
+  const fromLauncher = () =>
+    run("launcher", async () => {
       setKuro(await readLauncherCode());
-      setMessage({ ok: true, text: "Kuro-Code aus dem Launcher übernommen." });
-    } catch (e) {
-      setMessage({ ok: false, text: describe(e) });
-    } finally {
-      setBusy(undefined);
-    }
-  };
+      return "Kuro-Code aus dem Launcher übernommen.";
+    });
 
   const move = (idx: number, dir: -1 | 1) =>
     setGames((cur) => {
@@ -157,19 +169,18 @@ export function ProfileEditor({
       return next.map((g, i) => ({ ...g, order: i }));
     });
 
-  const save = async () => {
-    setBusy("save");
-    try {
-      await saveProfile({ id, name: name.trim() || "Profil", color, games }, { ltuid, ltoken, kuroOauth: kuro });
+  // Laut Konzept prüft die App die Tokens beim Speichern; ungültige Tokens werden nicht gespeichert.
+  const save = () =>
+    run("save", async () => {
+      let next = games;
+      if (hasHoyo && hoyoKey !== checkedHoyo) next = (await verifyHoyo(next)).games;
+      if (kuro && kuro !== checkedKuro) next = (await verifyKuro(next)).games;
+      setGames(next);
+      await saveProfile({ id, name: name.trim() || "Profil", color, games: next }, { ltuid, ltoken, kuroOauth: kuro });
       onDone(!profile);
-    } catch (e) {
-      setMessage({ ok: false, text: describe(e) });
-      setBusy(undefined);
-    }
-  };
+    });
 
   const sorted = [...games].sort((a, b) => a.order - b.order);
-  const hasHoyo = !!ltuid && !!ltoken;
 
   if (loading) return <p>Lade …</p>;
 
@@ -242,7 +253,7 @@ export function ProfileEditor({
                   type="checkbox"
                   className="w-5 h-5"
                   checked={g.visible}
-                  onChange={(e) => setGames((cur) => cur.map((x) => (x === g ? { ...x, visible: e.target.checked } : x)))}
+                  onChange={(e) => setGames((cur) => cur.map((x) => (sameAccount(x, g) ? { ...x, visible: e.target.checked } : x)))}
                 />
                 <span className="truncate">
                   {GAME_META[g.game].name} <span style={{ color: "var(--muted)" }}>{g.uid}</span>

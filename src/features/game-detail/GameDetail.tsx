@@ -4,10 +4,23 @@ import { Link, useParams } from "react-router-dom";
 import { useApp } from "../../app/state";
 import { statusKey, useGameStatus, useNow } from "../../app/hooks";
 import { ERROR_TEXT } from "../../api/errors";
-import { Card, Chip, GameIcon, OverflowDot, ProgressBar, ResourceBar, Ring, Skeleton, ValueText } from "../../components/ui";
+import {
+  artworkStyle,
+  Card,
+  Chip,
+  GameIcon,
+  OverflowDot,
+  ProgressBar,
+  ResourceBar,
+  Ring,
+  Skeleton,
+  useCountUp,
+  ValueText,
+  type BarMode,
+} from "../../components/ui";
 import { formatClock, formatCountdown, formatDuration, fraction, isFull, liveValue } from "../../lib/time";
 import { GAME_ACCENT, GAME_META } from "../../model/games";
-import type { DetailSection, GameAccountRef, GameId, Profile, Resource } from "../../model/types";
+import type { DetailSection, GameAccountRef, GameId, GameStatus, Profile, Resource } from "../../model/types";
 
 const TITLES: Record<DetailSection["kind"], string> = {
   daily: "Täglich",
@@ -16,7 +29,8 @@ const TITLES: Record<DetailSection["kind"], string> = {
   other: "Weitere Ressourcen",
 };
 
-function ResourceRow({ r, now, accent }: { r: Resource; now: number; accent: string }) {
+function ResourceRow({ r, now, accent, mode }: { r: Resource; now: number; accent: string; mode: BarMode }) {
+  const full = isFull(r, now);
   return (
     <div className="space-y-2">
       <div className="flex items-center justify-between gap-3">
@@ -26,8 +40,13 @@ function ResourceRow({ r, now, accent }: { r: Resource; now: number; accent: str
         </div>
         <ValueText r={r} now={now} className="font-semibold" />
       </div>
-      <ResourceBar r={r} now={now} accent={accent} />
-      {r.fullAt && !isFull(r, now) && (
+      <ResourceBar r={r} now={now} accent={accent} mode={mode} />
+      {mode === "overflow" && full && (
+        <div className="text-xs font-semibold" style={{ color: "var(--color-danger)" }}>
+          Voll
+        </div>
+      )}
+      {r.fullAt && !full && (
         <div className="text-xs" style={{ color: "var(--muted)" }}>
           Voll in {formatDuration(r.fullAt.getTime() - now)}
         </div>
@@ -58,7 +77,7 @@ function Section({ s, now, accent }: { s: DetailSection; now: number; accent: st
                       {t.done}/{t.total}
                     </span>
                   </div>
-                  <ProgressBar frac={t.total ? Math.min(1, t.done / t.total) : 0} accent={accent} height={6} />
+                  <ProgressBar frac={t.total ? Math.min(1, t.done / t.total) : 0} accent={accent} height={6} mode="progress" />
                 </div>
               ))}
             </div>
@@ -74,7 +93,7 @@ function Section({ s, now, accent }: { s: DetailSection; now: number; accent: st
             </div>
           )}
           {s.resources.map((r) => (
-            <ResourceRow key={r.label} r={r} now={now} accent={accent} />
+            <ResourceRow key={r.label} r={r} now={now} accent={accent} mode={s.kind === "other" ? "overflow" : "progress"} />
           ))}
           {timers.length > 0 && (
             <ul className="space-y-3">
@@ -98,46 +117,36 @@ function Section({ s, now, accent }: { s: DetailSection; now: number; accent: st
   );
 }
 
-function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef }) {
-  const q = useGameStatus(profile, gameRef);
-  const qc = useQueryClient();
-  const now = useNow();
-  const accent = GAME_ACCENT[gameRef.game];
-  const meta = GAME_META[gameRef.game];
-
-  // Die Detailseite lädt beim Öffnen neu, nutzt sonst dieselbe Antwort wie das Dashboard.
-  useEffect(() => {
-    void qc.invalidateQueries({ queryKey: statusKey(profile.id, gameRef) });
-  }, [qc, profile.id, gameRef]);
-
-  const s = q.data;
-  if (!s) {
-    return q.isError ? (
-      <p style={{ color: "var(--color-danger)" }}>{ERROR_TEXT[q.error.kind]}: {q.error.message}</p>
-    ) : (
-      <div className="space-y-3">
-        <Skeleton className="h-28" />
-        <Skeleton className="h-40" />
-      </div>
-    );
-  }
+function Head({
+  s,
+  now,
+  accent,
+  artworkKey,
+  gameName,
+}: {
+  s: GameStatus;
+  now: number;
+  accent: string;
+  artworkKey: string;
+  gameName: string;
+}) {
   const p = s.primary;
+  const value = useCountUp(liveValue(p, now));
+  // Reserve bzw. Waveplate Crystal gehören laut Konzept in den Kopf, nicht in einen Abschnitt.
+  const extras = s.secondary.filter((r) => !s.sections.some((sec) => sec.resources.includes(r)));
   return (
-    <div className={`space-y-5 ${q.isError ? "opacity-70" : ""}`}>
-      <div
-        className="rounded-2xl p-4 flex items-center gap-4"
-        style={{ background: `linear-gradient(135deg, color-mix(in srgb, ${accent} 35%, var(--surface)), var(--surface))`, border: "1px solid var(--border)" }}
-      >
+    <div className="rounded-2xl p-4 space-y-3" style={{ ...artworkStyle(artworkKey, accent, 135), border: "1px solid var(--border)" }}>
+      <div className="flex items-center gap-4">
         <Ring frac={fraction(p, now)} accent={accent}>
           <GameIcon iconKey={p.iconKey} size={44} label={p.label} />
         </Ring>
         <div className="min-w-0 flex-1">
           <div className="text-sm" style={{ color: "var(--muted)" }}>
-            {meta.name} · {s.nickname}
+            {gameName} · {s.nickname}
           </div>
           <div className="text-3xl font-bold flex items-center gap-2">
             <OverflowDot r={p} now={now} />
-            {liveValue(p, now)}
+            {value}
             <span className="text-lg font-normal" style={{ color: "var(--muted)" }}>
               / {p.max}
             </span>
@@ -150,6 +159,49 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
           </div>
         </div>
       </div>
+      {extras.map((r) => (
+        <div key={r.label} className="flex items-center gap-2 text-sm">
+          <GameIcon iconKey={r.iconKey} size={24} label={r.label} />
+          <span className="flex-1 truncate">{r.label}</span>
+          <ValueText r={r} now={now} className="font-semibold" />
+          {isFull(r, now) && (
+            <span className="text-xs font-semibold" style={{ color: "var(--color-danger)" }}>
+              Voll
+            </span>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef }) {
+  const q = useGameStatus(profile, gameRef);
+  const qc = useQueryClient();
+  const now = useNow();
+  const accent = GAME_ACCENT[gameRef.game];
+  const meta = GAME_META[gameRef.game];
+  const { game, uid } = gameRef;
+
+  // Die Detailseite lädt beim Öffnen neu, nutzt sonst dieselbe Antwort wie das Dashboard.
+  useEffect(() => {
+    void qc.invalidateQueries({ queryKey: statusKey(profile.id, { game, uid }) });
+  }, [qc, profile.id, game, uid]);
+
+  const s = q.data;
+  if (!s) {
+    return q.isError ? (
+      <p style={{ color: "var(--color-danger)" }}>{ERROR_TEXT[q.error.kind]}: {q.error.message}</p>
+    ) : (
+      <div className="space-y-3">
+        <Skeleton className="h-28" />
+        <Skeleton className="h-40" />
+      </div>
+    );
+  }
+  return (
+    <div className={`space-y-5 ${q.isError ? "opacity-70" : ""}`}>
+      <Head s={s} now={now} accent={accent} artworkKey={meta.artworkKey} gameName={meta.name} />
       {s.sections.map((sec) => (
         <Section key={sec.kind} s={sec} now={now} accent={accent} />
       ))}

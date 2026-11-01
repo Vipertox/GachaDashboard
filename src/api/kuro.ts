@@ -80,6 +80,22 @@ export async function queryPlayerInfo(
   throw new ApiError("schema", "Keine Spieler-ID in queryPlayerInfo gefunden");
 }
 
+/** Wartet vor dem nächsten Versuch; bricht ab, sobald die Anfrage abgebrochen wird (Profilwechsel). */
+function pause(ms: number, signal?: AbortSignal): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) return reject(signal.reason);
+    const id = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(id);
+        reject(signal.reason);
+      },
+      { once: true },
+    );
+  });
+}
+
 /** Schritt 2: Live-Werte. `data.<region>` ist ein JSON-String und wird ein zweites Mal geparst. */
 export async function queryRole(
   oauthCode: string,
@@ -101,7 +117,7 @@ export async function queryRole(
       return parsed as Record<string, unknown>;
     } catch (e) {
       if (e instanceof ApiError && e.kind === "retry" && i < attempts - 1) {
-        await new Promise((r) => setTimeout(r, 1500));
+        await pause(1500, signal);
         continue;
       }
       throw e;
