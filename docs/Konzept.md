@@ -11,6 +11,7 @@ In Version 1 enthalten:
 - Dashboard mit einer Karte pro Spiel: Stand, Maximum, Zeit bis voll
 - Zusatzinfos pro Spiel: Dailies, Expeditionen bzw. Aufträge, Wochenbosse
 - Figurenübersicht pro Spiel: Waffe, Ausrüstung, Talente und Werte jeder Figur, siehe "Figurenübersicht"
+- Wiederkehrende Herausforderungen pro Spiel wie Spiral Abyss oder Pure Fiction, siehe "Herausforderungen"
 - Manuelles Aktualisieren (Pull-to-Refresh) und automatisches Neuladen im Vordergrund
 - Mehrere Profile mit eigenen HoYoLAB-Tokens und Kuro-Code und Wechsel per Tipp
 
@@ -118,7 +119,7 @@ Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Ak
 | Screen | Inhalt |
 | --- | --- |
 | Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
-| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht" |
+| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Konten | Profile anlegen, bearbeiten und löschen; pro Profil Token-Eingabe, Spiele ein- und ausblenden |
 | Einstellungen | Aktualisierungsintervall, helles oder dunkles Design, Sprache |
@@ -415,6 +416,95 @@ Die App prüft nur eindeutige Regeln in `gearHints.ts` und gibt keine Build-Empf
 | Teile nicht ausgebaut | Teil unter Maximalstufe, z. B. Artefakt unter +20 |
 | Waffe unter Figurenstufe | Waffenstufe kleiner als Figurenstufe, oder keine Waffe angelegt |
 
+## Herausforderungen
+
+Die Detailseite hat einen dritten Tab **Herausforderungen**. Er zeigt die wiederkehrenden Endgame-Modi des Spiels, z. B. Spiral Abyss in Genshin oder Pure Fiction in Star Rail. Pro Modus gibt es eine Karte mit dem Stand der laufenden Periode und ihrer Restlaufzeit. Ein Umschalter auf der Karte wechselt zur vorherigen Periode.
+
+**Modi und Endpunkte**
+
+Alle Endpunkte gehören zur Battle Chronicle und nutzen dieselbe Authentifizierung wie die Notizen. Pfade und Feldnamen stammen aus der Community-Bibliothek genshin.py und sind beim Durchstich mit echten Antworten zu prüfen.
+
+| Spiel | Modus | Endpunkt | Anzeige |
+| --- | --- | --- | --- |
+| Genshin Impact | Spiral Abyss | `GET …/genshin/api/spiralAbyss?server=&role_id=&schedule_type=` | Sterne von 36, tiefste Kammer, gewonnene Kämpfe, Sterne der Etagen 9–12 |
+| Genshin Impact | Imaginarium Theater | `GET …/genshin/api/role_combat?server=&role_id=&need_detail=false` | Erreichter Akt, Schwierigkeit, Medaillen, Fantasia-Blumen |
+| Genshin Impact | Stygian Onslaught | `GET …/genshin/api/hard_challenge?server=&role_id=&need_detail=false` | Beste Stufe und Zeit, allein und im Koop |
+| Honkai: Star Rail | Memory of Chaos | `GET …/hkrpg/api/challenge?server=&role_id=&schedule_type=&need_all=true` | Sterne von 36, höchste Stufe, Kämpfe, Zusatzsterne |
+| Honkai: Star Rail | Pure Fiction | `GET …/hkrpg/api/challenge_story?…` | Sterne von 12, höchste Stufe, Kämpfe |
+| Honkai: Star Rail | Apocalyptic Shadow | `GET …/hkrpg/api/challenge_boss?…` | Sterne von 12, höchste Stufe, Kämpfe |
+| Honkai: Star Rail | Anomaly Arbitration | `GET …/hkrpg/api/challenge_peak?server=&role_id=&schedule_type=3` | Boss, Sterne für Boss und Gegner, Kämpfe |
+| Zenless Zone Zero | Shiyu Defense | `GET …/zzz/hadal_info_v2?server=&role_id=&schedule_type=` | Punkte von der Höchstpunktzahl, Bewertung, Rangliste, fünfte Front. Bei `hadal_ver` v1 höchste Stufe und Bewertungen |
+| Zenless Zone Zero | Deadly Assault | `GET …/zzz/hadal_mem_detail_v2?uid=&region=&schedule_type=` | Sterne von 9, Punkte, Rangliste |
+| Zenless Zone Zero | Threshold Simulation | `GET …/zzz/void_front_battle_period_abstract_info?uid=&region=&schedule_type=` | Punkte, Rangliste, erreichtes Ende. Die Antwort enthält keine Laufzeit |
+| Wuthering Waves | – | – | Die Kuro-Schnittstelle liefert nichts zu Tower of Adversity oder Whimpering Wastes. Der Tab wird ausgeblendet |
+
+`schedule_type` ist 1 für die laufende und 2 für die vorherige Periode. Imaginarium Theater, Stygian Onslaught und Anomaly Arbitration kennen diesen Parameter nicht oder anders. Ihre Antwort enthält mehrere Perioden als Liste, die neueste zuerst. Bei Stygian Onslaught werden wie in genshin.py Einträge mit `is_valid: false` übergangen.
+
+**Zeiten**
+
+Genshin liefert Beginn und Ende als Unix-Sekunden. Star Rail und ZZZ liefern Datumsteile (`year`, `month`, `day`, `hour`, `minute`) in Serverzeit. Die App rechnet sie mit der festen Abweichung des Servers um: Amerika UTC−5, Europa UTC+1, Asien und TW/HK/MO UTC+8. Die Server kennen keine Sommerzeit. Die Region kommt aus dem Konto, z. B. `os_euro`, `prod_official_eur` oder `prod_gf_eu`.
+
+**Höchstwerte**
+
+Die Antworten enthalten die Höchstzahl der Sterne nicht, sie ist deshalb fest hinterlegt: Spiral Abyss und Memory of Chaos 36, Pure Fiction und Apocalyptic Shadow 12, Deadly Assault 9. Die Aktzahl im Imaginarium Theater hängt von der Schwierigkeit ab: Leicht 3, Normal 6, Schwer 8, Visionär und Arkana 10. Ändert ein Spiel-Update diese Werte, müssen sie in `api/challenges/` angepasst werden.
+
+**Darstellung**
+
+```
+┌──────────────────────────────────┐
+│ ┌Übersicht┐┌Charaktere┐┌Herausf.┐ │
+│ 3 Modi                ↻ Neu laden │
+│ ┌──────────────────────────────┐ │
+│ │ Spiral Abyss [Aktuell|Vorh.] │ │
+│ │ läuft bis 07.11. · noch 6 T  │ │
+│ │ Sterne                 33/36 │ │
+│ │ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓░░░   │ │
+│ │ Tiefste Kammer  Kämpfe gew.  │ │
+│ │ 12-3            12 von 14    │ │
+│ └──────────────────────────────┘ │
+└──────────────────────────────────┘
+```
+
+- Jede Karte zeigt den Namen des Modus, falls vorhanden die Saison, die Laufzeit, einen Balken für Sterne, Akte oder Punkte und darunter die Kennwerte.
+- Endet ein Modus in weniger als 3 Tagen und ist nicht vollständig, erscheint die Laufzeit in Warnfarbe mit ⚠.
+- Ohne Daten erscheint statt eines Fehlers ein Hinweis: "Noch nicht freigeschaltet" oder "In dieser Periode noch nicht gespielt".
+- Der Tab steht wie der Figuren-Tab in der URL (`?tab=herausforderungen`).
+
+**Kurzfassung in der Übersicht**
+
+Unter dem Abschnitt Wöchentlich steht ein Abschnitt **Herausforderungen** mit einer Zeile pro Modus, z. B. "Spiral Abyss 33/36 Sterne · endet in 6 T 0 h". Ein Tipp darauf öffnet den Tab. Die Zeilen nutzen dieselben Abfragen wie der Tab und werden nur einmal geladen.
+
+**Laden und Aktualisieren**
+
+- Ein Aufruf pro Modus und Periode, Query-Schlüssel `["challenge", profileId, game, uid, modus, periode]`. Fällt ein Endpunkt aus, zeigt nur seine Karte einen Fehler.
+- Wie die Figurendaten 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus. "Neu laden" im Tab lädt alle Modi des Spiels neu.
+- Die vorherige Periode wird erst geladen, wenn sie auf der Karte gewählt wird.
+- `retcode` 10102 heißt hier, dass die Kampfchronik in HoYoLAB nicht öffentlich ist. Die Karte zeigt dann einen Hinweis auf die Datenschutz-Einstellung.
+
+**Datenmodell**
+
+Ein Modul pro Spiel in `api/challenges/` liefert eine Liste von Modi. Die Oberfläche kennt nur diese Typen.
+
+```typescript
+type ChallengePeriod = "current" | "previous";
+
+interface Challenge {
+  season?: string;        // Name der Saison, z. B. bei Star Rail
+  start?: Date;
+  end?: Date;
+  state: "ok" | "locked" | "empty";
+  progress?: { current: number; max: number; unit: string };  // "Sterne", "Akte", "Punkte"
+  summary?: string;       // Kurzform für die Übersicht, z. B. "33/36 Sterne"
+  facts: Fact[];
+}
+
+interface ChallengeMode {
+  key: string;            // "abyss", "pf", "shiyu" …
+  label: string;          // "Spiral Abyss"
+  fetch(account: Account, period: ChallengePeriod, signal?: AbortSignal): Promise<Challenge>;
+}
+```
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.
@@ -610,14 +700,15 @@ gacha-dashboard/
 │  ├─ app/            # Routing, Layout, Provider
 │  ├─ features/
 │  │  ├─ dashboard/   # Karten, Fortschrittsbalken
-│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken
+│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken, Herausforderungen
 │  │  └─ accounts/    # Einrichtung, Token-Eingabe
 │  ├─ api/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
 │  │  ├─ hoyolab.ts   # DS-Header, GET/POST, Konten-Endpunkt
 │  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
 │  │  ├─ adapters/    # Live-Werte: genshin.ts, starrail.ts, zzz.ts, wuwa.ts
-│  │  └─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
+│  │  ├─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
+│  │  └─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
 │  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
@@ -665,6 +756,8 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Adapter für Star Rail und ZZZ ergänzen
 - [x] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
 - [x] Figurenübersicht für Genshin, Star Rail und ZZZ, für Wuthering Waves nur die Anzahl
+- [x] Herausforderungen für Genshin, Star Rail und ZZZ
+- [ ] Endpunkte und Höchstwerte der Herausforderungen mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
