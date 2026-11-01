@@ -513,13 +513,15 @@ Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressource
 
 | Element | Bild | Quelle | Laden |
 | --- | --- | --- | --- |
-| Dashboard-Karte, Kopf | Spiel-Icon | Lokal im App-Bundle, `assets/games/<spiel>.webp` | Statisch |
-| Hauptressource | Resin, Trailblaze Power, Battery Charge, Waveplates | Lokal, `assets/resources/<spiel>/<ressource>.webp` | Statisch |
-| Weitere Ressourcen | z. B. Reserved Trailblaze Power, Realm Currency, Engagement, Transformator, Waveplate Crystal | Lokal, gleiche Ablage | Statisch |
-| Kartenhintergrund | Abgedunkeltes Spiel-Artwork | Lokal, `assets/artwork/<spiel>.webp` | Statisch |
+| Dashboard-Karte, Kopf | Spiel-Icon | Lokal `assets/games/<spiel>.webp`, sonst `logo` aus `getGameRecordCard` (HoYoLAB) | Statisch bzw. zur Laufzeit |
+| Hauptressource | Resin, Trailblaze Power, Battery Charge, Waveplates | Lokal `assets/<spiel>/<ressource>.webp`, sonst Icon-URL aus dem HoYoWiki (`assets/wikiIcons.ts`) | Statisch |
+| Weitere Ressourcen | z. B. Reserved Trailblaze Power, Realm Currency, Engagement, Transformator, Waveplate Crystal | Wie Hauptressource | Statisch |
+| Kartenhintergrund | Abgedunkeltes Spiel-Artwork | Lokal `assets/artwork/<spiel>.webp`, sonst `background_image` aus `getGameRecordCard` | Statisch bzw. zur Laufzeit |
 | Expeditionen und Assignments | Figurenbilder | URL aus der API (`character_icon`, `avatars`) | Zur Laufzeit |
 
 Die statischen Bilder sind Teil der App, keine gespeicherten Nutzerdaten. Der Grundsatz "nur Anmeldedaten speichern" bleibt damit erhalten. Figurenbilder kommen direkt aus der API-Antwort und liegen nur im Bild-Cache des Webviews.
+
+Spiel-Icon und Artwork lädt die App einmal am Tag pro Profil über die HoYoLAB-Spielkarten (`bbs-api-os.hoyolab.com/game_record/card/wapi/getGameRecordCard?uid=<ltuid>`, Zuordnung über `game_id`: 2 Genshin, 6 Star Rail, 8 ZZZ). Die Ressourcen-Icons stammen aus der HoYoWiki-API (`entry_page`, Feld `icon_url`) und stehen als feste URLs mit Eintrags-ID in `assets/wikiIcons.ts`. Für Wuthering Waves liefert keine der Schnittstellen Bilder, dort bleibt es ohne lokale Dateien beim Ersatzsymbol. Gleiches gilt für Genshin-Aufträge sowie ZZZ-Engagement und Survey Points, für die das Wiki keinen passenden Eintrag hat.
 
 Die App ist ausschließlich für den privaten Gebrauch gedacht und verwendet die Original-Bilder der Spiele. Eine Veröffentlichung, z. B. im Play Store, ist nicht vorgesehen.
 
@@ -552,7 +554,7 @@ interface GameMeta {
 }
 ```
 
-Eine zentrale Datei `assets/registry.ts` ordnet jedem Schlüssel die Bilddatei zu. Fehlt ein Bild, z. B. für eine neue Ressource nach einem Spiel-Update, zeigt die Oberfläche ein neutrales Ersatzsymbol.
+Eine zentrale Datei `assets/registry.ts` ordnet jedem Schlüssel die Bilddatei zu. Reihenfolge: lokale Datei, dann Bild aus der API, sonst ein neutrales Ersatzsymbol, z. B. für eine neue Ressource nach einem Spiel-Update.
 
 &#91;embedded content: Gestaltete Dashboard-Karten · Bild-Platzhalter\]
 

@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { parseGameArt } from "../gameArt";
 import { generateDs, pickRoles } from "../hoyolab";
 import { findPlayerId } from "../kuro";
 import { liveValue } from "../../lib/time";
@@ -151,5 +152,26 @@ describe("Kuro queryPlayerInfo", () => {
   it("findet die Spieler-ID tolerant", () => {
     expect(findPlayerId({ playerId: 123 })).toBe("123");
     expect(findPlayerId('{"x":{"Id":"456"}}')).toBe("456");
+  });
+});
+
+describe("Spielkarten-Bilder", () => {
+  it("ordnet Logo und Hintergrund über game_id zu und übergeht unbekannte Spiele", () => {
+    const art = parseGameArt({
+      list: [
+        { game_id: 2, logo: "https://x/gi-logo.png", background_image: "https://x/gi-bg.png" },
+        { game_id: "6", logo: "https://x/sr-logo.png", background_image: "" },
+        { game_id: 1, logo: "https://x/hi3.png" },
+      ],
+    });
+    expect(art).toEqual({
+      genshin: { iconUrl: "https://x/gi-logo.png", artworkUrl: "https://x/gi-bg.png" },
+      starrail: { iconUrl: "https://x/sr-logo.png", artworkUrl: undefined },
+    });
+  });
+
+  it("liefert bei unerwarteter Antwort nichts statt eines Fehlers", () => {
+    expect(parseGameArt(null)).toEqual({});
+    expect(parseGameArt({ list: "kaputt" })).toEqual({});
   });
 });

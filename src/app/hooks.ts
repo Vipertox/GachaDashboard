@@ -4,6 +4,7 @@ import { ADAPTERS } from "../api/adapters";
 import { CHARACTER_ADAPTERS, DETAIL_CHUNK } from "../api/characters";
 import { chunk } from "../api/characters/util";
 import { ApiError } from "../api/errors";
+import { fetchGameArt, type GameArt } from "../api/gameArt";
 import { loadSecrets } from "../credentials";
 import type {
   Account,
@@ -12,6 +13,7 @@ import type {
   ChallengePeriod,
   Character,
   GameAccountRef,
+  GameId,
   GameStatus,
   Profile,
   Roster,
@@ -103,6 +105,30 @@ export function useGameStatus(profile: Profile, ref: GameAccountRef) {
 export function useGameStatuses(profile: Profile, refs: GameAccountRef[]) {
   const options = useStatusOptions();
   return useQueries({ queries: refs.map((r) => options(profile, r)) });
+}
+
+/**
+ * Spiel-Icons und Kopfbilder aus den HoYoLAB-Spielkarten, einmal pro Profil und Tag.
+ * Ohne HoYoLAB-Tokens oder bei einem Fehler bleibt es bei lokalen Dateien bzw. Ersatzsymbolen.
+ */
+export function useGameArt(profile: Profile) {
+  const qc = useQueryClient();
+  return useQuery<Partial<Record<GameId, GameArt>>>({
+    queryKey: ["gameArt", profile.id],
+    queryFn: async ({ signal }) => {
+      const secrets = await qc.ensureQueryData({
+        queryKey: ["secrets", profile.id],
+        queryFn: () => loadSecrets(profile.id),
+        staleTime: Infinity,
+      });
+      if (!secrets.ltuid || !secrets.ltoken) return {};
+      return fetchGameArt({ ltuid: secrets.ltuid, ltoken: secrets.ltoken }, signal);
+    },
+    enabled: profile.games.some((g) => g.game !== "wuwa"),
+    staleTime: 24 * 60 * 60_000,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
 }
 
 /** Sichtbare Spielkonten eines Profils in der gewählten Reihenfolge. */
