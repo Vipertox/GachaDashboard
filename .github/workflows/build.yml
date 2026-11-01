@@ -55,6 +55,9 @@ jobs:
           distribution: temurin
           java-version: 17
       - uses: android-actions/setup-android@v3
+        with:
+          # Standard ist "tools platform-tools"; das Paket "tools" gibt es nicht mehr
+          packages: platform-tools
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: aarch64-linux-android,armv7-linux-androideabi,i686-linux-android,x86_64-linux-android
