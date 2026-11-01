@@ -5,6 +5,7 @@ import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Entry } from "@napi-rs/keyring";
 import { Hono, type Context } from "hono";
+import { hoyolabBrowserLogin } from "./login";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const DIST = join(ROOT, "dist");
@@ -86,7 +87,15 @@ export function createApp(token: string): Hono {
     }
   });
 
-  const keyOf = (c: Context): string | null => {
+  api.post("/hoyolab-login", async (c) => {
+    try {
+      return c.json(await hoyolabBrowserLogin());
+    } catch (e) {
+      return c.text(e instanceof Error ? e.message : "Anmeldung fehlgeschlagen", 500);
+    }
+  });
+
+  const keyOf =(c: Context): string | null => {
     const key = c.req.param("key") ?? "";
     return KEY_PATTERN.test(key) ? key : null;
   };

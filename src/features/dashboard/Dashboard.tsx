@@ -105,7 +105,7 @@ export function Dashboard() {
       <Summary profile={activeProfile} />
       {games.length === 0 ? (
         <p className="text-center py-10" style={{ color: "var(--muted)" }}>
-          Dieses Profil hat keine Spiele. Unter Konten Tokens eintragen und prüfen.
+          Dieses Profil hat noch keine Spiele. Unter Konten die Tokens eintragen und prüfen.
         </p>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">

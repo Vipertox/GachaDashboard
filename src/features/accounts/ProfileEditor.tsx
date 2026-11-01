@@ -4,7 +4,7 @@ import { fetchGameRoles, type GameRole } from "../../api/hoyolab";
 import { queryPlayerInfo, type KuroPlayer } from "../../api/kuro";
 import { loadSecrets } from "../../credentials";
 import { btn, btnPrimary, fieldCls, fieldStyle } from "../../components/ui";
-import { canUseNative, hoyolabWebviewLogin, isWindowsApp, readLauncherCode } from "../../lib/native";
+import { hoyolabWebviewLogin, isWindowsApp, readLauncherCode } from "../../lib/native";
 import { GAME_META } from "../../model/games";
 import type { GameAccountRef, GameId, Profile } from "../../model/types";
 import { useApp } from "../../app/state";
@@ -202,11 +202,9 @@ export function ProfileEditor({
         <SecretField label="ltuid_v2" value={ltuid} onChange={setLtuid} />
         <SecretField label="ltoken_v2" value={ltoken} onChange={setLtoken} />
         <div className="flex flex-wrap gap-2">
-          {canUseNative() && (
-            <button className={btn} style={{ background: "var(--surface-2)" }} disabled={!!busy} onClick={webviewLogin}>
-              Mit HoYoLAB anmelden
-            </button>
-          )}
+          <button className={btn} style={{ background: "var(--surface-2)" }} disabled={!!busy} onClick={webviewLogin}>
+            {busy === "login" ? "Warte auf Anmeldung …" : "Mit HoYoLAB anmelden"}
+          </button>
           <button className={btn} style={{ background: "var(--surface-2)" }} disabled={!hasHoyo || !!busy} onClick={checkHoyo}>
             {busy === "hoyo" ? "Prüfe …" : "Prüfen"}
           </button>
@@ -258,7 +256,7 @@ export function ProfileEditor({
       )}
 
       <div className="flex gap-2">
-        <button className={btnPrimary} disabled={!!busy || (!hasHoyo && !kuro)} onClick={save}>
+        <button className={btnPrimary} disabled={!!busy} onClick={save}>
           {busy === "save" ? "Speichere …" : "Profil speichern"}
         </button>
         <button className={btn} style={{ background: "var(--surface-2)" }} onClick={onCancel}>
@@ -266,7 +264,7 @@ export function ProfileEditor({
         </button>
       </div>
       <p className="text-xs" style={{ color: "var(--muted)" }}>
-        Tokens liegen nur im sicheren Speicher, nie in der Einstellungsdatei. Hat ein Login mehrere Server, wird das erste Konto je Spiel verwendet.
+        Alle Token-Felder sind optional und können später unter Konten nachgetragen werden. Tokens liegen nur im sicheren Speicher, nie in der Einstellungsdatei. Hat ein Login mehrere Server, wird das erste Konto je Spiel verwendet.
       </p>
     </div>
   );
