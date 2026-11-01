@@ -1,10 +1,10 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useRef, useState, type TouchEvent } from "react";
 import { Link } from "react-router-dom";
 import { useApp } from "../../app/state";
 import { useGameStatuses, useNow, visibleGames } from "../../app/hooks";
 import { btnPrimary } from "../../components/ui";
-import { formatDuration, isFull } from "../../lib/time";
+import { formatClock, formatDuration, isFull } from "../../lib/time";
 import { haptic } from "../../lib/native";
 import { GAME_META } from "../../model/games";
 import type { Profile } from "../../model/types";
@@ -114,13 +114,53 @@ export function Dashboard() {
           ))}
         </div>
       )}
+      <RefreshButton profile={activeProfile} onRefresh={refresh} />
+    </div>
+  );
+}
+
+function RefreshIcon({ spinning }: { spinning: boolean }) {
+  return (
+    <svg
+      width={18}
+      height={18}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth={2}
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={spinning ? "animate-spin motion-reduce:animate-none" : undefined}
+    >
+      <path d="M21 12a9 9 0 1 1-2.64-6.36" />
+      <path d="M21 3v6h-6" />
+    </svg>
+  );
+}
+
+/** Nur auf breiten Bildschirmen; auf dem Handy gibt es Pull-to-Refresh. */
+function RefreshButton({ profile, onRefresh }: { profile: Profile; onRefresh: () => Promise<unknown> }) {
+  const fetching = useIsFetching({ queryKey: ["status", profile.id] }) > 0;
+  const results = useGameStatuses(profile, visibleGames(profile));
+  const now = useNow();
+  const updatedAt = Math.max(0, ...results.map((r) => r.dataUpdatedAt));
+  return (
+    <div className="hidden md:flex items-center gap-3">
       <button
-        onClick={() => void refresh()}
-        className="hidden md:inline-flex min-h-11 px-4 rounded-xl items-center"
+        onClick={() => void onRefresh()}
+        disabled={fetching}
+        className="inline-flex min-h-11 px-4 rounded-xl items-center gap-2 disabled:opacity-70"
         style={{ background: "var(--surface-2)" }}
       >
-        Aktualisieren
+        <RefreshIcon spinning={fetching} />
+        {fetching ? "Aktualisiere …" : "Aktualisieren"}
       </button>
+      {updatedAt > 0 && (
+        <span className="text-sm" style={{ color: "var(--muted)" }}>
+          Zuletzt aktualisiert: {formatClock(new Date(updatedAt), now)}
+        </span>
+      )}
     </div>
   );
 }
