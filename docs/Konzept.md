@@ -12,6 +12,7 @@ In Version 1 enthalten:
 - Zusatzinfos pro Spiel: Dailies, Expeditionen bzw. Aufträge, Wochenbosse
 - Figurenübersicht pro Spiel: Waffe, Ausrüstung, Talente und Werte jeder Figur, siehe "Figurenübersicht"
 - Wiederkehrende Herausforderungen pro Spiel wie Spiral Abyss oder Pure Fiction, siehe "Herausforderungen"
+- Aktuelle Events und Gacha-Banner pro Spiel, siehe "Events und Banner"
 - Manuelles Aktualisieren (Pull-to-Refresh) und automatisches Neuladen im Vordergrund
 - Mehrere Profile mit eigenen HoYoLAB-Tokens und Kuro-Code und Wechsel per Tipp
 
@@ -119,7 +120,7 @@ Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Ak
 | Screen | Inhalt |
 | --- | --- |
 | Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
-| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
+| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel", dazu Events und Banner, siehe "Events und Banner". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Konten | Profile anlegen, bearbeiten und löschen; pro Profil Token-Eingabe, Spiele ein- und ausblenden |
 | Einstellungen | Aktualisierungsintervall, helles oder dunkles Design, Sprache |
@@ -505,6 +506,129 @@ interface ChallengeMode {
 }
 ```
 
+## Events und Banner
+
+Im Tab Übersicht stehen unter den Herausforderungen die Abschnitte **Events** und **Banner**. Sie zeigen die zeitlich begrenzten Events des Spiels mit Fortschritt und Restlaufzeit sowie die laufenden Gacha-Banner.
+
+**Datenquelle**
+
+Jedes Hoyoverse-Spiel hat einen Event-Kalender in der Battle Chronicle, mit derselben Authentifizierung wie die Notizen. Pfade und Feldnamen stammen aus genshin.py und sind beim Durchstich mit echten Antworten zu prüfen.
+
+| Spiel | Endpunkt | Events | Banner |
+| --- | --- | --- | --- |
+| Genshin Impact | `POST …/genshin/api/act_calendar` mit `{ role_id, server }` | `act_list[]` mit `name`, `desc`, `start_timestamp`, `end_timestamp`, `is_finished`, `reward_list`, Erkundung in % aus `explore_detail`, doppelte Belohnungen aus `double_detail` | `avatar_card_pool_list`, `weapon_card_pool_list`, `mixed_card_pool_list` mit `pool_name`, `avatars`, `weapon` |
+| Honkai: Star Rail | `GET …/hkrpg/api/get_act_calender?server=&role_id=` | `act_list[]` mit `name`, `panel_desc`, `act_type`, `act_status`, `time_info.start_ts/end_ts`, `current_progress`/`total_progress`, `all_finished`, `reward_list` | `avatar_card_pool_list`, `equip_card_pool_list` mit `name`, `avatar_list`, `equip_list` |
+| Zenless Zone Zero | `GET …/zzz/activity_calendar?uid=&region=` und `GET …/zzz/gacha_calendar?uid=&region=` | `activity_list[]` mit `name`, `state`, `start_ts`/`end_ts` und Polychrome aus `monochrome_got_cnt`/`monochrome_cnt`. Keine Beschreibung, keine Belohnungen | `avatar_gacha_schedule_list`, `weapon_gacha_schedule_list` mit `gacha_type`, `avatar_list`, `weapon_list` |
+| Wuthering Waves | – | Die Kuro-Schnittstelle liefert keine Events, die Abschnitte entfallen | – |
+
+Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nicht übernommen, sie stehen schon unter Herausforderungen. Star Rail liefert als Banner-Namen oft nur "Sprung" oder nichts. Die App nennt die Banner dann nach ihrer Liste "Charakter-Aktionssprung" bzw. "Lichtkegel-Aktionssprung". Bei ZZZ dürfen die Banner fehlen: Schlägt `gacha_calendar` fehl, erscheinen nur die Events. Alle Zeiten kommen als Unix-Sekunden. Abgelaufene Einträge werden ausgefiltert.
+
+**Status**
+
+| Status | Regel |
+| --- | --- |
+| Demnächst | Beginn in der Zukunft, bei Star Rail auch `act_status` "…Unopened", bei ZZZ `STATE_NOT_START` |
+| Erledigt | Genshin `is_finished`, Star Rail `all_finished` oder Status "…Finish", ZZZ `STATE_COMPLETED` |
+| Läuft | alle übrigen |
+
+**Darstellung**
+
+```
+EVENTS
+┌──────────────────────────────────┐
+│ ◆ Noch einzusammeln 1.740 Primogems │
+│   in 3 Events · davon 900 in kommenden · insgesamt 2.040 │
+│ ○ Abenteuer im Wüstental         │
+│   ⚠ endet in 1 T 4 h  ◆ noch 420 Primogems │
+│ ○ Doppelte Talentbücher [Doppelt] 2/3 │
+│   ▓▓▓▓▓▓▓░░░                     │
+│ ○ Lanternen-Ritus           63 % │
+│   ▓▓▓▓▓▓░░░░  endet in 5 T 0 h   │
+│ ✓ Fotowettbewerb                 │
+│   Erledigt · endet in 8 T 0 h    │
+│ Alle 7 Events anzeigen ▾         │
+│ DEMNÄCHST                        │
+│ ○ Neue Geschichte                │
+│   startet in 2 T 0 h             │
+└──────────────────────────────────┘
+BANNER
+┌──────────────────────────────────┐
+│ Version 5.2      läuft · 3 Banner ▴ │
+│ Charakter-Aktionsgebet  endet in 15 T │
+│ (Furina) (Xingqiu) (Bennett)     │
+│ Waffen-Aktionsgebet     endet in 15 T │
+│ (Splendor of Tranquil Waters)    │
+│ ──────────────────────────────── │
+│ Version 5.3   ab 12.11. · 2 Banner ▾ │
+└──────────────────────────────────┘
+```
+
+- Laufende und erledigte Events sind nach Ende sortiert, das früheste zuerst. Die ersten 5 sind sichtbar, der Rest lässt sich aufklappen. Kommende Events stehen darunter unter "Demnächst", sortiert nach Beginn.
+- Fortschritt erscheint als Balken mit "3/5", als Prozent bei der Erkundung oder als Polychrome bei ZZZ. Login-Events (Star Rail `ActivityTypeSign`) und Events mit doppelten Belohnungen bekommen ein Kennzeichen.
+- Jedes Event zeigt seine Premiumwährung als Plakette: "noch 420 Primogems" oder, wenn alles eingesammelt ist, grün "300 Primogems ✓". Darüber steht eine Summe mit dem Text "Noch einzusammeln", der Zahl der Events mit offener Währung, dem Anteil in kommenden Events und der Gesamtmenge.
+
+**Premiumwährung**
+
+| Spiel | Währung | Erkennung | Offen |
+| --- | --- | --- | --- |
+| Genshin Impact | Primogems | `reward_list[]` mit `item_id` 201 oder Name "Primogem…" | Gesamtmenge, bis das Event erledigt ist (`is_finished`) |
+| Honkai: Star Rail | Stellarjade | `reward_list[]` und `special_reward` mit `item_id` 1 oder Name "Stellar Jade"/"Stellarjade" | Gesamtmenge, bis das Event erledigt ist |
+| Zenless Zone Zero | Polychrome | `monochrome_cnt` und `monochrome_got_cnt` | Genau: `monochrome_cnt − monochrome_got_cnt` |
+
+Genshin und Star Rail nennen nur die Gesamtmenge eines Events, nicht wie viel davon schon abgeholt ist. Ein laufendes Event zählt deshalb bis zum Erledigen mit seiner vollen Menge. Die Summe ist dort eine Obergrenze. Kommende Events zählen mit, werden aber in der Summe getrennt ausgewiesen. Die Item-IDs stammen aus Community-Quellen und sind beim Durchstich zu prüfen. Deshalb greift zusätzlich der Name.
+- Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
+- Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
+- Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
+- Banner sind nach Version gruppiert (Genshin `version_name`, Star Rail und ZZZ `version`). Jede Version lässt sich auf- und zuklappen. Der Kopf zeigt „läuft“ oder „ab“ mit dem frühesten Beginn und die Zahl der Banner. Versionen mit einem laufenden Banner sind anfangs aufgeklappt, nur künftige Versionen zugeklappt. Banner ohne Version landen in der Gruppe „Ohne Version“.
+- Innerhalb einer Version sind die Banner in allen Spielen in drei Stufen sortiert: Erst kommen alle laufenden, dann alle künftigen Banner. Innerhalb davon stehen erst die Charakter-Banner, dann die Waffen-Banner, dann alle weiteren. Zuletzt gilt die Zeit wie bei den Events: laufende nach Ende, künftige nach Beginn. Die Versionen selbst folgen derselben Reihenfolge anhand ihres jeweils ersten Banners, die laufende Version steht also vor der kommenden.
+
+| Art | Genshin Impact | Honkai: Star Rail | Zenless Zone Zero |
+| --- | --- | --- | --- |
+| Charakter | `avatar_card_pool_list` | `avatar_card_pool_list` | `GACHA_TYPE_CHARACTER_UP`, `GACHA_TYPE_CHARACTER_RETURN` |
+| Waffe | `weapon_card_pool_list` | `equip_card_pool_list` (Lichtkegel) | `GACHA_TYPE_WEAPON_UP`, `GACHA_TYPE_WEAPON_RETURN` |
+| Weitere | `mixed_card_pool_list` (Chronik-Gebet) | – | `GACHA_TYPE_BANGBOO` |
+
+Unbekannte Kanaltypen in ZZZ gelten als Charakter- oder Waffen-Banner, je nachdem, aus welcher Liste sie kommen.
+
+**Laden**
+
+Ein Aufruf pro Spiel (bei ZZZ zwei parallel), Query-Schlüssel `["events", profileId, game, uid]`. Wie Figuren und Herausforderungen 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus. Ein Fehler betrifft nur den Abschnitt Events.
+
+**Datenmodell**
+
+```typescript
+type EventStatus = "upcoming" | "running" | "done";
+
+interface GameEvent {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  tag?: string;           // "Login", "Doppelt"
+  progress?: { current: number; max: number; unit?: string };  // unit "%" oder "Polychrome"
+  description?: string;
+  rewards: { name: string; count: number; iconUrl?: string }[];
+  currency?: { name: string; total: number; remaining: number; iconUrl?: string };  // Primogems, Stellarjade, Polychrome
+}
+
+interface Banner {
+  id: string;
+  name: string;
+  kind: "character" | "weapon" | "other";  // Reihenfolge der Anzeige
+  version?: string;       // "3.7", danach wird gruppiert
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  items: { name: string; iconUrl?: string; rarity: number }[];
+}
+
+interface EventAdapter {
+  game: GameId;
+  fetchCalendar(account: Account, signal?: AbortSignal): Promise<{ events: GameEvent[]; banners: Banner[] }>;
+}
+```
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.
@@ -708,7 +832,8 @@ gacha-dashboard/
 │  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
 │  │  ├─ adapters/    # Live-Werte: genshin.ts, starrail.ts, zzz.ts, wuwa.ts
 │  │  ├─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
-│  │  └─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
+│  │  ├─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
+│  │  └─ events/      # Event-Kalender und Banner: genshin.ts, starrail.ts, zzz.ts
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
 │  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
@@ -757,7 +882,8 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
 - [x] Figurenübersicht für Genshin, Star Rail und ZZZ, für Wuthering Waves nur die Anzahl
 - [x] Herausforderungen für Genshin, Star Rail und ZZZ
-- [ ] Endpunkte und Höchstwerte der Herausforderungen mit echten Antworten prüfen
+- [x] Events und Banner für Genshin, Star Rail und ZZZ
+- [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows

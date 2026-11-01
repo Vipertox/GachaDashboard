@@ -170,6 +170,73 @@ export interface ChallengeMode {
   fetch(account: Account, period: ChallengePeriod, signal?: AbortSignal): Promise<Challenge>;
 }
 
+export type EventStatus = "upcoming" | "running" | "done";
+
+export interface EventReward {
+  name: string;
+  count: number;
+  iconUrl?: string;
+}
+
+export interface EventCurrency {
+  name: string;
+  total: number;
+  /**
+   * Noch nicht eingesammelt. ZZZ meldet den Stand genau; Genshin und Star Rail liefern nur die Gesamtmenge,
+   * dort gilt sie bis zum Erledigen des Events als offen.
+   */
+  remaining: number;
+  iconUrl?: string;
+}
+
+/** Zeitlich begrenztes Event aus dem Event-Kalender von HoYoLAB. */
+export interface GameEvent {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  /** Kennzeichnung, z. B. "Login" oder "Doppelt". */
+  tag?: string;
+  /** Mit `unit` "%" als Prozent angezeigt, sonst als "3/5". */
+  progress?: { current: number; max: number; unit?: string };
+  description?: string;
+  rewards: EventReward[];
+  /** Premiumwährung des Events (Primogems, Stellarjade, Polychrome). */
+  currency?: EventCurrency;
+}
+
+export interface BannerItem {
+  name: string;
+  iconUrl?: string;
+  rarity: number;
+}
+
+/** Reihenfolge in der Anzeige: Charaktere, dann Waffen (Lichtkegel, W-Engines), dann alles Weitere. */
+export type BannerKind = "character" | "weapon" | "other";
+
+export interface Banner {
+  id: string;
+  name: string;
+  kind: BannerKind;
+  /** Spielversion, z. B. "3.7"; danach werden die Banner gruppiert. */
+  version?: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  items: BannerItem[];
+}
+
+export interface EventCalendar {
+  events: GameEvent[];
+  banners: Banner[];
+}
+
+export interface EventAdapter {
+  game: GameId;
+  fetchCalendar(account: Account, signal?: AbortSignal): Promise<EventCalendar>;
+}
+
 export interface GameTerms {
   character: string;
   characters: string;

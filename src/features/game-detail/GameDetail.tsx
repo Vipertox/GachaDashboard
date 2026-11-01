@@ -23,6 +23,7 @@ import { GAME_ACCENT, GAME_META, GAME_TERMS } from "../../model/games";
 import type { DetailSection, GameAccountRef, GameId, GameStatus, Profile, Resource } from "../../model/types";
 import { CHALLENGE_MODES } from "../../api/challenges";
 import { ChallengeSummary, Challenges } from "./Challenges";
+import { EventsSection } from "./Events";
 import { Roster } from "./Roster";
 
 type Tab = "uebersicht" | "figuren" | "herausforderungen";
@@ -288,6 +289,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
         <Section key={sec.kind} s={sec} now={now} accent={accent} />
       ))}
       <ChallengeSummary profile={profile} gameRef={gameRef} onOpen={() => openTab("herausforderungen")} />
+      <EventsSection profile={profile} gameRef={gameRef} accent={accent} />
       {s.sections.slice(summaryAt).map((sec) => (
         <Section key={sec.kind} s={sec} now={now} accent={accent} />
       ))}
