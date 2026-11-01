@@ -892,4 +892,6 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
 - [ ] Windows-Build mit `npm run tauri build`
 - [ ] Android-Build mit `npm run tauri android build`, Token-Ablage im Keystore
-- [ ] Builds über GitHub Actions mit `tauri-action` automatisieren, damit lokal kein Android SDK nötig ist
+- [x] Builds über GitHub Actions mit `tauri-action` automatisieren, damit lokal kein Android SDK nötig ist
+- [x] Signierte APK im Release (`apksigner` im Release-Workflow, Schlüssel als Secrets im Environment `release`)
+- [ ] Signierte APK auf einem Gerät installieren und prüfen
