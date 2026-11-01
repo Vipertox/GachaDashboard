@@ -1,37 +1,29 @@
-# Hält Abhängigkeiten und gepinnte Action-SHAs aktuell; PRs gehen nach develop (Git Flow)
+# Nur Sicherheitsupdates für npm, Cargo und Gradle (limit 0 schaltet reine Versionsupdates ab).
+# Actions laufen weiter monatlich, damit die gepinnten SHAs aktuell bleiben.
 version: 2
 updates:
   - package-ecosystem: npm
     directory: /
-    target-branch: develop
     schedule:
       interval: weekly
-    groups:
-      npm:
-        patterns: ["*"]
-        update-types: [minor, patch]
+    open-pull-requests-limit: 0
 
   - package-ecosystem: cargo
     directory: /src-tauri
-    target-branch: develop
     schedule:
       interval: weekly
-    groups:
-      cargo:
-        patterns: ["*"]
-        update-types: [minor, patch]
+    open-pull-requests-limit: 0
 
   - package-ecosystem: gradle
     directory: /src-tauri/gen/android
-    target-branch: develop
     schedule:
-      interval: monthly
+      interval: weekly
+    open-pull-requests-limit: 0
 
   - package-ecosystem: github-actions
     directory: /
-    target-branch: develop
     schedule:
-      interval: weekly
+      interval: monthly
     groups:
       actions:
         patterns: ["*"]

@@ -1,5 +1,0 @@
-blank_issues_enabled: false
-contact_links:
-  - name: Sicherheitslücke melden
-    url: https://github.com/Vipertox/GachaDashboard/security/advisories/new
-    about: Bitte Sicherheitsprobleme vertraulich melden, nicht als öffentliches Issue.

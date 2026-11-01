@@ -1,7 +1,7 @@
 name: Release
 
-# Neue Version veröffentlichen (Git Flow): auf release/X.Y.Z bzw. hotfix/X.Y.Z die Version
-# erhöhen, per PR nach main mergen, dann auf main `git tag -s vX.Y.Z && git push origin vX.Y.Z`.
+# Neue Version veröffentlichen: Version in tauri.conf.json, package.json und Cargo.toml erhöhen,
+# per PR nach main mergen, dann auf main `git tag vX.Y.Z && git push origin vX.Y.Z`.
 # Der Job wartet anschließend auf die Freigabe im Environment "release".
 on:
   push:
