@@ -52,14 +52,14 @@ Belegt ist der Ablauf durch die Logs des Launchers 3.0.1.0 und zwei Community-Qu
 | Aufruf | Block | Felder | Genutzt |
 | --- | --- | --- | --- |
 | `queryPlayerInfo` | `data.<region>` | `roleId`, `roleName`, `level`, `sex`, `headPhoto` | Spieler-ID beim Anlegen des Profils |
-| `queryRole` | `Base` | `Name`, `Id`, `Level` (Union-Stufe), `WorldLevel`, `CreatTime`, `ActiveDays`, `RoleNum`, `ChapterId`, `SoundBox`, `BirthMon`, `BirthDay`, `serverTimezone` | `Name`, `RoleNum` |
+| `queryRole` | `Base` | `Name`, `Id`, `Level` (Union-Stufe), `WorldLevel`, `CreatTime`, `ActiveDays`, `RoleNum`, `ChapterId`, `SoundBox`, `BirthMon`, `BirthDay`, `serverTimezone` | Name im Kopf, Abschnitt Konto: Union-Stufe, Weltstufe, Resonatoren, aktive Tage, Dabei seit |
 | `queryRole` | `Base` | `Energy`, `MaxEnergy`, `EnergyRecoverTime`, `StoreEnergy`, `MaxStoreEnergy`, `StoreEnergyRecoverTime` | Waveplates und Crystal |
 | `queryRole` | `Base` | `Liveness`, `LivenessMaxCount`, `LivenessUnlock`, `WeeklyInstCount` | Tagesaktivität, Wochenboss |
-| `queryRole` | `Base` | `Boxes`, `BasicBoxes`, `PhantomBoxes` jeweils als Zählung pro Stufe 1–4 | Nein, gesammelte Truhen |
-| `queryRole` | `BattlePass` | `Level`, `Exp`, `ExpLimit`, `WeekExp`, `WeekMaxExp`, `IsUnlock`, `IsOpen` | Pioneer Podcast |
-| `queryRole` | `MotorData` | `Level`, `Exp`, `NextExp`, `Skins[]`, `Stickers[]`, `Decorations[]`, `Frames[]`, `EquipSkin` mit `Id` und `Quality` | Nein, Fahrzeug und Anpassungen |
-| `queryRole` | `MusicData` | `Albums[]` mit `Id`, `Count`, `TotalCount` | Nein, gesammelte Alben |
-| `queryRole` | `DecorationData` | `Datas[]` mit `Id`, `Quality`, `SkinOwner[]`, `OrGroupId` | Nein, Dekorationen |
+| `queryRole` | `Base` | `Boxes`, `BasicBoxes`, `PhantomBoxes` jeweils als Zählung pro Stufe | `Boxes` als geöffnete Schatztruhen. `BasicBoxes` und `PhantomBoxes` sind nicht eindeutig belegt und werden nicht angezeigt |
+| `queryRole` | `BattlePass` | `Level`, `Exp`, `ExpLimit`, `WeekExp`, `WeekMaxExp`, `IsUnlock`, `IsOpen` | Pioneer Podcast mit Wochen-EXP. `Exp` und `ExpLimit` nicht, weil ihre Bedeutung auf der Höchststufe 70 unklar ist |
+| `queryRole` | `MotorData` | `Level`, `Exp`, `NextExp`, `Skins[]`, `Stickers[]`, `Decorations[]`, `Frames[]`, `EquipSkin` mit `Id` und `Quality` | Abschnitt Sammlung: Fahrzeug-Stufe mit EXP, Anzahl Sticker und Skins |
+| `queryRole` | `MusicData` | `Albums[]` mit `Id`, `Count`, `TotalCount` | Abschnitt Sammlung: Musiktitel gesamt und vollständige Alben |
+| `queryRole` | `DecorationData` | `Datas[]` mit `Id`, `Quality`, `SkinOwner[]`, `OrGroupId` | Nein, nur IDs ohne Namen |
 
 Figuren, Waffen, Echos und Resonanzketten liefert die Schnittstelle nicht. Für Figuren gibt es nur die Anzahl `Base.RoleNum`. Naheliegende weitere Endpunkte wie `queryRoleList`, `queryRoleDetail` oder `queryRoleInfo` antworten mit HTTP 404. Die Figurenübersicht zeigt für Wuthering Waves deshalb nur die Anzahl der Resonatoren.
 
@@ -142,6 +142,8 @@ Aufbau von oben nach unten:
 3. **Wöchentlich:** Rabatte und Wochenpunkte mit verbleibender Anzahl
 4. **Laufend:** Expeditionen bzw. Aufträge mit eigenem Countdown, nach Restzeit sortiert, fertige oben mit "Fertig"
 5. **Weitere Ressourcen:** Nebenwährungen und Abklingzeiten
+6. **Sammlung:** Fortschritt bei Sammelobjekten mit Balken und Kennwerten, derzeit nur Wuthering Waves
+7. **Konto:** Feste Kennwerte wie Kontostufe und aktive Tage ohne Balken, derzeit nur Wuthering Waves
 
 Alle Restzeiten werden beim Laden in feste Zeitpunkte umgerechnet und lokal im Sekundentakt heruntergezählt, wie auf dem Dashboard. Ein Abschnitt ohne Daten wird ausgeblendet, z. B. wenn ein Spielmodus noch nicht freigeschaltet ist.
 
@@ -190,6 +192,10 @@ Alle Restzeiten werden beim Laden in feste Zeitpunkte umgerechnet und lokal im S
 | Täglich | Tagesaktivität | `Base.Liveness`, `Base.LivenessMaxCount` | 80/100, Haken bei voll, nur wenn `Base.LivenessUnlock` |
 | Wöchentlich | Wochenboss-Belohnungen | `Base.WeeklyInstCount` | "2 übrig" |
 | Wöchentlich | Pioneer Podcast | `BattlePass.WeekExp`, `BattlePass.WeekMaxExp`, `BattlePass.Level` | Balken mit Stufe, nur wenn `BattlePass.IsOpen` |
+| Sammlung | Musiktitel | Summe von `MusicData.Albums[].Count` und `TotalCount` | Balken, z. B. 272 / 347 |
+| Sammlung | Fahrzeug | `MotorData.Level`, `MotorData.Exp`, `MotorData.NextExp` | Balken "bis Stufe 19" |
+| Sammlung | Schatztruhen, vollständige Alben, Sticker, Skins | `Base.Boxes`, `MusicData.Albums`, `MotorData.Stickers`, `MotorData.Skins` | Kennwerte, Truhen mit Aufteilung nach Stufe |
+| Konto | Union-Stufe, Weltstufe, Resonatoren, aktive Tage, Dabei seit | `Base.Level`, `Base.WorldLevel`, `Base.RoleNum`, `Base.ActiveDays`, `Base.CreatTime` | Kennwerte ohne Balken |
 
 Anders als bei HoYoLAB liefert `EnergyRecoverTime` keine Restzeit, sondern direkt den Zeitpunkt in Unix-Millisekunden. Der Wert ist 0, wenn die Waveplates schon voll sind. Ein Waveplate lädt alle 6 Minuten, ein Crystal alle 12 Minuten. Laufende Aufträge gibt es in Wuthering Waves nicht, der Abschnitt Laufend entfällt.
 
@@ -210,12 +216,18 @@ interface Flag {
   text?: string;          // z. B. Video-Store-Status
 }
 
+interface Fact {
+  label: string;          // "Union-Stufe"
+  value: string;          // "80"
+}
+
 interface DetailSection {
-  kind: "daily" | "weekly" | "running" | "other";
+  kind: "daily" | "weekly" | "running" | "other" | "collection" | "account";
   resources: Resource[];
   tasks: Task[];
   flags: Flag[];
   timers: Countdown[];
+  facts: Fact[];          // feste Kennwerte ohne Balken
 }
 
 interface GameStatus {

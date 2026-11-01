@@ -32,12 +32,19 @@ export interface Flag {
   text?: string;
 }
 
+/** Fester Kennwert ohne Fortschritt, z. B. "Union-Stufe: 80". */
+export interface Fact {
+  label: string;
+  value: string;
+}
+
 export interface DetailSection {
-  kind: "daily" | "weekly" | "running" | "other";
+  kind: "daily" | "weekly" | "running" | "other" | "collection" | "account";
   resources: Resource[];
   tasks: Task[];
   flags: Flag[];
   timers: Countdown[];
+  facts: Fact[];
 }
 
 export interface GameStatus {

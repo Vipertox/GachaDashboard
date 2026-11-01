@@ -28,6 +28,8 @@ const TITLES: Record<DetailSection["kind"], string> = {
   weekly: "Wöchentlich",
   running: "Laufend",
   other: "Weitere Ressourcen",
+  collection: "Sammlung",
+  account: "Konto",
 };
 
 function ResourceRow({ r, now, accent, mode }: { r: Resource; now: number; accent: string; mode: BarMode }) {
@@ -96,6 +98,16 @@ function Section({ s, now, accent }: { s: DetailSection; now: number; accent: st
           {s.resources.map((r) => (
             <ResourceRow key={r.label} r={r} now={now} accent={accent} mode={s.kind === "other" ? "overflow" : "progress"} />
           ))}
+          {s.facts.length > 0 && (
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+              {s.facts.map((f) => (
+                <div key={f.label} className={f.value.length > 14 ? "col-span-2" : ""}>
+                  <dt style={{ color: "var(--muted)" }}>{f.label}</dt>
+                  <dd className="font-semibold">{f.value}</dd>
+                </div>
+              ))}
+            </dl>
+          )}
           {timers.length > 0 && (
             <ul className="space-y-3">
               {timers.map((t, i) => {

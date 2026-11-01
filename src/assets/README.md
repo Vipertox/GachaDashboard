@@ -15,7 +15,7 @@ Von den Adaptern verwendete Schlüssel:
 | Genshin Impact | `genshin/resin`, `genshin/realm`, `genshin/commission` |
 | Honkai: Star Rail | `starrail/power`, `starrail/reserve`, `starrail/training`, `starrail/rogue`, `starrail/divergent` |
 | Zenless Zone Zero | `zzz/battery`, `zzz/engagement`, `zzz/survey` |
-| Wuthering Waves | `wuwa/waveplate`, `wuwa/crystal`, `wuwa/activity`, `wuwa/podcast` |
+| Wuthering Waves | `wuwa/waveplate`, `wuwa/crystal`, `wuwa/activity`, `wuwa/podcast`, `wuwa/album`, `wuwa/vehicle` |
 
 Das Artwork erscheint abgedunkelt als Band im Kartenkopf und als Hintergrund des Detailkopfs.
 

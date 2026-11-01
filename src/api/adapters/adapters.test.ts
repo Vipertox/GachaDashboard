@@ -104,6 +104,27 @@ describe("Wuthering Waves", () => {
     expect(s.sections.map((x) => x.kind)).toEqual(["daily", "weekly"]);
     expect(s.secondary.map((r) => r.label)).toEqual(["Waveplate Crystal"]);
   });
+  it("liest Konto und Sammlung", () => {
+    const s = parseWuwa(
+      {
+        Base: { ...base, Level: 80, WorldLevel: 8, RoleNum: 26, ActiveDays: 248, CreatTime: Date.UTC(2024, 4, 23), Boxes: { "2": 416, "1": 407 } },
+        MotorData: { Level: 18, Exp: 190, NextExp: 13500, Skins: [{}], Stickers: [{}, {}] },
+        MusicData: { Albums: [{ Count: 12, TotalCount: 12 }, { Count: 3, TotalCount: 10 }] },
+      },
+      acc("wuwa"),
+      now,
+    );
+    const collection = s.sections.find((x) => x.kind === "collection")!;
+    expect(collection.resources.map((r) => [r.label, r.current, r.max])).toEqual([
+      ["Musiktitel", 15, 22],
+      ["Fahrzeug bis Stufe 19", 190, 13500],
+    ]);
+    expect(collection.facts[0]).toEqual({ label: "Geöffnete Schatztruhen", value: "823 (Stufe 1–4: 407 · 416)" });
+    expect(collection.facts[1]).toEqual({ label: "Vollständige Alben", value: "1 / 2" });
+    const account = s.sections.find((x) => x.kind === "account")!;
+    expect(account.facts.map((f) => f.label)).toEqual(["Union-Stufe", "Weltstufe", "Resonatoren", "Aktive Tage", "Dabei seit"]);
+    expect(s.sections.map((x) => x.kind)).toEqual(["daily", "weekly", "collection", "account"]);
+  });
   it("0 bedeutet voll", () => {
     const s = parseWuwa({ Base: { ...base, Energy: 240, EnergyRecoverTime: 0 } }, acc("wuwa"), now);
     expect(s.primary.fullAt).toBeUndefined();

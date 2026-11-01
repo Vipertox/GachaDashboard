@@ -16,7 +16,7 @@ Eine Codebasis für Android, Windows und den lokalen Browser.
 | Genshin Impact | ✓ | ✓ |
 | Honkai: Star Rail | ✓ | ✓ |
 | Zenless Zone Zero | ✓ | ✓, Details beim Antippen |
-| Wuthering Waves | ✓ | Nur Anzahl der Resonatoren, die Kuro-Schnittstelle liefert keine Figurendaten |
+| Wuthering Waves | ✓, dazu Sammlung (Musikalben, Fahrzeug, Schatztruhen) und Konto (Union-Stufe, Weltstufe, aktive Tage) | Nur Anzahl der Resonatoren, die Kuro-Schnittstelle liefert keine Figurendaten |
 
 ## Stack
 

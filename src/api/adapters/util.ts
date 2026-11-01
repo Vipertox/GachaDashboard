@@ -51,11 +51,11 @@ export function makeResource(i: ResourceInput): Resource {
 }
 
 export function section(kind: DetailSection["kind"], part: Partial<DetailSection>): DetailSection {
-  return { kind, resources: [], tasks: [], flags: [], timers: [], ...part };
+  return { kind, resources: [], tasks: [], flags: [], timers: [], facts: [], ...part };
 }
 
 export function nonEmpty(s: DetailSection): boolean {
-  return s.resources.length + s.tasks.length + s.flags.length + s.timers.length > 0;
+  return s.resources.length + s.tasks.length + s.flags.length + s.timers.length + s.facts.length > 0;
 }
 
 export function timer(label: string, seconds: number, now: Date, iconUrl?: string): Countdown {
