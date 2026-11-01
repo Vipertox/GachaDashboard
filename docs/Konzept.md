@@ -12,6 +12,7 @@ In Version 1 enthalten:
 - Zusatzinfos pro Spiel: Dailies, Expeditionen bzw. Aufträge, Wochenbosse
 - Figurenübersicht pro Spiel: Waffe, Ausrüstung, Talente und Werte jeder Figur, siehe "Figurenübersicht"
 - Wiederkehrende Herausforderungen pro Spiel wie Spiral Abyss oder Pure Fiction, siehe "Herausforderungen"
+- Aktuelle Events und Gacha-Banner pro Spiel, siehe "Events und Banner"
 - Manuelles Aktualisieren (Pull-to-Refresh) und automatisches Neuladen im Vordergrund
 - Mehrere Profile mit eigenen HoYoLAB-Tokens und Kuro-Code und Wechsel per Tipp
 
@@ -119,7 +120,7 @@ Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Ak
 | Screen | Inhalt |
 | --- | --- |
 | Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
-| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
+| Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel", dazu Events und Banner, siehe "Events und Banner". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Konten | Profile anlegen, bearbeiten und löschen; pro Profil Token-Eingabe, Spiele ein- und ausblenden |
 | Einstellungen | Aktualisierungsintervall, helles oder dunkles Design, Sprache |
@@ -505,6 +506,98 @@ interface ChallengeMode {
 }
 ```
 
+## Events und Banner
+
+Im Tab Übersicht stehen unter den Herausforderungen die Abschnitte **Events** und **Banner**. Sie zeigen die zeitlich begrenzten Events des Spiels mit Fortschritt und Restlaufzeit sowie die laufenden Gacha-Banner.
+
+**Datenquelle**
+
+Jedes Hoyoverse-Spiel hat einen Event-Kalender in der Battle Chronicle, mit derselben Authentifizierung wie die Notizen. Pfade und Feldnamen stammen aus genshin.py und sind beim Durchstich mit echten Antworten zu prüfen.
+
+| Spiel | Endpunkt | Events | Banner |
+| --- | --- | --- | --- |
+| Genshin Impact | `POST …/genshin/api/act_calendar` mit `{ role_id, server }` | `act_list[]` mit `name`, `desc`, `start_timestamp`, `end_timestamp`, `is_finished`, `reward_list`, Erkundung in % aus `explore_detail`, doppelte Belohnungen aus `double_detail` | `avatar_card_pool_list`, `weapon_card_pool_list`, `mixed_card_pool_list` mit `pool_name`, `avatars`, `weapon` |
+| Honkai: Star Rail | `GET …/hkrpg/api/get_act_calender?server=&role_id=` | `act_list[]` mit `name`, `panel_desc`, `act_type`, `act_status`, `time_info.start_ts/end_ts`, `current_progress`/`total_progress`, `all_finished`, `reward_list` | `avatar_card_pool_list`, `equip_card_pool_list` mit `name`, `avatar_list`, `equip_list` |
+| Zenless Zone Zero | `GET …/zzz/activity_calendar?uid=&region=` und `GET …/zzz/gacha_calendar?uid=&region=` | `activity_list[]` mit `name`, `state`, `start_ts`/`end_ts` und Polychrome aus `monochrome_got_cnt`/`monochrome_cnt`. Keine Beschreibung, keine Belohnungen | `avatar_gacha_schedule_list`, `weapon_gacha_schedule_list` mit `gacha_type`, `avatar_list`, `weapon_list` |
+| Wuthering Waves | – | Die Kuro-Schnittstelle liefert keine Events, die Abschnitte entfallen | – |
+
+Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nicht übernommen, sie stehen schon unter Herausforderungen. Bei ZZZ dürfen die Banner fehlen: Schlägt `gacha_calendar` fehl, erscheinen nur die Events. Alle Zeiten kommen als Unix-Sekunden. Abgelaufene Einträge werden ausgefiltert.
+
+**Status**
+
+| Status | Regel |
+| --- | --- |
+| Demnächst | Beginn in der Zukunft, bei Star Rail auch `act_status` "…Unopened", bei ZZZ `STATE_NOT_START` |
+| Erledigt | Genshin `is_finished`, Star Rail `all_finished` oder Status "…Finish", ZZZ `STATE_COMPLETED` |
+| Läuft | alle übrigen |
+
+**Darstellung**
+
+```
+EVENTS
+┌──────────────────────────────────┐
+│ ○ Abenteuer im Wüstental         │
+│   ⚠ endet in 1 T 4 h             │
+│ ○ Doppelte Talentbücher [Doppelt] 2/3 │
+│   ▓▓▓▓▓▓▓░░░                     │
+│ ○ Lanternen-Ritus           63 % │
+│   ▓▓▓▓▓▓░░░░  endet in 5 T 0 h   │
+│ ✓ Fotowettbewerb                 │
+│   Erledigt · endet in 8 T 0 h    │
+│ Alle 7 Events anzeigen ▾         │
+│ DEMNÄCHST                        │
+│ ○ Neue Geschichte                │
+│   startet in 2 T 0 h             │
+└──────────────────────────────────┘
+BANNER
+┌──────────────────────────────────┐
+│ Charakter-Aktionsgebet  endet in 15 T │
+│ (Furina) (Xingqiu) (Bennett)     │
+└──────────────────────────────────┘
+```
+
+- Laufende und erledigte Events sind nach Ende sortiert, das früheste zuerst. Die ersten 5 sind sichtbar, der Rest lässt sich aufklappen. Kommende Events stehen darunter unter "Demnächst", sortiert nach Beginn.
+- Fortschritt erscheint als Balken mit "3/5", als Prozent bei der Erkundung oder als Polychrome bei ZZZ. Login-Events (Star Rail `ActivityTypeSign`) und Events mit doppelten Belohnungen bekommen ein Kennzeichen.
+- Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
+- Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
+- Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
+
+**Laden**
+
+Ein Aufruf pro Spiel (bei ZZZ zwei parallel), Query-Schlüssel `["events", profileId, game, uid]`. Wie Figuren und Herausforderungen 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus. Ein Fehler betrifft nur den Abschnitt Events.
+
+**Datenmodell**
+
+```typescript
+type EventStatus = "upcoming" | "running" | "done";
+
+interface GameEvent {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  tag?: string;           // "Login", "Doppelt"
+  progress?: { current: number; max: number; unit?: string };  // unit "%" oder "Polychrome"
+  description?: string;
+  rewards: { name: string; count: number; iconUrl?: string }[];
+}
+
+interface Banner {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  items: { name: string; iconUrl?: string; rarity: number }[];
+}
+
+interface EventAdapter {
+  game: GameId;
+  fetchCalendar(account: Account, signal?: AbortSignal): Promise<{ events: GameEvent[]; banners: Banner[] }>;
+}
+```
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.
@@ -708,7 +801,8 @@ gacha-dashboard/
 │  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
 │  │  ├─ adapters/    # Live-Werte: genshin.ts, starrail.ts, zzz.ts, wuwa.ts
 │  │  ├─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
-│  │  └─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
+│  │  ├─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
+│  │  └─ events/      # Event-Kalender und Banner: genshin.ts, starrail.ts, zzz.ts
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
 │  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
@@ -757,7 +851,8 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
 - [x] Figurenübersicht für Genshin, Star Rail und ZZZ, für Wuthering Waves nur die Anzahl
 - [x] Herausforderungen für Genshin, Star Rail und ZZZ
-- [ ] Endpunkte und Höchstwerte der Herausforderungen mit echten Antworten prüfen
+- [x] Events und Banner für Genshin, Star Rail und ZZZ
+- [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
