@@ -210,6 +210,8 @@ interface GameStatus {
 
 Star Rail, ZZZ und Wuthering Waves folgen demselben Aufbau mit ihren eigenen Feldern aus den Tabellen oben.
 
+Eine Figurenübersicht mit Waffen und Ausrüstung als zweiter Tab der Detailseite ist in [Konzept-Figuren.md](Konzept-Figuren.md) beschrieben.
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.
