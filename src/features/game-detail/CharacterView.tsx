@@ -164,8 +164,6 @@ function Detail({ c, game, terms, accent }: { c: Character; game: GameId; terms:
         </ul>
       )}
 
-      {guideUrl && <PrydwenLink url={guideUrl} />}
-
       <Block title={terms.weapon}>
         {w ? (
           <div className="flex gap-3">
@@ -256,6 +254,8 @@ function Detail({ c, game, terms, accent }: { c: Character; game: GameId; terms:
           )}
         </Block>
       )}
+
+      {guideUrl && <PrydwenLink url={guideUrl} />}
 
       {c.companion && (
         <Block title="Memosprite">

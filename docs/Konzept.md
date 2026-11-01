@@ -389,12 +389,12 @@ Ein Tipp auf eine Kachel öffnet die Route `/game/:game/:uid/figur/:id`. Aufbau 
 
 1. **Kopf:** Bild, Name, Element und Pfad bzw. Rolle, Seltenheit, Stufe, Duplikate als sechs Punkte.
 2. **Hinweise:** Ausrüstungslücken, siehe unten.
-3. **Build-Guide:** Link auf die Prydwen-Seite der Figur, siehe unten. Fehlt bei Wuthering Waves.
-4. **Waffe:** Symbol, Name, Stufe, Veredelung, Haupt- und Nebenwert.
-5. **Ausrüstung:** Eine Zeile pro Platz in Spielreihenfolge mit Set-Name, Stufe, Hauptwert groß und Nebenwerten als Chips. Erhöhungen erscheinen als Punkte am Chip, z. B. "Krit. Schaden 14,0% ••". Leere Plätze erscheinen gestrichelt.
-6. **Sets:** Chips mit Set-Name und Teilezahl, ein Tipp zeigt die Bonustexte.
-7. **Talente:** Stufen nebeneinander.
-8. **Werte:** Die wichtigsten Werte, darunter "Alle Werte" zum Aufklappen.
+3. **Waffe:** Symbol, Name, Stufe, Veredelung, Haupt- und Nebenwert.
+4. **Ausrüstung:** Eine Zeile pro Platz in Spielreihenfolge mit Set-Name, Stufe, Hauptwert groß und Nebenwerten als Chips. Erhöhungen erscheinen als Punkte am Chip, z. B. "Krit. Schaden 14,0% ••". Leere Plätze erscheinen gestrichelt.
+5. **Sets:** Chips mit Set-Name und Teilezahl, ein Tipp zeigt die Bonustexte.
+6. **Talente:** Stufen nebeneinander.
+7. **Werte:** Die wichtigsten Werte, darunter "Alle Werte" zum Aufklappen.
+8. **Build-Guide:** Link auf die Prydwen-Seite der Figur, siehe unten. Fehlt bei Wuthering Waves.
 9. **Memosprite:** Nur bei Star Rail auf dem Pfad der Erinnerung.
 
 Pfeile oben und Wischen nach links oder rechts wechseln zur nächsten Figur in der Reihenfolge des Rasters.
