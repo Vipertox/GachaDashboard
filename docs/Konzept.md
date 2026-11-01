@@ -561,7 +561,7 @@ BANNER
 - Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
 - Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
 - Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
-- Banner sind in allen Spielen nach Art sortiert: erst Charakter-Banner, dann Waffen-Banner, dann alle weiteren. Innerhalb einer Art gilt die Zeit, wie bei den Events.
+- Banner sind in allen Spielen in drei Stufen sortiert: Erst kommen alle laufenden, dann alle künftigen Banner. Innerhalb davon stehen erst die Charakter-Banner, dann die Waffen-Banner, dann alle weiteren. Zuletzt gilt die Zeit wie bei den Events: laufende nach Ende, künftige nach Beginn.
 
 | Art | Genshin Impact | Honkai: Star Rail | Zenless Zone Zero |
 | --- | --- | --- | --- |

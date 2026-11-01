@@ -5,7 +5,8 @@ import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../components/ui";
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
-import type { Banner, BannerKind, GameAccountRef, GameEvent, Profile } from "../../model/types";
+import type { Banner, GameAccountRef, GameEvent, Profile } from "../../model/types";
+import { bannerOrder, byTime } from "./eventView";
 
 // Wie bei den Herausforderungen: ab drei Tagen vor Ende wird ein offenes Event hervorgehoben.
 const ENDING_SOON_MS = 3 * 86400_000;
@@ -36,19 +37,6 @@ function whenText(x: { status: GameEvent["status"]; start?: Date; end?: Date }, 
   if (x.status === "upcoming" && x.start) return `startet in ${formatDuration(x.start.getTime() - now)}`;
   if (x.end) return `endet in ${formatDuration(x.end.getTime() - now)}`;
   return undefined;
-}
-
-/** Laufende und erledigte nach Ende, kommende nach Beginn; ohne Ende (dauerhaft) zuletzt. */
-function byTime(a: { start?: Date; end?: Date; status: string }, b: typeof a): number {
-  const key = (x: typeof a) => (x.status === "upcoming" ? x.start : x.end)?.getTime() ?? Infinity;
-  return key(a) - key(b);
-}
-
-const KIND_ORDER: Record<BannerKind, number> = { character: 0, weapon: 1, other: 2 };
-
-/** Erst Charakter-, dann Waffen-, dann weitere Banner; innerhalb einer Art nach Zeit. */
-function bannerOrder(a: Banner, b: Banner): number {
-  return KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || byTime(a, b);
 }
 
 function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accent: string; onOpen: () => void }) {
