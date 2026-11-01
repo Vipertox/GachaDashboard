@@ -199,6 +199,10 @@ Alle Restzeiten werden beim Laden in feste Zeitpunkte umgerechnet und lokal im S
 
 Anders als bei HoYoLAB liefert `EnergyRecoverTime` keine Restzeit, sondern direkt den Zeitpunkt in Unix-Millisekunden. Der Wert ist 0, wenn die Waveplates schon voll sind. Ein Waveplate lädt alle 6 Minuten, ein Crystal alle 12 Minuten. Laufende Aufträge gibt es in Wuthering Waves nicht, der Abschnitt Laufend entfällt.
 
+<img src="images/wuwa-sammlung-konto.jpg" width="280" alt="Wuthering-Waves-Detailseite in der App mit den Abschnitten Wöchentlich, Sammlung und Konto">
+
+*Wuthering Waves in der App: Sammlung mit Musiktiteln, Fahrzeug und Schatztruhen, darunter feste Kennwerte des Kontos.*
+
 Die API-Feldnamen der Hoyoverse-Spiele stammen aus den Rohdaten, die die Community-Bibliothek genshin.py auswertet. Die Feldnamen für Wuthering Waves stammen aus einer echten Antwort im Launcher-Log. Ihre Bedeutung beruht teils auf Annahmen der Community und ist beim Durchstich zu prüfen. Seit Kurzem gibt es in ZZZ eine Backup Battery Charge, ob die API sie liefert, ist beim Durchstich zu prüfen.
 
 Für die Detailseite wird `GameStatus` um Abschnitte erweitert. Die Adapter füllen sie, die Oberfläche rendert sie generisch:
@@ -373,6 +377,10 @@ Figurendaten ändern sich selten und sind deutlich größer als die Notizen. Sie
 - Filter als Chips nach Element, bei Star Rail zusätzlich nach Pfad und bei ZZZ nach Rolle. Sortierung nach Stufe, Seltenheit, Duplikaten oder Name. Filter und Sortierung merkt sich die App pro Spiel im `localStorage`, es sind reine Anzeige-Einstellungen.
 - Elemente erscheinen als farbige Plakette mit Anfangsbuchstaben. Neuere ZZZ-Elementtypen wie `300` sind noch nicht zugeordnet und erscheinen ohne Plakette.
 
+<img src="images/figuren-raster.jpg" width="280" alt="Figuren-Tab von Genshin Impact in der App mit Element-Filter, Sortierung und Raster der Charaktere">
+
+*Figuren-Tab in der App (Genshin Impact, dunkles Design, Smartphone-Breite).*
+
 **Figur-Detail**
 
 Ein Tipp auf eine Kachel öffnet die Route `/game/:game/:uid/figur/:id`. Aufbau von oben nach unten:
@@ -387,6 +395,14 @@ Ein Tipp auf eine Kachel öffnet die Route `/game/:game/:uid/figur/:id`. Aufbau 
 8. **Memosprite:** Nur bei Star Rail auf dem Pfad der Erinnerung.
 
 Pfeile oben und Wischen nach links oder rechts wechseln zur nächsten Figur in der Reihenfolge des Rasters.
+
+<p>
+  <img src="images/figur-detail-kopf.jpg" width="240" alt="Figur-Detail von Hu Tao mit Kopf, Hinweis auf nicht ausgebaute Artefakte und Waffe">
+  <img src="images/figur-detail-ausruestung.jpg" width="240" alt="Artefakte von Hu Tao mit Hauptwerten, Nebenwerten mit Erhöhungen und Set-Chips">
+  <img src="images/figur-detail-zzz.jpg" width="240" alt="Figur-Detail von Miyabi in Zenless Zone Zero mit W-Engine und Drive Discs">
+</p>
+
+*Figur-Detail in der App. Links Kopf, Hinweis und Waffe, in der Mitte Artefakte mit Erhöhungen als Punkte und Set-Chips (beides Genshin Impact), rechts derselbe Aufbau für einen Agenten in Zenless Zone Zero.*
 
 **Hinweise auf Ausrüstungslücken**
 

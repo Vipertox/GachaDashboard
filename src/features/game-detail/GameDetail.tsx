@@ -41,7 +41,7 @@ function ResourceRow({ r, now, accent, mode }: { r: Resource; now: number; accen
           <GameIcon iconKey={r.iconKey} size={28} label={r.label} />
           <span className="truncate">{r.label}</span>
         </div>
-        <ValueText r={r} now={now} className="font-semibold" />
+        <ValueText r={r} now={now} className="font-semibold shrink-0 whitespace-nowrap" />
       </div>
       <ResourceBar r={r} now={now} accent={accent} mode={mode} />
       {mode === "overflow" && full && (
@@ -176,7 +176,7 @@ function Head({
         <div key={r.label} className="flex items-center gap-2 text-sm">
           <GameIcon iconKey={r.iconKey} size={24} label={r.label} />
           <span className="flex-1 truncate">{r.label}</span>
-          <ValueText r={r} now={now} className="font-semibold" />
+          <ValueText r={r} now={now} className="font-semibold shrink-0 whitespace-nowrap" />
           {isFull(r, now) && (
             <span className="text-xs font-semibold" style={{ color: "var(--color-danger)" }}>
               Voll

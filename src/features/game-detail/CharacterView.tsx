@@ -138,7 +138,7 @@ function Detail({ c, terms, accent }: { c: Character; terms: GameTerms; accent: 
       <Block title={terms.weapon}>
         {w ? (
           <div className="flex gap-3">
-            <span className="rounded-xl shrink-0" style={{ background: rarityBackground(w.rarity) }}>
+            <span className="rounded-xl shrink-0 self-start" style={{ background: rarityBackground(w.rarity) }}>
               <GameIcon url={w.iconUrl} size={56} label={w.name} />
             </span>
             <div className="min-w-0 space-y-1">
