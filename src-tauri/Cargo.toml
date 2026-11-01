@@ -2,6 +2,7 @@
 name = "gacha-dashboard"
 version = "0.1.1"
 description = "Gacha-Ressourcen-Dashboard"
+license = "MIT"
 edition = "2021"
 
 [lib]
