@@ -5,7 +5,17 @@ import { CHARACTER_ADAPTERS, DETAIL_CHUNK } from "../api/characters";
 import { chunk } from "../api/characters/util";
 import { ApiError } from "../api/errors";
 import { loadSecrets } from "../credentials";
-import type { Account, Character, GameAccountRef, GameStatus, Profile, Roster } from "../model/types";
+import type {
+  Account,
+  Challenge,
+  ChallengeMode,
+  ChallengePeriod,
+  Character,
+  GameAccountRef,
+  GameStatus,
+  Profile,
+  Roster,
+} from "../model/types";
 import { useApp } from "./state";
 
 // Ein gemeinsamer Sekundentakt für alle Countdowns.
@@ -192,4 +202,27 @@ export function useCharacter(profile: Profile, ref: GameAccountRef, roster: Rost
         loaded: !!bulk.data && !bulk.isFetching,
       }
     : { character: single.data ?? undefined, error: single.error, loaded: single.isFetched && !single.isFetching };
+}
+
+// Herausforderungen wechseln nur alle paar Wochen: wie die Figuren 30 Minuten frisch und kein Intervall.
+export function challengeKey(profileId: string, ref: Pick<GameAccountRef, "game" | "uid">) {
+  return ["challenge", profileId, ref.game, ref.uid] as const;
+}
+
+/** Eine Periode eines Modus, pro Modus ein eigener Aufruf, damit ein Fehler nur dessen Karte betrifft. */
+export function useChallenge(profile: Profile, ref: GameAccountRef, mode: ChallengeMode, period: ChallengePeriod) {
+  const qc = useQueryClient();
+  return useQuery<Challenge, ApiError>({
+    queryKey: [...challengeKey(profile.id, ref), mode.key, period],
+    queryFn: async ({ signal }) => {
+      try {
+        return await mode.fetch(await loadAccount(qc, profile, ref), period, signal);
+      } catch (e) {
+        throw asApiError(e);
+      }
+    },
+    staleTime: CHARACTER_STALE,
+    refetchOnWindowFocus: false,
+    retry: false,
+  });
 }

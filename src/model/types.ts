@@ -148,6 +148,28 @@ export interface CharacterAdapter {
   fetchDetails(account: Account, ids: string[], signal?: AbortSignal): Promise<Character[]>;
 }
 
+export type ChallengePeriod = "current" | "previous";
+
+/** Stand eines wiederkehrenden Endgame-Modus in einer Periode, z. B. Spiral Abyss oder Pure Fiction. */
+export interface Challenge {
+  /** Name der Saison, sofern die API ihn liefert. */
+  season?: string;
+  start?: Date;
+  end?: Date;
+  /** `locked`: Modus nicht freigeschaltet, `empty`: in dieser Periode nicht gespielt. */
+  state: "ok" | "locked" | "empty";
+  progress?: { current: number; max: number; unit: string };
+  /** Kurzform für die Übersicht, z. B. "30/36 Sterne". */
+  summary?: string;
+  facts: Fact[];
+}
+
+export interface ChallengeMode {
+  key: string;
+  label: string;
+  fetch(account: Account, period: ChallengePeriod, signal?: AbortSignal): Promise<Challenge>;
+}
+
 export interface GameTerms {
   character: string;
   characters: string;
