@@ -1,23 +1,9 @@
 # Mitwirken
 
-Danke für dein Interesse! Beiträge laufen ausschließlich über Forks und Pull Requests.
+Beiträge laufen über Forks und Pull Requests gegen `main`.
 
-## Branch-Modell (Git Flow)
-
-| Branch | Zweck | Ziel des PRs |
-| --- | --- | --- |
-| `main` | nur veröffentlichte, getaggte Releases | – |
-| `develop` | Integrationszweig, Default-Branch | – |
-| `feature/<kurzname>` | eine Änderung | `develop` |
-| `release/<X.Y.Z>` | Release vorbereiten (nur Maintainer) | `main`, danach zurück nach `develop` |
-| `hotfix/<X.Y.Z>` | dringender Fix aus `main` (nur Maintainer) | `main`, danach zurück nach `develop` |
-
-Pull Requests von außen gehen immer gegen **`develop`**.
-
-## Ablauf
-
-1. Repository forken und einen Branch `feature/<kurzname>` von `develop` anlegen.
-2. Änderung umsetzen, lokal prüfen:
+1. Repository forken und einen Branch von `main` anlegen, z. B. `feature/<kurzname>`.
+2. Änderung umsetzen und lokal prüfen:
 
    ```bash
    npm ci
@@ -27,15 +13,11 @@ Pull Requests von außen gehen immer gegen **`develop`**.
    ```
 
    Bei Änderungen am Rust-Teil zusätzlich `cargo test --manifest-path src-tauri/Cargo.toml`.
-3. Pull Request gegen `develop` öffnen und die Vorlage ausfüllen.
+3. Pull Request gegen `main` öffnen und kurz beschreiben, was und warum.
 
-Die CI für Pull Requests aus Forks startet erst nach Freigabe durch einen Maintainer. Gemergt wird per Squash.
+Die CI für Pull Requests aus Forks startet erst nach Freigabe durch den Maintainer.
 
-## Regeln
-
-- Ein PR, ein Thema. Kleine PRs werden schneller geprüft.
-- Neue Abhängigkeiten nur mit Begründung im PR.
-- Änderungen an `.github/`, `src-tauri/tauri.conf.json` und Build-Skripten werden besonders genau geprüft.
+- Neue Abhängigkeiten nur mit Begründung.
 - Keine echten Cookies, Tokens oder Schlüssel committen – auch nicht in Tests.
 - Sicherheitslücken nicht als Issue melden, sondern wie in [SECURITY.md](SECURITY.md) beschrieben.
 
