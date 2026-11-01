@@ -17,6 +17,7 @@ const schema = z.object({
     LivenessMaxCount: optNum,
     LivenessUnlock: z.boolean().optional(),
     WeeklyInstCount: optNum,
+    RoleNum: optNum,
   }),
   BattlePass: z
     .object({
@@ -98,6 +99,7 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
     secondary: crystal,
     tasks: daily.tasks,
     sections: [daily, weekly].filter(nonEmpty),
+    characterCount: b.RoleNum,
     fetchedAt: now,
   };
 }

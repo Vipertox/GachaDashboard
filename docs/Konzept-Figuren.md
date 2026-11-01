@@ -45,7 +45,13 @@ Für die drei Hoyoverse-Spiele gibt es eigene Endpunkte der Battle Chronicle. Si
 | Zenless Zone Zero | `GET sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz/avatar/basic?server=&role_id=` | `GET …/zzz/avatar/info?server=&role_id=&id_list[]=…&need_wiki=true` | Details für mehrere Figuren in einem Aufruf |
 | Wuthering Waves | Keine bekannte Quelle, siehe unten | – | Launcher-API liefert nur die Anzahl |
 
-Wie bei den Notizen sind alle Endpunkte inoffiziell. Pfade und Feldnamen stammen aus der Community-Bibliothek genshin.py und müssen beim Durchstich mit einer echten Antwort geprüft werden.
+Wie bei den Notizen sind alle Endpunkte inoffiziell. Pfade und Feldnamen stammen aus der Community-Bibliothek genshin.py und sind beim Durchstich am 1. November 2026 mit echten Antworten geprüft worden. Dabei hat sich gezeigt:
+
+- **ZZZ:** `avatar/info` nimmt nur eine ID pro Aufruf, bei mehreren meldet es `retcode` -400005 ("Parameter Error"). Details werden deshalb erst beim Antippen einer Figur geladen, nicht vorgeladen.
+- **Erhöhungen der Nebenwerte:** Genshin liefert in `times` nur die Erhöhungen. Star Rail zählt in `times` den Startwert mit, angezeigt wird `times - 1`. ZZZ liefert die Erhöhungen im Feld `add` der Disc-Werte.
+- **Sprache:** Genshin und Star Rail liefern deutsche Namen. ZZZ liefert Werte und Set-Namen trotz `x-rpc-language: de-de` auf Englisch.
+- **Star Rail:** Die Antwort enthält keine Set-Namen, nur die Namen der einzelnen Relikte. Set-Boni und der Hinweis "Set unvollständig" entfallen für Star Rail.
+- **ZZZ:** Neuere Agenten haben einen Elementtyp, der noch keinem Element zugeordnet ist (z. B. `300`). Sie erscheinen ohne Elementsymbol.
 
 **Genshin Impact**
 
@@ -194,7 +200,7 @@ Figurendaten ändern sich selten und sind deutlich größer als die Notizen. Sie
 
 - **Liste:** Wird erst geladen, wenn der Figuren-Tab geöffnet wird. Query-Schlüssel `["roster", profileId, game, uid]`, `staleTime` 30 Minuten, kein Neuladen im Intervall.
 - **Details:** Werden beim Antippen einer Figur geladen. Query-Schlüssel `["character", profileId, game, uid, id]`. Bei Star Rail befüllt die Listenantwort die Details direkt mit, ein zweiter Aufruf entfällt.
-- **Vorladen:** Bei Genshin und ZZZ lädt die App nach der Liste die Details in Blöcken zu je 10 Figuren nach, sobald der Tab offen ist. Dann funktionieren auch die Hinweise auf Ausrüstungslücken in der Liste. Ob das die Rate-Limits einhält, ist beim Durchstich zu prüfen. Sonst bleibt es beim Laden auf Antippen.
+- **Vorladen:** Bei Genshin lädt die App nach der Liste die Details in Blöcken zu je 10 Figuren nach, sobald der Tab offen ist. Dann funktionieren auch die Hinweise auf Ausrüstungslücken in der Liste. Bei ZZZ bleibt es beim Laden auf Antippen, weil jede Figur einen eigenen Aufruf braucht. Das Warnsymbol fehlt dort deshalb in der Liste.
 - **Aktualisieren:** Pull-to-Refresh im Figuren-Tab lädt Liste und geöffnete Details neu. Das automatische Neuladen der Notizen berührt die Figurendaten nicht.
 - **Profilwechsel:** Wie bei den Notizen enthalten alle Schlüssel die Profil-ID. Der Cache des alten Profils wird verworfen.
 
@@ -247,7 +253,7 @@ Die App prüft nur eindeutige Regeln und gibt keine Build-Empfehlungen.
 | Hinweis | Regel |
 | --- | --- |
 | Platz leer | Weniger Teile in `gear` als Plätze |
-| Set unvollständig | Ein Set mit 1 bzw. 3 Teilen, also ein knapp verpasster Bonus |
+| Set unvollständig | Ein Set mit 3 Teilen, also ein knapp verpasster 4er-Bonus. Ein einzelnes Teil gilt nicht als Lücke, weil 4+1-Kombinationen üblich sind |
 | Ausrüstung nicht ausgebaut | Teil unter Maximalstufe, z. B. Artefakt unter +20 |
 | Waffe nicht ausgebaut | Waffenstufe unter Figurenstufe |
 
@@ -288,17 +294,17 @@ Die Adapter liegen getrennt von den Notiz-Adaptern, weil sie andere Endpunkte un
 
 ## Umsetzungsplan und offene Punkte
 
-- [ ] Durchstich Star Rail: `avatar/info` im Browser-Modus abrufen, echte Antwort als Test-Fixture ablegen, Feldnamen prüfen
-- [ ] Datenmodell, `GAME_TERMS` und Star-Rail-Adapter mit Tests
-- [ ] Tabs auf der Detailseite, Figurenraster und Figur-Detail
-- [ ] Adapter für Genshin (`character/list`, `character/detail`) und ZZZ (`avatar/basic`, `avatar/info`)
-- [ ] Hinweise auf Ausrüstungslücken mit Tests
-- [ ] Filter, Sortierung und Wischen zwischen Figuren
-- [ ] Wuthering Waves: Anzahl aus `Base.RoleNum`, Kuro BBS für globale Konten prüfen
+- [x] Durchstich mit echten Antworten für Genshin, Star Rail und ZZZ im Browser-Modus
+- [x] Datenmodell, `GAME_TERMS` und Adapter mit Tests
+- [x] Tabs auf der Detailseite, Figurenraster und Figur-Detail
+- [x] Hinweise auf Ausrüstungslücken mit Tests
+- [x] Filter, Sortierung und Wischen zwischen Figuren
+- [x] Wuthering Waves: Anzahl aus `Base.RoleNum`
+- [ ] Element- und Pfadsymbole als Bilder unter `assets/elements/`, bis dahin farbige Plaketten
+- [ ] Wuthering Waves: Kuro BBS für globale Konten prüfen
 
 Offene Punkte:
 
-- Feldnamen und Bildfelder aller Endpunkte, besonders das Porträt bei ZZZ
-- Ob `x-rpc-language: de-de` für alle drei Spiele deutsche Namen liefert, sonst Englisch als Rückfall
-- Rate-Limits beim Vorladen der Details
+- Rate-Limits beim Vorladen: Genshin mit 95 Figuren (10 Aufrufe) lief ohne Fehler, bei größeren Konten ist es zu beobachten
+- Zuordnung neuer ZZZ-Elementtypen
 - Ob Kuro BBS Figurendaten für globale Wuthering-Waves-Konten liefert

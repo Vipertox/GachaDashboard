@@ -2,6 +2,7 @@ import { useState } from "react";
 import { HashRouter, NavLink, Route, Routes } from "react-router-dom";
 import { Accounts } from "../features/accounts/Accounts";
 import { Dashboard } from "../features/dashboard/Dashboard";
+import { CharacterView } from "../features/game-detail/CharacterView";
 import { GameDetail } from "../features/game-detail/GameDetail";
 import { Settings } from "../features/settings/Settings";
 import { UpdateBanner } from "../features/settings/Updates";
@@ -83,6 +84,7 @@ export function App() {
         <Routes>
           <Route path="/" element={<Dashboard />} />
           <Route path="/game/:game/:uid" element={<GameDetail />} />
+          <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
