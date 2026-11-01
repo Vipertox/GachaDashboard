@@ -1,6 +1,6 @@
 [package]
 name = "gacha-dashboard"
-version = "0.1.0"
+version = "0.1.1"
 description = "Gacha-Ressourcen-Dashboard"
 edition = "2021"
 
