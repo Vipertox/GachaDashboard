@@ -1,6 +1,6 @@
 [package]
 name = "gacha-dashboard"
-version = "0.1.4"
+version = "0.1.5"
 description = "Gacha-Ressourcen-Dashboard"
 license = "MIT"
 edition = "2021"
