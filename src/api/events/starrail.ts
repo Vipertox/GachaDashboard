@@ -4,13 +4,11 @@ import { optNum, parseOrThrow } from "../adapters/util";
 import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
 import { hoyoGet } from "../hoyolab";
-import { bannerStatus, eventStatus, isCurrent, multiline, rarity, toRarity } from "./util";
+import { bannerStatus, currencyFromRewards, eventStatus, isCurrent, multiline, rarity, rewardSchema, toRarity } from "./util";
 import type { Banner, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
 
 // Dauerhafte Events haben keinen Zeitraum, `start_ts` ist dann leer oder 0.
 const timeInfo = z.object({ start_ts: optNum, end_ts: optNum }).optional().nullable();
-
-const reward = z.object({ name: optStr, icon: optStr, num: optNum });
 
 const act = z.object({
   id: str,
@@ -22,8 +20,12 @@ const act = z.object({
   current_progress: optNum,
   total_progress: optNum,
   all_finished: z.boolean().optional(),
-  reward_list: z.array(reward).optional().nullable(),
+  reward_list: z.array(rewardSchema).optional().nullable(),
+  special_reward: rewardSchema.optional().nullable(),
 });
+
+// Stellarjade hat die Item-ID 1.
+const STELLAR_JADE = { id: 1, name: /stellar ?jade/i, label: "Stellarjade" };
 
 const warp = z.object({
   id: str,
@@ -59,6 +61,8 @@ function toEvent(a: z.infer<typeof act>, now: Date): GameEvent {
     rewards: (a.reward_list ?? [])
       .filter((r) => r.name)
       .map((r) => ({ name: r.name!, count: r.num ?? 0, iconUrl: r.icon ?? undefined })),
+    // Die Sonderbelohnung steht getrennt von der Liste und kann ebenfalls Stellarjade sein.
+    currency: currencyFromRewards([...(a.reward_list ?? []), ...(a.special_reward ? [a.special_reward] : [])], STELLAR_JADE, done),
   };
   if (a.total_progress) e.progress = { current: a.current_progress ?? 0, max: a.total_progress };
   return e;

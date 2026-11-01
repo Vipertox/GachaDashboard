@@ -1,4 +1,32 @@
-import type { Banner, BannerKind } from "../../model/types";
+import type { Banner, BannerKind, GameEvent } from "../../model/types";
+
+export interface CurrencySummary {
+  name: string;
+  iconUrl?: string;
+  total: number;
+  remaining: number;
+  /** Davon in Events, die noch nicht begonnen haben. */
+  upcoming: number;
+  /** Events mit offener Währung. */
+  openEvents: number;
+}
+
+/** Summe der Premiumwährung über alle Events, getrennt nach Währung (pro Spiel ist es meist genau eine). */
+export function currencySummary(events: GameEvent[]): CurrencySummary[] {
+  const byName = new Map<string, CurrencySummary>();
+  for (const e of events) {
+    const c = e.currency;
+    if (!c) continue;
+    const s = byName.get(c.name) ?? { name: c.name, iconUrl: c.iconUrl, total: 0, remaining: 0, upcoming: 0, openEvents: 0 };
+    s.iconUrl ??= c.iconUrl;
+    s.total += c.total;
+    s.remaining += c.remaining;
+    if (e.status === "upcoming") s.upcoming += c.remaining;
+    if (c.remaining > 0) s.openEvents += 1;
+    byName.set(c.name, s);
+  }
+  return [...byName.values()];
+}
 
 /** Laufende und erledigte nach Ende, kommende nach Beginn; ohne Ende (dauerhaft) zuletzt. */
 export function byTime(a: { start?: Date; end?: Date; status: string }, b: typeof a): number {

@@ -4,7 +4,7 @@ import { num, optNum, parseOrThrow } from "../adapters/util";
 import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
 import { hoyoPost } from "../hoyolab";
-import { bannerStatus, eventStatus, isCurrent, multiline, rarity, toRarity } from "./util";
+import { bannerStatus, currencyFromRewards, eventStatus, isCurrent, multiline, rarity, rewardSchema, toRarity } from "./util";
 import type { Banner, BannerKind, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
 
 const item = z.object({ name: optStr, icon: optStr, rarity });
@@ -26,7 +26,7 @@ const act = z.object({
   start_timestamp: optNum,
   end_timestamp: optNum,
   is_finished: z.boolean().optional(),
-  reward_list: z.array(z.object({ name: optStr, icon: optStr, num: optNum })).optional().nullable(),
+  reward_list: z.array(rewardSchema).optional().nullable(),
   explore_detail: z.object({ explore_percent: optNum, is_finished: z.boolean().optional() }).optional().nullable(),
   double_detail: z.object({ total: num, left: num }).optional().nullable(),
 });
@@ -39,9 +39,13 @@ const schema = z.object({
   mixed_card_pool_list: z.array(pool).optional().nullable(),
 });
 
+// Primogem hat die Item-ID 201.
+const PRIMOGEMS = { id: 201, name: /primogem/i, label: "Primogems" };
+
 function toEvent(a: z.infer<typeof act>, now: Date): GameEvent {
   const start = unixDate(a.start_timestamp);
   const e: GameEvent = {
+    currency: currencyFromRewards(a.reward_list, PRIMOGEMS, !!a.is_finished),
     id: a.id,
     name: plain(a.name),
     start,

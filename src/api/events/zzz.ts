@@ -39,7 +39,12 @@ export function parseZzzEvents(data: unknown, now = new Date()): GameEvent[] {
         status: a.state === "STATE_NOT_START" ? "upcoming" : eventStatus(start, a.state === "STATE_COMPLETED", now),
         rewards: [],
       };
-      if (a.monochrome_cnt) e.progress = { current: a.monochrome_got_cnt ?? 0, max: a.monochrome_cnt, unit: "Polychrome" };
+      if (a.monochrome_cnt) {
+        const got = a.monochrome_got_cnt ?? 0;
+        e.progress = { current: got, max: a.monochrome_cnt, unit: "Polychrome" };
+        // Anders als Genshin und Star Rail meldet ZZZ genau, wie viel schon eingesammelt ist.
+        e.currency = { name: "Polychrome", total: a.monochrome_cnt, remaining: Math.max(0, a.monochrome_cnt - got) };
+      }
       return e;
     })
     .filter((e) => isCurrent(e, now));

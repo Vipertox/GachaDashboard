@@ -50,6 +50,24 @@ describe("Genshin", () => {
     expect(events[2].status).toBe("upcoming");
   });
 
+  it("erkennt Primogems an Name oder Item-ID, erledigt heißt eingesammelt", () => {
+    const { events } = parseGenshinEvents(
+      {
+        act_list: [
+          { id: 1, name: "Offen", end_timestamp: ts(5), reward_list: [{ name: "Primogems", num: 420 }, { name: "Mora", num: 1000 }] },
+          { id: 2, name: "Fertig", end_timestamp: ts(5), is_finished: true, reward_list: [{ item_id: 201, name: "Urgestein", num: 300 }] },
+          { id: 3, name: "Ohne", end_timestamp: ts(5), reward_list: [{ name: "Mora", num: 1000 }] },
+        ],
+      },
+      now,
+    );
+    expect(events.map((e) => e.currency)).toEqual([
+      { name: "Primogems", total: 420, remaining: 420, iconUrl: undefined },
+      { name: "Primogems", total: 300, remaining: 0, iconUrl: undefined },
+      undefined,
+    ]);
+  });
+
   it("liest Banner", () => {
     const { banners } = parseGenshinEvents(data, now);
     expect(banners).toMatchObject([
@@ -114,6 +132,7 @@ describe("Star Rail", () => {
       ["Gesperrt", "upcoming", undefined],
     ]);
     expect(c.events[0].progress).toEqual({ current: 3, max: 5 });
+    expect(c.events[0].currency).toMatchObject({ name: "Stellarjade", total: 800, remaining: 800 });
     expect(c.banners[0].items).toEqual([{ name: "Firefly", iconUrl: "ff.png", rarity: 5 }]);
     // Allgemeiner oder fehlender Name wird durch den Typ ersetzt; gleiche IDs in beiden Listen bleiben unterscheidbar.
     expect(c.banners.map((b) => [b.id, b.name, b.kind])).toEqual([
@@ -138,6 +157,7 @@ describe("ZZZ", () => {
     expect(events.map((e) => e.status)).toEqual(["running", "done", "upcoming"]);
     expect(events[0].progress).toEqual({ current: 40, max: 120, unit: "Polychrome" });
     expect(events[1].progress).toBeUndefined();
+    expect(events[0].currency).toEqual({ name: "Polychrome", total: 120, remaining: 80 });
   });
 
   it("liest Kanäle mit Buchstaben-Seltenheit", () => {

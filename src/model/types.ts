@@ -178,6 +178,17 @@ export interface EventReward {
   iconUrl?: string;
 }
 
+export interface EventCurrency {
+  name: string;
+  total: number;
+  /**
+   * Noch nicht eingesammelt. ZZZ meldet den Stand genau; Genshin und Star Rail liefern nur die Gesamtmenge,
+   * dort gilt sie bis zum Erledigen des Events als offen.
+   */
+  remaining: number;
+  iconUrl?: string;
+}
+
 /** Zeitlich begrenztes Event aus dem Event-Kalender von HoYoLAB. */
 export interface GameEvent {
   id: string;
@@ -191,6 +202,8 @@ export interface GameEvent {
   progress?: { current: number; max: number; unit?: string };
   description?: string;
   rewards: EventReward[];
+  /** Premiumwährung des Events (Primogems, Stellarjade, Polychrome). */
+  currency?: EventCurrency;
 }
 
 export interface BannerItem {

@@ -5,8 +5,8 @@ import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../components/ui";
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
-import type { Banner, GameAccountRef, GameEvent, Profile } from "../../model/types";
-import { byTime, groupBanners, type BannerGroup } from "./eventView";
+import type { Banner, EventCurrency, GameAccountRef, GameEvent, Profile } from "../../model/types";
+import { byTime, currencySummary, groupBanners, type BannerGroup, type CurrencySummary } from "./eventView";
 
 // Wie bei den Herausforderungen: ab drei Tagen vor Ende wird ein offenes Event hervorgehoben.
 const ENDING_SOON_MS = 3 * 86400_000;
@@ -68,14 +68,68 @@ function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accen
             mode="progress"
           />
         )}
-        {(done || when) && (
-          <div className="text-xs" style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
-            {soon && "⚠ "}
-            {[done ? "Erledigt" : undefined, when].filter(Boolean).join(" · ")}
+        {(done || when || e.currency) && (
+          <div className="flex items-center justify-between gap-3 text-xs">
+            <span style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
+              {soon && "⚠ "}
+              {[done ? "Erledigt" : undefined, when].filter(Boolean).join(" · ")}
+            </span>
+            {e.currency && <CurrencyBadge c={e.currency} />}
           </div>
         )}
       </button>
     </li>
+  );
+}
+
+const fmtNum = (n: number) => n.toLocaleString("de-DE");
+
+/** "noch 420 Primogems" oder, wenn alles eingesammelt ist, "420 Primogems ✓". */
+function CurrencyBadge({ c }: { c: EventCurrency }) {
+  const open = c.remaining > 0;
+  return (
+    <span
+      className="shrink-0 inline-flex items-center gap-1 rounded-full pl-1 pr-2 min-h-6 font-semibold"
+      style={{
+        background: open ? "var(--surface-2)" : "color-mix(in srgb, var(--color-ok) 22%, transparent)",
+        color: open ? "var(--text)" : "var(--color-ok)",
+      }}
+    >
+      {c.iconUrl ? <GameIcon url={c.iconUrl} size={16} round label={c.name} /> : <span aria-hidden>◆</span>}
+      {open ? `noch ${fmtNum(c.remaining)} ${c.name}` : `${fmtNum(c.total)} ${c.name} ✓`}
+    </span>
+  );
+}
+
+/** Kopfzeile der Events: wie viel Premiumwährung noch einzusammeln ist. */
+function CurrencyTotals({ sums }: { sums: CurrencySummary[] }) {
+  return (
+    <div className="space-y-1">
+      {sums.map((s) => (
+        <div key={s.name} className="rounded-xl px-3 py-2 space-y-0.5" style={{ background: "var(--surface-2)" }}>
+          <div className="flex items-center justify-between gap-3">
+            <span className="flex items-center gap-2 text-sm">
+              {s.iconUrl ? <GameIcon url={s.iconUrl} size={24} round label={s.name} /> : <span aria-hidden>◆</span>}
+              Noch einzusammeln
+            </span>
+            <span className="font-bold">
+              {fmtNum(s.remaining)} {s.name}
+            </span>
+          </div>
+          <div className="text-xs" style={{ color: "var(--muted)" }}>
+            {s.remaining > 0
+              ? [
+                  `in ${s.openEvents} ${s.openEvents === 1 ? "Event" : "Events"}`,
+                  s.upcoming > 0 ? `davon ${fmtNum(s.upcoming)} in kommenden` : undefined,
+                  `insgesamt ${fmtNum(s.total)}`,
+                ]
+                  .filter(Boolean)
+                  .join(" · ")
+              : `Alles eingesammelt · insgesamt ${fmtNum(s.total)}`}
+          </div>
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -194,6 +248,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
   const upcoming = events.filter((e) => e.status === "upcoming").sort(byTime);
   const shown = all ? current : current.slice(0, VISIBLE);
   const bannerGroups = groupBanners(q.data?.banners ?? []);
+  const sums = currencySummary(events);
 
   return (
     <>
@@ -215,6 +270,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
               </p>
             ) : (
               <>
+                {sums.length > 0 && <CurrencyTotals sums={sums} />}
                 {shown.length > 0 && (
                   <ul className="space-y-3">
                     {shown.map((e) => (

@@ -1,6 +1,30 @@
 import { describe, expect, it } from "vitest";
-import { bannerOrder, groupBanners } from "./eventView";
-import type { Banner } from "../../model/types";
+import { bannerOrder, currencySummary, groupBanners } from "./eventView";
+import type { Banner, GameEvent } from "../../model/types";
+
+describe("Währung", () => {
+  const ev = (status: GameEvent["status"], total: number, remaining: number): GameEvent => ({
+    id: `${status}-${total}`,
+    name: "Event",
+    status,
+    rewards: [],
+    currency: { name: "Primogems", total, remaining },
+  });
+
+  it("summiert offene, kommende und gesamte Währung", () => {
+    const [s] = currencySummary([
+      ev("running", 420, 420),
+      ev("done", 300, 0),
+      ev("upcoming", 900, 900),
+      { id: "x", name: "Ohne", status: "running", rewards: [] },
+    ]);
+    expect(s).toEqual({ name: "Primogems", iconUrl: undefined, total: 1620, remaining: 1320, upcoming: 900, openEvents: 2 });
+  });
+
+  it("liefert nichts ohne Währung", () => {
+    expect(currencySummary([{ id: "x", name: "Ohne", status: "running", rewards: [] }])).toEqual([]);
+  });
+});
 
 const day = (n: number) => new Date(Date.UTC(2026, 10, 1 + n));
 const banner = (id: string, kind: Banner["kind"], status: Banner["status"], start: number, end: number): Banner => ({

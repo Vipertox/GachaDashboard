@@ -536,8 +536,10 @@ Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nic
 ```
 EVENTS
 ┌──────────────────────────────────┐
+│ ◆ Noch einzusammeln 1.740 Primogems │
+│   in 3 Events · davon 900 in kommenden · insgesamt 2.040 │
 │ ○ Abenteuer im Wüstental         │
-│   ⚠ endet in 1 T 4 h             │
+│   ⚠ endet in 1 T 4 h  ◆ noch 420 Primogems │
 │ ○ Doppelte Talentbücher [Doppelt] 2/3 │
 │   ▓▓▓▓▓▓▓░░░                     │
 │ ○ Lanternen-Ritus           63 % │
@@ -563,6 +565,17 @@ BANNER
 
 - Laufende und erledigte Events sind nach Ende sortiert, das früheste zuerst. Die ersten 5 sind sichtbar, der Rest lässt sich aufklappen. Kommende Events stehen darunter unter "Demnächst", sortiert nach Beginn.
 - Fortschritt erscheint als Balken mit "3/5", als Prozent bei der Erkundung oder als Polychrome bei ZZZ. Login-Events (Star Rail `ActivityTypeSign`) und Events mit doppelten Belohnungen bekommen ein Kennzeichen.
+- Jedes Event zeigt seine Premiumwährung als Plakette: "noch 420 Primogems" oder, wenn alles eingesammelt ist, grün "300 Primogems ✓". Darüber steht eine Summe mit dem Text "Noch einzusammeln", der Zahl der Events mit offener Währung, dem Anteil in kommenden Events und der Gesamtmenge.
+
+**Premiumwährung**
+
+| Spiel | Währung | Erkennung | Offen |
+| --- | --- | --- | --- |
+| Genshin Impact | Primogems | `reward_list[]` mit `item_id` 201 oder Name "Primogem…" | Gesamtmenge, bis das Event erledigt ist (`is_finished`) |
+| Honkai: Star Rail | Stellarjade | `reward_list[]` und `special_reward` mit `item_id` 1 oder Name "Stellar Jade"/"Stellarjade" | Gesamtmenge, bis das Event erledigt ist |
+| Zenless Zone Zero | Polychrome | `monochrome_cnt` und `monochrome_got_cnt` | Genau: `monochrome_cnt − monochrome_got_cnt` |
+
+Genshin und Star Rail nennen nur die Gesamtmenge eines Events, nicht wie viel davon schon abgeholt ist. Ein laufendes Event zählt deshalb bis zum Erledigen mit seiner vollen Menge. Die Summe ist dort eine Obergrenze. Kommende Events zählen mit, werden aber in der Summe getrennt ausgewiesen. Die Item-IDs stammen aus Community-Quellen und sind beim Durchstich zu prüfen. Deshalb greift zusätzlich der Name.
 - Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
 - Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
 - Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
@@ -596,6 +609,7 @@ interface GameEvent {
   progress?: { current: number; max: number; unit?: string };  // unit "%" oder "Polychrome"
   description?: string;
   rewards: { name: string; count: number; iconUrl?: string }[];
+  currency?: { name: string; total: number; remaining: number; iconUrl?: string };  // Primogems, Stellarjade, Polychrome
 }
 
 interface Banner {
