@@ -41,3 +41,6 @@ desktop.ini
 
 # Claude Code (lokale Einstellungen)
 .claude/settings.local.json
+
+# Proxy-Laufzeitdaten (Token, Einstellungen)
+proxy/.runtime/

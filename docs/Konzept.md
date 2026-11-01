@@ -448,11 +448,11 @@ Die Retcodes entsprechen den Werten, die Community-Bibliotheken und die Communit
 
 Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf alle Spiele und Plattformen erweitert.
 
-- [ ] Projekt anlegen mit `npm create tauri-app` (Vorlage React + TypeScript), Tailwind und TanStack Query ergänzen
-- [ ] HoYoLAB-Client mit DS-Header und Konten-Endpunkt, im Browser-Modus über den lokalen Proxy testen
-- [ ] Genshin-Adapter und Dashboard-Karte als erster durchgehender Durchstich
-- [ ] Adapter für Star Rail und ZZZ ergänzen
-- [ ] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
+- [x] Projekt anlegen mit `npm create tauri-app` (Vorlage React + TypeScript), Tailwind und TanStack Query ergänzen
+- [x] HoYoLAB-Client mit DS-Header und Konten-Endpunkt, im Browser-Modus über den lokalen Proxy testen
+- [x] Genshin-Adapter und Dashboard-Karte als erster durchgehender Durchstich
+- [x] Adapter für Star Rail und ZZZ ergänzen
+- [x] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
 - [ ] Windows-Build mit `npm run tauri build`
