@@ -38,7 +38,8 @@ export function findBrowser(env = process.env): string | undefined {
 }
 
 export function pickTokens(cookies: { name: string; value: string; domain: string }[]): HoyoTokens | null {
-  const hoyo = cookies.filter((c) => c.domain.endsWith("hoyolab.com"));
+  // Nur hoyolab.com selbst und echte Subdomains, nicht etwa "evilhoyolab.com"
+  const hoyo = cookies.filter((c) => /(^|\.)hoyolab\.com$/.test(c.domain));
   const ltuid = hoyo.find((c) => c.name === "ltuid_v2")?.value;
   const ltoken = hoyo.find((c) => c.name === "ltoken_v2")?.value;
   return ltuid && ltoken ? { ltuid, ltoken } : null;
