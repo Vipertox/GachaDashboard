@@ -170,6 +170,54 @@ export interface ChallengeMode {
   fetch(account: Account, period: ChallengePeriod, signal?: AbortSignal): Promise<Challenge>;
 }
 
+export type EventStatus = "upcoming" | "running" | "done";
+
+export interface EventReward {
+  name: string;
+  count: number;
+  iconUrl?: string;
+}
+
+/** Zeitlich begrenztes Event aus dem Event-Kalender von HoYoLAB. */
+export interface GameEvent {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  /** Kennzeichnung, z. B. "Login" oder "Doppelt". */
+  tag?: string;
+  /** Mit `unit` "%" als Prozent angezeigt, sonst als "3/5". */
+  progress?: { current: number; max: number; unit?: string };
+  description?: string;
+  rewards: EventReward[];
+}
+
+export interface BannerItem {
+  name: string;
+  iconUrl?: string;
+  rarity: number;
+}
+
+export interface Banner {
+  id: string;
+  name: string;
+  start?: Date;
+  end?: Date;
+  status: EventStatus;
+  items: BannerItem[];
+}
+
+export interface EventCalendar {
+  events: GameEvent[];
+  banners: Banner[];
+}
+
+export interface EventAdapter {
+  game: GameId;
+  fetchCalendar(account: Account, signal?: AbortSignal): Promise<EventCalendar>;
+}
+
 export interface GameTerms {
   character: string;
   characters: string;
