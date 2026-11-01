@@ -5,7 +5,7 @@ import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../components/ui";
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
-import type { Banner, GameAccountRef, GameEvent, Profile } from "../../model/types";
+import type { Banner, BannerKind, GameAccountRef, GameEvent, Profile } from "../../model/types";
 
 // Wie bei den Herausforderungen: ab drei Tagen vor Ende wird ein offenes Event hervorgehoben.
 const ENDING_SOON_MS = 3 * 86400_000;
@@ -42,6 +42,13 @@ function whenText(x: { status: GameEvent["status"]; start?: Date; end?: Date }, 
 function byTime(a: { start?: Date; end?: Date; status: string }, b: typeof a): number {
   const key = (x: typeof a) => (x.status === "upcoming" ? x.start : x.end)?.getTime() ?? Infinity;
   return key(a) - key(b);
+}
+
+const KIND_ORDER: Record<BannerKind, number> = { character: 0, weapon: 1, other: 2 };
+
+/** Erst Charakter-, dann Waffen-, dann weitere Banner; innerhalb einer Art nach Zeit. */
+function bannerOrder(a: Banner, b: Banner): number {
+  return KIND_ORDER[a.kind] - KIND_ORDER[b.kind] || byTime(a, b);
 }
 
 function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accent: string; onOpen: () => void }) {
@@ -167,7 +174,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
   const current = events.filter((e) => e.status !== "upcoming").sort(byTime);
   const upcoming = events.filter((e) => e.status === "upcoming").sort(byTime);
   const shown = all ? current : current.slice(0, VISIBLE);
-  const banners = [...(q.data?.banners ?? [])].sort(byTime);
+  const banners = [...(q.data?.banners ?? [])].sort(bannerOrder);
 
   return (
     <>

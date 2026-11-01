@@ -52,7 +52,9 @@ describe("Genshin", () => {
 
   it("liest Banner", () => {
     const { banners } = parseGenshinEvents(data, now);
-    expect(banners).toMatchObject([{ name: "Charakter-Aktionsgebet", status: "running", items: [{ name: "Furina", rarity: 5 }] }]);
+    expect(banners).toMatchObject([
+      { name: "Charakter-Aktionsgebet", kind: "character", status: "running", items: [{ name: "Furina", rarity: 5 }] },
+    ]);
   });
 });
 
@@ -114,9 +116,9 @@ describe("Star Rail", () => {
     expect(c.events[0].progress).toEqual({ current: 3, max: 5 });
     expect(c.banners[0].items).toEqual([{ name: "Firefly", iconUrl: "ff.png", rarity: 5 }]);
     // Allgemeiner oder fehlender Name wird durch den Typ ersetzt; gleiche IDs in beiden Listen bleiben unterscheidbar.
-    expect(c.banners.map((b) => [b.id, b.name])).toEqual([
-      ["character-7", "Charakter-Aktionssprung"],
-      ["lightCone-7", "Lichtkegel-Aktionssprung"],
+    expect(c.banners.map((b) => [b.id, b.name, b.kind])).toEqual([
+      ["character-7", "Charakter-Aktionssprung", "character"],
+      ["lightCone-7", "Lichtkegel-Aktionssprung", "weapon"],
     ]);
   });
 });
@@ -148,6 +150,20 @@ describe("ZZZ", () => {
       },
       now,
     );
-    expect(b).toMatchObject({ name: "Exklusiver Kanal", items: [{ name: "Hoshimi Miyabi", rarity: 5 }] });
+    expect(b).toMatchObject({ name: "Exklusiver Kanal", kind: "character", items: [{ name: "Hoshimi Miyabi", rarity: 5 }] });
+  });
+
+  it("ordnet Kanäle nach Typ ein, unbekannte nach ihrer Liste", () => {
+    const banners = parseZzzBanners(
+      {
+        avatar_gacha_schedule_list: [{ gacha_type: "GACHA_TYPE_NEU", start_ts: ts(-1), end_ts: ts(10) }],
+        weapon_gacha_schedule_list: [
+          { gacha_type: "GACHA_TYPE_WEAPON_RETURN", start_ts: ts(-1), end_ts: ts(10) },
+          { gacha_type: "GACHA_TYPE_BANGBOO", start_ts: ts(-1), end_ts: ts(10) },
+        ],
+      },
+      now,
+    );
+    expect(banners.map((b) => b.kind)).toEqual(["character", "weapon", "other"]);
   });
 });

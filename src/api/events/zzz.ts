@@ -5,7 +5,7 @@ import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
 import { hoyoGet } from "../hoyolab";
 import { bannerStatus, eventStatus, isCurrent, rarity, toRarity } from "./util";
-import type { Banner, EventAdapter, GameEvent } from "../../model/types";
+import type { Banner, BannerKind, EventAdapter, GameEvent } from "../../model/types";
 
 const BASE = "https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz";
 
@@ -65,22 +65,29 @@ const gachaSchema = z.object({
   weapon_gacha_schedule_list: z.array(schedule).optional().nullable(),
 });
 
-const CHANNEL: Record<string, string> = {
-  GACHA_TYPE_CHARACTER_UP: "Exklusiver Kanal",
-  GACHA_TYPE_WEAPON_UP: "W-Engine-Kanal",
-  GACHA_TYPE_BANGBOO: "Bangboo-Kanal",
-  GACHA_TYPE_CHARACTER_RETURN: "Exklusive Wiederholung",
-  GACHA_TYPE_WEAPON_RETURN: "W-Engine-Wiederholung",
+const CHANNEL: Record<string, { name: string; kind: BannerKind }> = {
+  GACHA_TYPE_CHARACTER_UP: { name: "Exklusiver Kanal", kind: "character" },
+  GACHA_TYPE_CHARACTER_RETURN: { name: "Exklusive Wiederholung", kind: "character" },
+  GACHA_TYPE_WEAPON_UP: { name: "W-Engine-Kanal", kind: "weapon" },
+  GACHA_TYPE_WEAPON_RETURN: { name: "W-Engine-Wiederholung", kind: "weapon" },
+  GACHA_TYPE_BANGBOO: { name: "Bangboo-Kanal", kind: "other" },
 };
 
 export function parseZzzBanners(data: unknown, now = new Date()): Banner[] {
   const d = parseOrThrow(gachaSchema, data);
-  return [...(d.avatar_gacha_schedule_list ?? []), ...(d.weapon_gacha_schedule_list ?? [])]
-    .map((s, i): Banner => {
+  // Unbekannte Kanaltypen ordnen sich nach ihrer Liste ein.
+  const fromList = (kind: BannerKind) => (s: z.infer<typeof schedule>) => ({ s, kind });
+  return [
+    ...(d.avatar_gacha_schedule_list ?? []).map(fromList("character")),
+    ...(d.weapon_gacha_schedule_list ?? []).map(fromList("weapon")),
+  ]
+    .map(({ s, kind }, i): Banner => {
       const start = unixDate(s.start_ts);
+      const channel = CHANNEL[s.gacha_type ?? ""];
       return {
         id: `${s.gacha_type ?? "gacha"}-${s.start_ts ?? i}-${i}`,
-        name: CHANNEL[s.gacha_type ?? ""] ?? "Kanal",
+        name: channel?.name ?? "Kanal",
+        kind: channel?.kind ?? kind,
         start,
         end: unixDate(s.end_ts),
         status: bannerStatus(start, now),

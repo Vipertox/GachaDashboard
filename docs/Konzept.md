@@ -561,6 +561,15 @@ BANNER
 - Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
 - Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
 - Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
+- Banner sind in allen Spielen nach Art sortiert: erst Charakter-Banner, dann Waffen-Banner, dann alle weiteren. Innerhalb einer Art gilt die Zeit, wie bei den Events.
+
+| Art | Genshin Impact | Honkai: Star Rail | Zenless Zone Zero |
+| --- | --- | --- | --- |
+| Charakter | `avatar_card_pool_list` | `avatar_card_pool_list` | `GACHA_TYPE_CHARACTER_UP`, `GACHA_TYPE_CHARACTER_RETURN` |
+| Waffe | `weapon_card_pool_list` | `equip_card_pool_list` (Lichtkegel) | `GACHA_TYPE_WEAPON_UP`, `GACHA_TYPE_WEAPON_RETURN` |
+| Weitere | `mixed_card_pool_list` (Chronik-Gebet) | – | `GACHA_TYPE_BANGBOO` |
+
+Unbekannte Kanaltypen in ZZZ gelten als Charakter- oder Waffen-Banner, je nachdem, aus welcher Liste sie kommen.
 
 **Laden**
 
@@ -586,6 +595,7 @@ interface GameEvent {
 interface Banner {
   id: string;
   name: string;
+  kind: "character" | "weapon" | "other";  // Reihenfolge der Anzeige
   start?: Date;
   end?: Date;
   status: EventStatus;

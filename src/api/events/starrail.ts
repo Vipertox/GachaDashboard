@@ -73,6 +73,7 @@ function toBanner(w: z.infer<typeof warp>, kind: keyof typeof WARP_NAME, now: Da
   return {
     id: `${kind}-${w.id}`,
     name: GENERIC_NAMES.has(name.toLowerCase()) ? WARP_NAME[kind] : name,
+    kind: kind === "character" ? "character" : "weapon",
     start,
     end: unixDate(w.time_info?.end_ts),
     status: bannerStatus(start, now),

@@ -199,9 +199,13 @@ export interface BannerItem {
   rarity: number;
 }
 
+/** Reihenfolge in der Anzeige: Charaktere, dann Waffen (Lichtkegel, W-Engines), dann alles Weitere. */
+export type BannerKind = "character" | "weapon" | "other";
+
 export interface Banner {
   id: string;
   name: string;
+  kind: BannerKind;
   start?: Date;
   end?: Date;
   status: EventStatus;

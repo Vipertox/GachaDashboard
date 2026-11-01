@@ -5,7 +5,7 @@ import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
 import { hoyoPost } from "../hoyolab";
 import { bannerStatus, eventStatus, isCurrent, multiline, rarity, toRarity } from "./util";
-import type { Banner, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
+import type { Banner, BannerKind, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
 
 const item = z.object({ name: optStr, icon: optStr, rarity });
 
@@ -60,11 +60,12 @@ function toEvent(a: z.infer<typeof act>, now: Date): GameEvent {
   return e;
 }
 
-function toBanner(p: z.infer<typeof pool>, now: Date): Banner {
+function toBanner(p: z.infer<typeof pool>, kind: BannerKind, now: Date): Banner {
   const start = unixDate(p.start_timestamp);
   return {
-    id: p.pool_id,
+    id: `${kind}-${p.pool_id}`,
     name: plain(p.pool_name) || "Gebet",
+    kind,
     start,
     end: unixDate(p.end_timestamp),
     status: bannerStatus(start, now),
@@ -76,10 +77,14 @@ function toBanner(p: z.infer<typeof pool>, now: Date): Banner {
 
 export function parseGenshinEvents(data: unknown, now = new Date()): EventCalendar {
   const d = parseOrThrow(schema, data);
-  const pools = [...(d.avatar_card_pool_list ?? []), ...(d.weapon_card_pool_list ?? []), ...(d.mixed_card_pool_list ?? [])];
   return {
     events: (d.act_list ?? []).map((a) => toEvent(a, now)).filter((e) => isCurrent(e, now)),
-    banners: pools.map((p) => toBanner(p, now)).filter((b) => isCurrent(b, now)),
+    // Das Chronik-Gebet (`mixed_card_pool_list`) enthält Figuren und Waffen und zählt zu "Weitere".
+    banners: [
+      ...(d.avatar_card_pool_list ?? []).map((p) => toBanner(p, "character", now)),
+      ...(d.weapon_card_pool_list ?? []).map((p) => toBanner(p, "weapon", now)),
+      ...(d.mixed_card_pool_list ?? []).map((p) => toBanner(p, "other", now)),
+    ].filter((b) => isCurrent(b, now)),
   };
 }
 
