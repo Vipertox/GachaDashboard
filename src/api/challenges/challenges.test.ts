@@ -7,7 +7,7 @@ import { plain, serverDate, serverOffset } from "./util";
 describe("Namen", () => {
   it("entfernt Tags und verschachtelte Reste", () => {
     expect(plain("Ewige <unbreak>Melodie</unbreak>")).toBe("Ewige Melodie");
-    expect(plain("<scr<script>ipt>x")).toBe("iptx");
+    expect(plain("<scr<script>ipt>x")).toBe("x");
   });
 });
 
