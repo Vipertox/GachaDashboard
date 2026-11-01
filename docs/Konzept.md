@@ -853,6 +853,7 @@ Die App fragt die Server sparsam an und rechnet dazwischen lokal weiter. Fehler 
 - Beim Start und beim Zurückkehren in die App lädt TanStack Query alle Spiele neu.
 - Solange die App im Vordergrund ist, lädt sie alle 10 Minuten neu.
 - Pull-to-Refresh lädt sofort neu.
+- Auf breiten Bildschirmen gibt es zusätzlich den Button „Aktualisieren“ unter den Karten. Während eines Abrufs, auch eines automatischen, dreht sich sein Symbol, der Text wird zu „Aktualisiere …“ und der Button ist gesperrt. Daneben steht die Uhrzeit des letzten erfolgreichen Abrufs.
 - Zwischen zwei Abrufen zählt die Oberfläche den Stand anhand von `fullAt` im Sekundentakt hoch. So wirkt die Anzeige live, ohne die Server zu belasten.
 
 **Fehlerfälle:**
