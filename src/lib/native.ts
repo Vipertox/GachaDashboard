@@ -25,6 +25,16 @@ export async function hoyolabWebviewLogin(): Promise<{ ltuid: string; ltoken: st
   return (await res.json()) as { ltuid: string; ltoken: string };
 }
 
+/** App: Systembrowser über das Opener-Plugin (erlaubte URLs in capabilities/default.json). Browser: neuer Tab. */
+export async function openExternal(url: string): Promise<void> {
+  if (isTauri()) {
+    const { openUrl } = await import("@tauri-apps/plugin-opener");
+    await openUrl(url);
+    return;
+  }
+  window.open(url, "_blank", "noopener,noreferrer");
+}
+
 export function haptic(ms = 15): void {
   try {
     navigator.vibrate?.(ms);

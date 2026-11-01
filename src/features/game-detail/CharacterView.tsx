@@ -5,7 +5,9 @@ import { useCharacter, useRoster } from "../../app/hooks";
 import { Card, GameIcon, Skeleton } from "../../components/ui";
 import { GAME_ACCENT, GAME_TERMS } from "../../model/games";
 import type { Character, GameAccountRef, GameId, GameTerms, GearPiece, Profile, Stat } from "../../model/types";
+import { openExternal } from "../../lib/native";
 import { gearHints } from "./gearHints";
+import { prydwenUrl } from "./prydwen";
 import { characterErrorText, ElementDot, rarityBackground } from "./Roster";
 import { applyPrefs, loadPrefs } from "./rosterView";
 
@@ -94,10 +96,37 @@ function StatList({ stats }: { stats: Stat[] }) {
   );
 }
 
-function Detail({ c, terms, accent }: { c: Character; terms: GameTerms; accent: string }) {
+function PrydwenLink({ url }: { url: string }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        e.preventDefault();
+        void openExternal(url);
+      }}
+      className="flex items-center justify-between gap-3 rounded-xl px-4 min-h-12 text-sm"
+      style={{ background: "var(--surface-2)" }}
+    >
+      <span>
+        <span className="font-semibold">Build-Guide auf Prydwen</span>
+        <span className="block text-xs" style={{ color: "var(--muted)" }}>
+          Builds im Tab „Build and teams“
+        </span>
+      </span>
+      <span aria-hidden="true" className="text-indigo-400">
+        ↗
+      </span>
+    </a>
+  );
+}
+
+function Detail({ c, game, terms, accent }: { c: Character; game: GameId; terms: GameTerms; accent: string }) {
   const [allStats, setAllStats] = useState(false);
   const [openSet, setOpenSet] = useState<string>();
   const hints = gearHints(c, terms);
+  const guideUrl = prydwenUrl(game, c);
   const w = c.weapon;
   return (
     <div className="space-y-5">
@@ -226,6 +255,8 @@ function Detail({ c, terms, accent }: { c: Character; terms: GameTerms; accent: 
         </Block>
       )}
 
+      {guideUrl && <PrydwenLink url={guideUrl} />}
+
       {c.companion && (
         <Block title="Memosprite">
           <div className="flex items-center gap-3">
@@ -283,7 +314,7 @@ function Body({ profile, gameRef, id }: { profile: Profile; gameRef: GameAccount
         </div>
       )}
       {c ? (
-        <Detail key={c.id} c={c} terms={terms} accent={GAME_ACCENT[gameRef.game]} />
+        <Detail key={c.id} c={c} game={gameRef.game} terms={terms} accent={GAME_ACCENT[gameRef.game]} />
       ) : error ? (
         <p style={{ color: "var(--color-danger)" }}>{characterErrorText(error)}</p>
       ) : loaded ? (

@@ -8,7 +8,7 @@ Eine Codebasis für Android, Windows und den lokalen Browser.
 
 - **Dashboard:** Eine Karte pro Spiel mit Hauptressource, Zeit bis voll und wichtigster Tagesaufgabe
 - **Detailseite, Tab Übersicht:** Alle Live-Werte des Spiels, gruppiert nach Täglich, Wöchentlich, Laufend und Weitere. Darunter die laufenden Events mit Fortschritt und Restlaufzeit, kommende Events und die aktuellen Gacha-Banner
-- **Detailseite, Tab Figuren:** Raster aller Figuren mit Element, Duplikaten, Stufe und Waffe, filter- und sortierbar. Ein Tipp öffnet Waffe, Ausrüstung mit Haupt- und Nebenwerten, Sets, Talente und Werte. Hinweise zeigen Lücken in der Ausrüstung
+- **Detailseite, Tab Figuren:** Raster aller Figuren mit Element, Duplikaten, Stufe und Waffe, filter- und sortierbar. Ein Tipp öffnet Waffe, Ausrüstung mit Haupt- und Nebenwerten, Sets, Talente und Werte. Hinweise zeigen Lücken in der Ausrüstung, ein Link führt zum Build-Guide der Figur auf [Prydwen](https://www.prydwen.gg/)
 - **Detailseite, Tab Herausforderungen:** Wiederkehrende Endgame-Modi wie Spiral Abyss, Pure Fiction oder Shiyu Defense mit Stand und Restlaufzeit, umschaltbar auf die vorherige Periode. Eine Kurzfassung steht in der Übersicht unter Wöchentlich
 - **Profile:** Mehrere HoYoLAB-Logins mit Wechsel per Tipp
 
