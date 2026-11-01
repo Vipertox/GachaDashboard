@@ -8,6 +8,10 @@
     "store:default",
     "secure-keystore:default",
     {
+      "identifier": "opener:allow-open-url",
+      "allow": [{ "url": "https://www.prydwen.gg/*" }]
+    },
+    {
       "identifier": "http:default",
       "allow": [
         { "url": "https://bbs-api-os.hoyolab.com/*" },
