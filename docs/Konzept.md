@@ -11,7 +11,7 @@ In Version 1 enthalten:
 - Dashboard mit einer Karte pro Spiel: Stand, Maximum, Zeit bis voll
 - Zusatzinfos pro Spiel: Dailies, Expeditionen bzw. Aufträge, Wochenbosse
 - Manuelles Aktualisieren (Pull-to-Refresh) und automatisches Neuladen im Vordergrund
-- Mehrere Profile mit eigenen HoYoLAB-Tokens und Wechsel per Tipp
+- Mehrere Profile mit eigenen HoYoLAB-Tokens und Kuro-Code und Wechsel per Tipp
 
 Grundsätze:
 
@@ -22,20 +22,29 @@ Nicht in Version 1: Gacha-Historie und Pity-Zähler, Push-Benachrichtigungen, au
 
 ## Datenquellen pro Spiel
 
-Die drei Hoyoverse-Spiele liefern alle Ressourcen live über HoYoLAB. Für Wuthering Waves gibt es für globale Konten derzeit keine verlässliche Schnittstelle. Das Spiel ist deshalb in Version 1 nur als Platzhalter-Karte vorgesehen.
+Die drei Hoyoverse-Spiele liefern alle Ressourcen live über HoYoLAB. Wuthering Waves liefert sie über die Schnittstelle, die auch die Infokarte im PC-Launcher nutzt.
 
 | Spiel | Hauptressource (Max.) | Weitere Werte | Endpunkt | Authentifizierung |
 | --- | --- | --- | --- | --- |
 | Genshin Impact | Original Resin (200) | Realm Currency, Expeditionen, Daily Commissions, Wochenboss-Rabatte, Transformer | `bbs-api-os.hoyolab.com/game_record/genshin/api/dailyNote` | HoYoLAB-Cookie + DS-Header |
 | Honkai: Star Rail | Trailblaze Power (300), Reserve (2400) | Daily Training, Echo of War, Assignments | `bbs-api-os.hoyolab.com/game_record/hkrpg/api/note` | HoYoLAB-Cookie + DS-Header |
 | Zenless Zone Zero | Battery Charge (240) | Engagement, Scratch Card, Video Store | `sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz/note` | HoYoLAB-Cookie + DS-Header |
-| Wuthering Waves | Waveplates (240), Waveplate Crystal (480) | – | Keiner für globale Konten | Platzhalter "Coming Soon..." |
+| Wuthering Waves | Waveplates (240), Waveplate Crystal (480) | Tagesaktivität, Wochenboss, Pioneer Podcast | `pc-launcher-sdk-api.kurogame.net/game/queryRole` | Kuro-`oauthCode` im Body |
 
 Vorgeschaltet ist ein Aufruf von `api-account-os.hoyolab.com/account/binding/api/getUserGameRolesByCookie`. Er liefert für das angemeldete HoYoLAB-Konto alle verknüpften Spielkonten mit UID und Server. Die App zeigt danach automatisch nur die Spiele an, die der Nutzer tatsächlich spielt.
 
 Alle Endpunkte sind inoffiziell. Maximalwerte und Endpunkte stammen aus dem Stand der Community-Tools (Referenz: genshin.py, Starward) und müssen vor der Umsetzung geprüft werden.
 
-**Wuthering Waves:** Für globale Konten ist keine Live-Schnittstelle bekannt. Die Community dokumentiert nur die API der chinesischen Kuro-Community-App, deren früherer Endpunkt für Tagesdaten bereits als ungültig markiert ist ([Kuro-API-Collection](https://github.com/TomyJan/Kuro-API-Collection/blob/master/API/gamer/roleBox/aki/baseData.md)). Die App zeigt deshalb eine Platzhalter-Karte mit dem Hinweis "Coming Soon...". Der Adapter ist vorgesehen, liefert aber noch keine Daten. Eine manuelle Eingabe mit Countdown, wie sie [WuWaLab](https://github.com/Arglax/WuWaLab) anbietet, entfällt, weil sie Spieldaten speichern würde. Neu zu prüfen ist das, sobald Bibliotheken wie [kuro.py](https://github.com/Wuthery/kuro.py) globale Spieldaten unterstützen.
+**Wuthering Waves:** Der PC-Launcher (ab Version 3.0) zeigt eine Infokarte mit Live-Werten des Kontos. Seine Weboberfläche ruft dafür zwei Endpunkte auf, die die App genauso nutzt:
+
+| Schritt | Aufruf | Body | Ergebnis |
+| --- | --- | --- | --- |
+| 1 | `POST pc-launcher-sdk-api.kurogame.net/game/queryPlayerInfo?_t=<unix>` | `{ oauthCode }` | `data` mit dem Server als Schlüssel, z. B. `"Europe"`, darin die Spieler-ID |
+| 2 | `POST pc-launcher-sdk-api.kurogame.net/game/queryRole?_t=<unix>` | `{ oauthCode, playerId, region }` | `data.<region>` ist ein JSON-String mit `Base`, `BattlePass` und weiteren Blöcken |
+
+Mögliche Server sind `America`, `Asia`, `Europe`, `HMT` und `SEA`. Schritt 1 läuft nur beim Anlegen des Profils, danach stehen Spieler-ID und Server im Profil. Der Wert von `data.<region>` muss ein zweites Mal geparst werden.
+
+Belegt ist der Ablauf durch die Logs des Launchers 3.0.1.0 und zwei Community-Quellen ([Feldbeschreibung](https://blog.3irun.moe/2025/11/10/wuwa_api_document/), [Haiyu #69](https://github.com/HaiyuGame/Haiyu/issues/69)). Die Schnittstelle ist inoffiziell und kann sich mit jedem Launcher-Update ändern.
 
 ## Architektur
 
@@ -43,7 +52,7 @@ Oberfläche und API-Logik sind für alle Plattformen identisch. Nur die HTTP-Sch
 
 &#91;embedded content: Architektur · 4 Schichten, 2 Betriebsarten\]
 
-In der App nutzt die API-Schicht das HTTP-Plugin von Tauri, im Browser den lokalen Proxy. Die Tauri-Plugins sind `plugin-http` für die Aufrufe und tauri-plugin-secure-keystore für die Tokens. Für Version 1 ist kein Dateizugriff nötig, weil die Gacha-Historie noch fehlt.
+In der App nutzt die API-Schicht das HTTP-Plugin von Tauri, im Browser den lokalen Proxy. Die Tauri-Plugins sind `plugin-http` für die Aufrufe und tauri-plugin-secure-keystore für die Tokens. Ein allgemeiner Dateizugriff ist für Version 1 nicht nötig. Nur unter Windows liest ein eigener Rust-Befehl den Kuro-Code aus der Cache-Datei des Launchers, siehe "Anmeldung und Sicherheit".
 
 ## Datenmodell
 
@@ -154,9 +163,19 @@ Alle Restzeiten werden beim Laden in feste Zeitpunkte umgerechnet und lokal im S
 | Wöchentlich | Bounty Commission | `bounty_commission` | "2 von 4" |
 | Wöchentlich | Survey Points | `survey_points` | Balken |
 
-**Wuthering Waves:** Die Detailseite zeigt nur "Coming Soon...".
+**Wuthering Waves** ([Feldreferenz](https://blog.3irun.moe/2025/11/10/wuwa_api_document/))
 
-Die API-Feldnamen stammen aus den Rohdaten, die die Community-Bibliothek genshin.py auswertet. Seit Kurzem gibt es in ZZZ eine Backup Battery Charge, ob die API sie liefert, ist beim Durchstich zu prüfen.
+| Bereich | Anzeige | API-Feld | Darstellung |
+| --- | --- | --- | --- |
+| Kopf | Waveplates | `Base.Energy`, `Base.MaxEnergy`, `Base.EnergyRecoverTime` | Balken, "voll um" und Countdown |
+| Kopf | Waveplate Crystal | `Base.StoreEnergy`, `Base.MaxStoreEnergy` | Zahl, Hinweis bei voll |
+| Täglich | Tagesaktivität | `Base.Liveness`, `Base.LivenessMaxCount` | 80/100, Haken bei voll, nur wenn `Base.LivenessUnlock` |
+| Wöchentlich | Wochenboss-Belohnungen | `Base.WeeklyInstCount` | "2 übrig" |
+| Wöchentlich | Pioneer Podcast | `BattlePass.WeekExp`, `BattlePass.WeekMaxExp`, `BattlePass.Level` | Balken mit Stufe, nur wenn `BattlePass.IsOpen` |
+
+Anders als bei HoYoLAB liefert `EnergyRecoverTime` keine Restzeit, sondern direkt den Zeitpunkt in Unix-Millisekunden. Der Wert ist 0, wenn die Waveplates schon voll sind. Ein Waveplate lädt alle 6 Minuten, ein Crystal alle 12 Minuten. Laufende Aufträge gibt es in Wuthering Waves nicht, der Abschnitt Laufend entfällt.
+
+Die API-Feldnamen der Hoyoverse-Spiele stammen aus den Rohdaten, die die Community-Bibliothek genshin.py auswertet. Die Feldnamen für Wuthering Waves stammen aus einer echten Antwort im Launcher-Log. Ihre Bedeutung beruht teils auf Annahmen der Community und ist beim Durchstich zu prüfen. Seit Kurzem gibt es in ZZZ eine Backup Battery Charge, ob die API sie liefert, ist beim Durchstich zu prüfen.
 
 Für die Detailseite wird `GameStatus` um Abschnitte erweitert. Die Adapter füllen sie, die Oberfläche rendert sie generisch:
 
@@ -189,7 +208,7 @@ interface GameStatus {
 
 &#91;embedded content: Detailseite-Skizze · Genshin Impact, Smartphone\]
 
-Star Rail und ZZZ folgen demselben Aufbau mit ihren eigenen Feldern aus den Tabellen oben.
+Star Rail, ZZZ und Wuthering Waves folgen demselben Aufbau mit ihren eigenen Feldern aus den Tabellen oben.
 
 ## Visuelle Gestaltung
 
@@ -201,7 +220,7 @@ Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressource
 | --- | --- | --- | --- |
 | Dashboard-Karte, Kopf | Spiel-Icon | Lokal im App-Bundle, `assets/games/<spiel>.webp` | Statisch |
 | Hauptressource | Resin, Trailblaze Power, Battery Charge, Waveplates | Lokal, `assets/resources/<spiel>/<ressource>.webp` | Statisch |
-| Weitere Ressourcen | z. B. Reserved Trailblaze Power, Realm Currency, Engagement, Transformator | Lokal, gleiche Ablage | Statisch |
+| Weitere Ressourcen | z. B. Reserved Trailblaze Power, Realm Currency, Engagement, Transformator, Waveplate Crystal | Lokal, gleiche Ablage | Statisch |
 | Kartenhintergrund | Abgedunkeltes Spiel-Artwork | Lokal, `assets/artwork/<spiel>.webp` | Statisch |
 | Expeditionen und Assignments | Figurenbilder | URL aus der API (`character_icon`, `avatars`) | Zur Laufzeit |
 
@@ -217,7 +236,6 @@ Die App ist ausschließlich für den privaten Gebrauch gedacht und verwendet die
 - **Zusammenfassung oben auf dem Dashboard:** Eine Zeile wie "Als Nächstes voll: Star Rail in 1 h 24 min" zeigt die dringendste Ressource.
 - **Aufgaben als Chips:** Tägliche Aufgaben erscheinen als kleine Chips mit Icon, die sich beim Erledigen grün füllen.
 - **Figurenbilder bei Expeditionen:** Rund ausgeschnitten, mit Countdown darunter. Fertige Expeditionen bekommen einen Haken.
-- **Coming-Soon-Karte:** Wuthering Waves erscheint mit Icon in Graustufen und einem Band "Coming Soon...".
 - **Zahlen und Bewegung:** Zahlen in Tabellenziffern (`font-variant-numeric: tabular-nums`), damit Countdowns nicht springen. Balken füllen sich beim Laden animiert, Zahlen zählen kurz hoch. Beim Laden erscheinen Skelett-Karten statt eines Spinners. Animationen entfallen, wenn das System "Bewegung reduzieren" meldet.
 - **Haptik:** Kurzes Vibrationsfeedback bei Pull-to-Refresh und beim Antippen einer Karte auf Android.
 - **Dunkles Design zuerst:** Artwork und Icons wirken auf dunklem Grund am besten. Helles Design bleibt über die Systemeinstellung verfügbar.
@@ -243,7 +261,7 @@ Eine zentrale Datei `assets/registry.ts` ordnet jedem Schlüssel die Bilddatei z
 
 &#91;embedded content: Gestaltete Dashboard-Karten · Bild-Platzhalter\]
 
-Die Skizze zeigt Platzhalter an den Stellen, an denen die App die Spiel- und Ressourcenbilder einsetzt.
+Die Skizze zeigt Platzhalter an den Stellen, an denen die App die Spiel- und Ressourcenbilder einsetzt. Skizzen und Mock-Up zeigen Wuthering Waves noch als "Coming Soon"-Karte. Künftig bekommt das Spiel eine normale Karte wie die anderen Spiele.
 
 ### Mock-Up
 
@@ -259,7 +277,7 @@ Das Mock-Up setzt die visuelle Gestaltung im dunklen Design für das Smartphone 
 
 ## Anmeldung und Sicherheit
 
-Gespeichert werden nur die HoYoLAB-Tokens `ltuid_v2` und `ltoken_v2`, niemals ein Passwort. Die Tokens liegen im sicheren Speicher des Betriebssystems und nie im Klartext.
+Gespeichert werden nur die HoYoLAB-Tokens `ltuid_v2` und `ltoken_v2` und der Kuro-`oauthCode`, niemals ein Passwort. Die Tokens liegen im sicheren Speicher des Betriebssystems und nie im Klartext.
 
 **Token per Hand eintragen:** Im Profil gibt es je ein Feld für die beiden Tokens. Der Nutzer kopiert die Cookie-Werte nach einer Anmeldung auf hoyolab.com hinein. Die App prüft sie sofort mit dem Konten-Endpunkt und zeigt die gefundenen Spielkonten an. Ein Login mit Benutzername und Passwort über die API scheidet aus, weil HoYoLAB dabei ein Captcha verlangt.
 
@@ -276,6 +294,15 @@ Ablauf des Webview-Logins:
 
 Anmeldungen über Google oder Apple können in eingebetteten Webviews blockiert sein. In dem Fall bleibt die Anmeldung per E-Mail und Passwort oder die manuelle Eingabe.
 
+**Kuro-Code für Wuthering Waves:** Die Kuro-Schnittstelle braucht keinen Cookie, sondern den `oauthCode` des Spielkontos. Ihn legt das Login-SDK des Spiels nach der Anmeldung im Launcher ab.
+
+- **Fundort:** `%APPDATA%\KR_G153\A1730\KRSDKUserLauncherCache.json`, ein JSON-Array mit einem Eintrag pro Konto und dem Feld `oauthCode`. Jedes Zeichen ist mit dem Schlüssel `5` per XOR verschleiert. Entschlüsselt ist der Code 36 Zeichen lang.
+- **Windows (Tauri):** Die Schaltfläche "Aus Launcher übernehmen" ruft einen Rust-Befehl auf. Er liest nur diese eine Datei, entschlüsselt den Code und füllt das Feld. Die Datei bleibt unverändert, gespeichert wird erst mit "Profil speichern".
+- **Android und Browser:** Es gibt keinen Launcher. Der Code wird einmal von Hand eingetragen, z. B. vom Windows-PC übernommen.
+- **Gültigkeit:** In den Launcher-Logs blieb derselbe Code über drei Tage und mehrere Launcher-Neustarts gültig. Wann er abläuft, ist unbekannt. Liefert die Schnittstelle "invalid token", zeigt die Karte "Neu anmelden", wie bei HoYoLAB.
+
+Der Code gibt Zugriff auf Kontodaten bis hin zum Geburtsdatum. Er wird deshalb genauso behandelt wie die HoYoLAB-Tokens: Er liegt nur im sicheren Speicher, erscheint nie in Logs und wird nur an `pc-launcher-sdk-api.kurogame.net` gesendet.
+
 | Betriebsart | Ablage der Tokens |
 | --- | --- |
 | Windows (Tauri) | Windows-Anmeldeinformationsverwaltung, über `tauri-plugin-secure-keystore` |
@@ -288,7 +315,7 @@ Der lokale Proxy im Browser-Modus lauscht nur auf `127.0.0.1`. Jede Anfrage muss
 
 ## Profile und Kontowechsel
 
-Ein Profil entspricht genau einem HoYoLAB-Login mit eigenen Tokens. Der Wechsel zwischen Profilen ist mit zwei Tipps aus dem Dashboard möglich.
+Ein Profil entspricht genau einem HoYoLAB-Login mit eigenen Tokens und optional einem Kuro-Code für Wuthering Waves. Der Wechsel zwischen Profilen ist mit zwei Tipps aus dem Dashboard möglich.
 
 **Was ein Profil enthält:**
 
@@ -296,7 +323,8 @@ Ein Profil entspricht genau einem HoYoLAB-Login mit eigenen Tokens. Der Wechsel 
 | --- | --- | --- |
 | Name und Farbe | "Hauptkonto", Blau | Profil-Einstellungen |
 | HoYoLAB-Tokens | `ltuid_v2`, `ltoken_v2` | Sicherer Speicher, Schlüssel `<profilId>/ltoken_v2` |
-| Spielkonten | UID je Spiel, automatisch aus dem Login ermittelt | Profil-Einstellungen |
+| Kuro-Code | `oauthCode` für Wuthering Waves, optional | Sicherer Speicher, Schlüssel `<profilId>/kuro_oauth` |
+| Spielkonten | UID je Spiel, automatisch aus dem Login ermittelt, für Wuthering Waves über `queryPlayerInfo` | Profil-Einstellungen |
 | Anzeige | Reihenfolge der Karten, ausgeblendete Spiele | Profil-Einstellungen |
 
 **Token-Felder im Profil:**
@@ -307,6 +335,9 @@ Ein Profil entspricht genau einem HoYoLAB-Login mit eigenen Tokens. Der Wechsel 
 | Feld `ltoken_v2` | Wie oben, als Passwortfeld mit Schalter zum Anzeigen |
 | Schaltfläche "Mit HoYoLAB anmelden" | Öffnet den Webview-Login, liest beide Tokens aus und füllt die Felder. Nur in der App sichtbar |
 | Schaltfläche "Prüfen" | Ruft den Konten-Endpunkt auf und zeigt die gefundenen Spielkonten |
+| Feld Kuro-Code | Passwortfeld mit Schalter zum Anzeigen, optional |
+| Schaltfläche "Aus Launcher übernehmen" | Liest den Code aus dem Launcher-Cache und füllt das Feld. Nur unter Windows sichtbar |
+| Schaltfläche "Prüfen" (Kuro) | Ruft `queryPlayerInfo` auf und zeigt Spieler-ID und Server |
 
 Gespeichert wird erst mit "Profil speichern". Die App prüft die Tokens und schreibt sie mit `tauri-plugin-secure-keystore` unter `<profilId>/ltuid_v2` und `<profilId>/ltoken_v2` in den sicheren Speicher. In die Einstellungsdatei gelangen nur die Profil-Einstellungen. Beim erneuten Öffnen des Profils liest die App die Felder aus dem sicheren Speicher. Im Browser-Modus speichert der lokale Proxy die Tokens im OS-Schlüsselspeicher.
 
@@ -323,7 +354,7 @@ interface Profile {
 interface GameAccountRef {
   game: GameId;
   uid: string;
-  region: string;          // vom Login vorgegeben, z. B. "os_euro"
+  region: string;          // vom Login vorgegeben, z. B. "os_euro" oder bei Wuthering Waves "Europe"
   visible: boolean;
   order: number;
 }
@@ -336,7 +367,7 @@ interface ProfileState {
 
 **Abläufe:**
 
-1. **Anlegen:** Name vergeben, Tokens per Hand eintragen oder per HoYoLAB-Login auslesen lassen, die App ruft die verknüpften Spielkonten ab und übernimmt sie automatisch ins Profil.
+1. **Anlegen:** Name vergeben, Tokens per Hand eintragen oder per HoYoLAB-Login auslesen lassen, die App ruft die verknüpften Spielkonten ab und übernimmt sie automatisch ins Profil. Optional den Kuro-Code eintragen oder aus dem Launcher übernehmen, dann kommt das Wuthering-Waves-Konto dazu.
 2. **Wechseln:** Tipp auf den Profilnamen in der Kopfzeile öffnet ein Bottom Sheet mit allen Profilen. Ein Tipp auf ein Profil macht es aktiv und lädt dessen Daten.
 3. **Bearbeiten:** Name, Farbe, Spielauswahl und Reihenfolge ändern, Tokens erneuern.
 4. **Löschen:** Entfernt die Profil-Einstellungen und die Tokens aus dem sicheren Speicher. Danach wird das nächste Profil aktiv, ohne Profil startet die Einrichtung.
@@ -354,7 +385,7 @@ Eine spätere Ausbaustufe kann eine Ansicht "Alle Profile" ergänzen, die die Ka
 
 ## Technologie-Stack und Projektstruktur
 
-Fast der gesamte Code ist TypeScript. Rust wird nur für das Tauri-Grundgerüst und die Token-Ablage gebraucht.
+Fast der gesamte Code ist TypeScript. Rust wird nur für das Tauri-Grundgerüst, die Token-Ablage und das Auslesen des Kuro-Codes unter Windows gebraucht.
 
 | Bereich | Wahl | Grund |
 | --- | --- | --- |
@@ -379,11 +410,12 @@ gacha-dashboard/
 │  ├─ api/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
 │  │  ├─ hoyolab.ts   # DS-Header, Konten-Endpunkt
+│  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
 │  │  └─ adapters/    # genshin.ts, starrail.ts, zzz.ts, wuwa.ts
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
 │  └─ model/          # GameStatus, Resource, Task
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
-└─ src-tauri/         # Tauri-Konfiguration, Rust-Befehle
+└─ src-tauri/         # Tauri-Konfiguration, Rust-Befehle (u. a. Kuro-Code aus dem Launcher-Cache)
 ```
 
 Die Datei `api/http.ts` ist die einzige Stelle, die zwischen App und Browser unterscheidet. Alle Adapter rufen nur sie auf.
@@ -403,13 +435,14 @@ Die App fragt die Server sparsam an und rechnet dazwischen lokal weiter. Fehler 
 
 | Fall | Erkennung | Verhalten |
 | --- | --- | --- |
-| Token abgelaufen | `retcode` -100 oder 10001 | Karte zeigt "Neu anmelden", Link zur Einrichtung |
+| Token abgelaufen | `retcode` -100 oder 10001, bei Kuro `code` 1001 ("invalid token") | Karte zeigt "Neu anmelden", Link zur Einrichtung |
+| Kuro-Daten nicht bereit | `code` 1005 ("retrying"), falscher Server oder Daten im Abgleich | Bis zu dreimal nach kurzer Pause erneut versuchen, sonst letzten Stand behalten |
 | Live-Notizen nicht freigegeben | `retcode` 10102 | Hinweis, die Echtzeit-Notizen in HoYoLAB zu aktivieren |
 | Zu viele Anfragen | `retcode` 10101 | Letzten Stand behalten, später erneut versuchen |
 | Netzwerkfehler | Exception | Letzten Stand grau markieren mit Zeitpunkt des Abrufs |
 | Unbekannte Antwort | Schema-Prüfung schlägt fehl | Karte zeigt "Schnittstelle geändert" |
 
-Die Retcodes entsprechen den Werten, die Community-Bibliotheken auswerten. Sie müssen bei der Umsetzung geprüft werden. Für die Schema-Prüfung der Antworten eignet sich `zod`, damit Änderungen der inoffiziellen APIs sofort auffallen.
+Die Retcodes entsprechen den Werten, die Community-Bibliotheken und die Community-Doku zur Kuro-Schnittstelle nennen. Sie müssen bei der Umsetzung geprüft werden. Für die Schema-Prüfung der Antworten eignet sich `zod`, damit Änderungen der inoffiziellen APIs sofort auffallen.
 
 ## Umsetzungsplan, Build und offene Punkte
 
@@ -419,6 +452,8 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [ ] HoYoLAB-Client mit DS-Header und Konten-Endpunkt, im Browser-Modus über den lokalen Proxy testen
 - [ ] Genshin-Adapter und Dashboard-Karte als erster durchgehender Durchstich
 - [ ] Adapter für Star Rail und ZZZ ergänzen
+- [ ] Kuro-Client und Wuthering-Waves-Adapter, Kuro-Code zunächst per Hand eintragen
+- [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
 - [ ] Einrichtungsdialog und Token-Ablage für Windows
 - [ ] Windows-Build mit `npm run tauri build`
 - [ ] Android-Build mit `npm run tauri android build`, Token-Ablage im Keystore

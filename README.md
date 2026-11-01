@@ -1,6 +1,6 @@
 # GachaDashboard
 
-Cross-Platform Gacha Dashboard: zeigt auf einen Blick, wie voll die regenerierenden Ressourcen in Genshin Impact, Honkai: Star Rail und Zenless Zone Zero sind und wann sie überlaufen. Wuthering Waves ist vorerst als Platzhalter vorgesehen.
+Cross-Platform Gacha Dashboard: zeigt auf einen Blick, wie voll die regenerierenden Ressourcen in Genshin Impact, Honkai: Star Rail, Zenless Zone Zero und Wuthering Waves sind und wann sie überlaufen.
 
 Eine Codebasis für Android, Windows und den lokalen Browser.
 
