@@ -62,7 +62,8 @@ export function parseShiyu(data: unknown, region: string): Challenge {
   if (!b?.score) return challenge({ ...period, state: "empty" });
   const facts: Fact[] = [];
   if (b.rating) facts.push({ label: "Bewertung", value: b.rating });
-  facts.push({ label: "Punkte", value: fmtNum(b.score) });
+  // Mit Höchstwert stehen die Punkte schon am Balken.
+  if (!b.max_score) facts.push({ label: "Punkte", value: fmtNum(b.score) });
   if (b.rank_percent) facts.push({ label: "Rangliste", value: fmtRank(b.rank_percent) });
   facts.push({ label: "Fünfte Front", value: v2?.pass_fifth_floor ? "Geschafft" : "Offen" });
   return challenge({
