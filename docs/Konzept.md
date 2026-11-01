@@ -551,8 +551,13 @@ EVENTS
 └──────────────────────────────────┘
 BANNER
 ┌──────────────────────────────────┐
+│ Version 5.2      läuft · 3 Banner ▴ │
 │ Charakter-Aktionsgebet  endet in 15 T │
 │ (Furina) (Xingqiu) (Bennett)     │
+│ Waffen-Aktionsgebet     endet in 15 T │
+│ (Splendor of Tranquil Waters)    │
+│ ──────────────────────────────── │
+│ Version 5.3   ab 12.11. · 2 Banner ▾ │
 └──────────────────────────────────┘
 ```
 
@@ -561,7 +566,8 @@ BANNER
 - Endet ein laufendes Event in weniger als 3 Tagen, erscheint die Restzeit in Warnfarbe mit ⚠, wie bei den Herausforderungen.
 - Ein Tipp auf ein Event öffnet ein Blatt mit Zeitraum, Beschreibung und Belohnungen. Formatierungs-Tags in Beschreibungen werden entfernt.
 - Banner zeigen ihre Figuren und Waffen als Chips mit Rahmen in Seltenheitsfarbe, die höchste Seltenheit zuerst.
-- Banner sind in allen Spielen in drei Stufen sortiert: Erst kommen alle laufenden, dann alle künftigen Banner. Innerhalb davon stehen erst die Charakter-Banner, dann die Waffen-Banner, dann alle weiteren. Zuletzt gilt die Zeit wie bei den Events: laufende nach Ende, künftige nach Beginn.
+- Banner sind nach Version gruppiert (Genshin `version_name`, Star Rail und ZZZ `version`). Jede Version lässt sich auf- und zuklappen. Der Kopf zeigt „läuft“ oder „ab“ mit dem frühesten Beginn und die Zahl der Banner. Versionen mit einem laufenden Banner sind anfangs aufgeklappt, nur künftige Versionen zugeklappt. Banner ohne Version landen in der Gruppe „Ohne Version“.
+- Innerhalb einer Version sind die Banner in allen Spielen in drei Stufen sortiert: Erst kommen alle laufenden, dann alle künftigen Banner. Innerhalb davon stehen erst die Charakter-Banner, dann die Waffen-Banner, dann alle weiteren. Zuletzt gilt die Zeit wie bei den Events: laufende nach Ende, künftige nach Beginn. Die Versionen selbst folgen derselben Reihenfolge anhand ihres jeweils ersten Banners, die laufende Version steht also vor der kommenden.
 
 | Art | Genshin Impact | Honkai: Star Rail | Zenless Zone Zero |
 | --- | --- | --- | --- |
@@ -596,6 +602,7 @@ interface Banner {
   id: string;
   name: string;
   kind: "character" | "weapon" | "other";  // Reihenfolge der Anzeige
+  version?: string;       // "3.7", danach wird gruppiert
   start?: Date;
   end?: Date;
   status: EventStatus;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { bannerOrder } from "./eventView";
+import { bannerOrder, groupBanners } from "./eventView";
 import type { Banner } from "../../model/types";
 
 const day = (n: number) => new Date(Date.UTC(2026, 10, 1 + n));
@@ -30,6 +30,22 @@ describe("Banner-Reihenfolge", () => {
       "weitere",
       "charakter-bald",
       "waffe-bald",
+    ]);
+  });
+
+  it("gruppiert nach Version, laufende Version zuerst", () => {
+    const v = (b: Banner, version?: string): Banner => ({ ...b, version });
+    const groups = groupBanners([
+      v(banner("neu-waffe", "weapon", "upcoming", 3, 20), "3.8"),
+      v(banner("waffe", "weapon", "running", -5, 10), "3.7"),
+      v(banner("neu-charakter", "character", "upcoming", 3, 20), "3.8"),
+      v(banner("charakter", "character", "running", -5, 10), "3.7"),
+      banner("ohne", "other", "upcoming", 30, 40),
+    ]);
+    expect(groups.map((g) => [g.version, g.running, g.banners.map((b) => b.id)])).toEqual([
+      ["3.7", true, ["charakter", "waffe"]],
+      ["3.8", false, ["neu-charakter", "neu-waffe"]],
+      [undefined, false, ["ohne"]],
     ]);
   });
 });

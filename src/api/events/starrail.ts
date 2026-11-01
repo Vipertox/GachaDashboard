@@ -28,6 +28,7 @@ const act = z.object({
 const warp = z.object({
   id: str,
   name: optStr,
+  version: optStr,
   time_info: timeInfo,
   avatar_list: z.array(z.object({ item_name: optStr, icon_url: optStr, rarity })).optional().nullable(),
   equip_list: z.array(z.object({ item_name: optStr, item_url: optStr, rarity })).optional().nullable(),
@@ -74,6 +75,7 @@ function toBanner(w: z.infer<typeof warp>, kind: keyof typeof WARP_NAME, now: Da
     id: `${kind}-${w.id}`,
     name: GENERIC_NAMES.has(name.toLowerCase()) ? WARP_NAME[kind] : name,
     kind: kind === "character" ? "character" : "weapon",
+    version: w.version || undefined,
     start,
     end: unixDate(w.time_info?.end_ts),
     status: bannerStatus(start, now),

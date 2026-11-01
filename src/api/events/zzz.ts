@@ -47,6 +47,7 @@ export function parseZzzEvents(data: unknown, now = new Date()): GameEvent[] {
 
 const schedule = z.object({
   gacha_type: optStr,
+  version: optStr,
   start_ts: optNum,
   end_ts: optNum,
   avatar_list: z
@@ -88,6 +89,7 @@ export function parseZzzBanners(data: unknown, now = new Date()): Banner[] {
         id: `${s.gacha_type ?? "gacha"}-${s.start_ts ?? i}-${i}`,
         name: channel?.name ?? "Kanal",
         kind: channel?.kind ?? kind,
+        version: s.version || undefined,
         start,
         end: unixDate(s.end_ts),
         status: bannerStatus(start, now),

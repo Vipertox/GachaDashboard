@@ -12,6 +12,7 @@ const item = z.object({ name: optStr, icon: optStr, rarity });
 const pool = z.object({
   pool_id: str,
   pool_name: optStr,
+  version_name: optStr,
   start_timestamp: optNum,
   end_timestamp: optNum,
   avatars: z.array(item).optional().nullable(),
@@ -66,6 +67,7 @@ function toBanner(p: z.infer<typeof pool>, kind: BannerKind, now: Date): Banner 
     id: `${kind}-${p.pool_id}`,
     name: plain(p.pool_name) || "Gebet",
     kind,
+    version: p.version_name || undefined,
     start,
     end: unixDate(p.end_timestamp),
     status: bannerStatus(start, now),

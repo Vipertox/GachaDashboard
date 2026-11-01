@@ -206,6 +206,8 @@ export interface Banner {
   id: string;
   name: string;
   kind: BannerKind;
+  /** Spielversion, z. B. "3.7"; danach werden die Banner gruppiert. */
+  version?: string;
   start?: Date;
   end?: Date;
   status: EventStatus;

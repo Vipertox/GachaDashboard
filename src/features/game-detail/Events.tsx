@@ -6,7 +6,7 @@ import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../compon
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
 import type { Banner, GameAccountRef, GameEvent, Profile } from "../../model/types";
-import { bannerOrder, byTime } from "./eventView";
+import { byTime, groupBanners, type BannerGroup } from "./eventView";
 
 // Wie bei den Herausforderungen: ab drei Tagen vor Ende wird ein offenes Event hervorgehoben.
 const ENDING_SOON_MS = 3 * 86400_000;
@@ -150,7 +150,38 @@ function BannerRow({ b, now }: { b: Banner; now: number }) {
   );
 }
 
-/** Abschnitt "Events" in der Übersicht, darunter die laufenden Banner. */
+const fmtDay = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
+
+/** Eine Version zum Aufklappen; Versionen mit laufenden Bannern sind anfangs offen. */
+function BannerGroupBlock({ g, now }: { g: BannerGroup; now: number }) {
+  const [open, setOpen] = useState(g.running);
+  const firstStart = g.banners.map((b) => b.start?.getTime()).filter((t): t is number => t !== undefined).sort()[0];
+  const status = g.running ? "läuft" : firstStart !== undefined ? `ab ${fmtDay(new Date(firstStart))}` : "demnächst";
+  return (
+    <li>
+      <button
+        className="w-full flex items-center justify-between gap-3 min-h-11 text-left active:opacity-70"
+        aria-expanded={open}
+        onClick={() => setOpen(!open)}
+      >
+        <span className="font-semibold">{g.version ? `Version ${g.version}` : "Ohne Version"}</span>
+        <span className="flex items-center gap-2 text-xs shrink-0" style={{ color: "var(--muted)" }}>
+          {status} · {g.banners.length} Banner
+          <span aria-hidden>{open ? "▴" : "▾"}</span>
+        </span>
+      </button>
+      {open && (
+        <ul className="space-y-4 pt-2 pb-1">
+          {g.banners.map((b) => (
+            <BannerRow key={b.id} b={b} now={now} />
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
+
+/** Abschnitt "Events" in der Übersicht, darunter die Banner nach Version. */
 export function EventsSection({ profile, gameRef, accent }: { profile: Profile; gameRef: GameAccountRef; accent: string }) {
   const q = useEvents(profile, gameRef);
   const now = useNow();
@@ -162,7 +193,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
   const current = events.filter((e) => e.status !== "upcoming").sort(byTime);
   const upcoming = events.filter((e) => e.status === "upcoming").sort(byTime);
   const shown = all ? current : current.slice(0, VISIBLE);
-  const banners = [...(q.data?.banners ?? [])].sort(bannerOrder);
+  const bannerGroups = groupBanners(q.data?.banners ?? []);
 
   return (
     <>
@@ -213,15 +244,15 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
           </div>
         </Card>
       </section>
-      {banners.length > 0 && (
+      {bannerGroups.length > 0 && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
             Banner
           </h2>
           <Card>
-            <ul className="p-4 space-y-4">
-              {banners.map((b) => (
-                <BannerRow key={b.id} b={b} now={now} />
+            <ul className="px-4 py-2 divide-y divide-[var(--border)]">
+              {bannerGroups.map((g) => (
+                <BannerGroupBlock key={g.key} g={g} now={now} />
               ))}
             </ul>
           </Card>
