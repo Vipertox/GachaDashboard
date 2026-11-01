@@ -250,7 +250,7 @@ Star Rail, ZZZ und Wuthering Waves folgen demselben Aufbau mit ihren eigenen Fel
 
 Die Detailseite hat zwei Tabs: **Übersicht** mit den Live-Werten und **Figuren** mit allen Figuren des Kontos. Der Figuren-Tab zeigt auf einen Blick, welche Waffe und welche Ausrüstung jede Figur trägt, und bei Bedarf alle Details dazu. Es gelten dieselben Grundsätze wie bei den Live-Werten: Figurendaten werden zur Laufzeit geladen und nur im Arbeitsspeicher gehalten, Bilder kommen als URL aus der API.
 
-Nicht enthalten sind Schadensrechner, Bewertung der Ausrüstung mit Punktzahl, Vergleich mit Builds aus Guides und Planung von Materialien. Sie bleiben spätere Ausbaustufen.
+Nicht enthalten sind Schadensrechner, Bewertung der Ausrüstung mit Punktzahl, Vergleich mit Builds aus Guides und Planung von Materialien. Für Build-Empfehlungen verlinkt das Figur-Detail auf Prydwen, siehe "Build-Guide auf Prydwen". Sie bleiben spätere Ausbaustufen.
 
 **Begriffe pro Spiel**
 
@@ -389,12 +389,13 @@ Ein Tipp auf eine Kachel öffnet die Route `/game/:game/:uid/figur/:id`. Aufbau 
 
 1. **Kopf:** Bild, Name, Element und Pfad bzw. Rolle, Seltenheit, Stufe, Duplikate als sechs Punkte.
 2. **Hinweise:** Ausrüstungslücken, siehe unten.
-3. **Waffe:** Symbol, Name, Stufe, Veredelung, Haupt- und Nebenwert.
-4. **Ausrüstung:** Eine Zeile pro Platz in Spielreihenfolge mit Set-Name, Stufe, Hauptwert groß und Nebenwerten als Chips. Erhöhungen erscheinen als Punkte am Chip, z. B. "Krit. Schaden 14,0% ••". Leere Plätze erscheinen gestrichelt.
-5. **Sets:** Chips mit Set-Name und Teilezahl, ein Tipp zeigt die Bonustexte.
-6. **Talente:** Stufen nebeneinander.
-7. **Werte:** Die wichtigsten Werte, darunter "Alle Werte" zum Aufklappen.
-8. **Memosprite:** Nur bei Star Rail auf dem Pfad der Erinnerung.
+3. **Build-Guide:** Link auf die Prydwen-Seite der Figur, siehe unten. Fehlt bei Wuthering Waves.
+4. **Waffe:** Symbol, Name, Stufe, Veredelung, Haupt- und Nebenwert.
+5. **Ausrüstung:** Eine Zeile pro Platz in Spielreihenfolge mit Set-Name, Stufe, Hauptwert groß und Nebenwerten als Chips. Erhöhungen erscheinen als Punkte am Chip, z. B. "Krit. Schaden 14,0% ••". Leere Plätze erscheinen gestrichelt.
+6. **Sets:** Chips mit Set-Name und Teilezahl, ein Tipp zeigt die Bonustexte.
+7. **Talente:** Stufen nebeneinander.
+8. **Werte:** Die wichtigsten Werte, darunter "Alle Werte" zum Aufklappen.
+9. **Memosprite:** Nur bei Star Rail auf dem Pfad der Erinnerung.
 
 Pfeile oben und Wischen nach links oder rechts wechseln zur nächsten Figur in der Reihenfolge des Rasters.
 
@@ -416,6 +417,25 @@ Die App prüft nur eindeutige Regeln in `gearHints.ts` und gibt keine Build-Empf
 | Set unvollständig | Ein Set mit 3 Teilen, also ein knapp verpasster 4er-Bonus. Ein einzelnes Teil gilt nicht als Lücke, weil 4+1-Kombinationen üblich sind |
 | Teile nicht ausgebaut | Teil unter Maximalstufe, z. B. Artefakt unter +20 |
 | Waffe unter Figurenstufe | Waffenstufe kleiner als Figurenstufe, oder keine Waffe angelegt |
+
+**Build-Guide auf Prydwen**
+
+Das Figur-Detail verlinkt auf die Charakterseite von [Prydwen](https://www.prydwen.gg/) (Genshin Impact, Star Rail, Zenless Zone Zero). Die Builds stehen dort im Tab "Build and teams". Ein direkter Link auf diesen Tab ist nicht möglich, weil der Tab die URL nicht ändert.
+
+Die Build-Daten werden bewusst nicht in die App übernommen: Prydwen hat keine öffentliche API, die internen Endpunkte sind in der `robots.txt` gesperrt, und die Empfehlungen sind redaktionelle Inhalte. Dasselbe gilt für Game8, dessen Nutzungsbedingungen jede Weiterverwendung der Inhalte untersagen.
+
+`prydwen.ts` bildet die URL `https://www.prydwen.gg/<spiel>/characters/<slug>`:
+
+| Fall | Slug |
+| --- | --- |
+| Normalfall | Deutscher Name aus HoYoLAB in Kleinbuchstaben, ohne Akzente, Sonderzeichen als `-`, z. B. "Hu Tao" → `hu-tao` |
+| Deutscher Name weicht ab | Ausnahmetabelle `SLUG_EXCEPTIONS`, Schlüssel ist der Slug des deutschen Namens, z. B. `silberwolf` → `silver-wolf`, `shougun-raiden` → `raiden-shogun`. Bei ZZZ auch Kurznamen, die Prydwen mit vollem Namen führt, z. B. `jane` → `jane-doe` |
+| Reisender (Genshin) | Nach Element, z. B. `traveler-anemo` |
+| Trailblazer (Star Rail) | Nach Figuren-ID 8001–8010 und damit Pfad, z. B. `trailblazer-harmony` |
+
+Die Ausnahmetabelle ist mit den deutschen und englischen Namen aus dem HoYoWiki und der Prydwen-Sitemap abgeglichen (Stand November 2026). Neue Figuren mit abweichendem deutschen Namen müssen nachgetragen werden, sonst führt der Link auf eine 404-Seite.
+
+In der App öffnet der Link über `tauri-plugin-opener` den Systembrowser, erlaubt ist nur `https://www.prydwen.gg/*`. Im Browser-Modus öffnet er einen neuen Tab.
 
 ## Herausforderungen
 
@@ -819,6 +839,7 @@ Fast der gesamte Code ist TypeScript. Rust wird nur für das Tauri-Grundgerüst,
 | DS-Header | `md5` aus `js-md5` o. ä. | Signatur für HoYoLAB |
 | App-Rahmen | Tauri 2 | Windows und Android aus einer Codebasis |
 | Token-Ablage | tauri-plugin-secure-keystore | Windows Credential Manager und Android Keystore |
+| Externe Links | tauri-plugin-opener | Öffnet Links wie den Prydwen-Build-Guide im Systembrowser, das Webview kann das nicht selbst |
 
 ```
 gacha-dashboard/
@@ -826,7 +847,7 @@ gacha-dashboard/
 │  ├─ app/            # Routing, Layout, Provider
 │  ├─ features/
 │  │  ├─ dashboard/   # Karten, Fortschrittsbalken
-│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken, Herausforderungen
+│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken, Prydwen-Link, Herausforderungen
 │  │  └─ accounts/    # Einrichtung, Token-Eingabe
 │  ├─ api/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
