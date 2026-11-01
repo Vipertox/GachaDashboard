@@ -1,6 +1,7 @@
 import { useApp } from "../../app/state";
 import { fieldCls, fieldStyle } from "../../components/ui";
 import type { AppSettings } from "../../model/types";
+import { UpdateSection } from "./Updates";
 
 export function Settings() {
   const { settings, updateSettings } = useApp();
@@ -35,6 +36,7 @@ export function Settings() {
           <option value="light">Hell</option>
         </select>
       </label>
+      <UpdateSection />
     </div>
   );
 }

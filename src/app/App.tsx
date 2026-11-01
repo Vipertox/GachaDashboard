@@ -4,6 +4,7 @@ import { Accounts } from "../features/accounts/Accounts";
 import { Dashboard } from "../features/dashboard/Dashboard";
 import { GameDetail } from "../features/game-detail/GameDetail";
 import { Settings } from "../features/settings/Settings";
+import { UpdateBanner } from "../features/settings/Updates";
 import { BottomSheet } from "../components/ui";
 import { useApp } from "./state";
 
@@ -73,6 +74,7 @@ export function App() {
     <HashRouter>
       <Header />
       <main className="max-w-5xl mx-auto px-4 py-4 pb-28">
+        <UpdateBanner />
         {loadError && (
           <p className="mb-4 rounded-xl p-3 text-sm" style={{ background: "var(--surface-2)", color: "var(--color-danger)" }}>
             {loadError}
