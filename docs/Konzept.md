@@ -521,7 +521,7 @@ Jedes Hoyoverse-Spiel hat einen Event-Kalender in der Battle Chronicle, mit ders
 | Zenless Zone Zero | `GET …/zzz/activity_calendar?uid=&region=` und `GET …/zzz/gacha_calendar?uid=&region=` | `activity_list[]` mit `name`, `state`, `start_ts`/`end_ts` und Polychrome aus `monochrome_got_cnt`/`monochrome_cnt`. Keine Beschreibung, keine Belohnungen | `avatar_gacha_schedule_list`, `weapon_gacha_schedule_list` mit `gacha_type`, `avatar_list`, `weapon_list` |
 | Wuthering Waves | – | Die Kuro-Schnittstelle liefert keine Events, die Abschnitte entfallen | – |
 
-Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nicht übernommen, sie stehen schon unter Herausforderungen. Bei ZZZ dürfen die Banner fehlen: Schlägt `gacha_calendar` fehl, erscheinen nur die Events. Alle Zeiten kommen als Unix-Sekunden. Abgelaufene Einträge werden ausgefiltert.
+Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nicht übernommen, sie stehen schon unter Herausforderungen. Star Rail liefert als Banner-Namen oft nur "Sprung" oder nichts. Die App nennt die Banner dann nach ihrer Liste "Charakter-Aktionssprung" bzw. "Lichtkegel-Aktionssprung". Bei ZZZ dürfen die Banner fehlen: Schlägt `gacha_calendar` fehl, erscheinen nur die Events. Alle Zeiten kommen als Unix-Sekunden. Abgelaufene Einträge werden ausgefiltert.
 
 **Status**
 
