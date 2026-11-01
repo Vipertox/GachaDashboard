@@ -2,7 +2,14 @@ import { describe, expect, it } from "vitest";
 import { parseAbyss, parseStygian, parseTheater } from "./genshin";
 import { parseFloors, parsePeak } from "./starrail";
 import { parseAssault, parseShiyu, parseThreshold } from "./zzz";
-import { serverDate, serverOffset } from "./util";
+import { plain, serverDate, serverOffset } from "./util";
+
+describe("Namen", () => {
+  it("entfernt Tags und verschachtelte Reste", () => {
+    expect(plain("Ewige <unbreak>Melodie</unbreak>")).toBe("Ewige Melodie");
+    expect(plain("<scr<script>ipt>x")).toBe("ipt x".replace(" ", ""));
+  });
+});
 
 // Fixtures nach den Feldnamen aus genshin.py, gekürzt. Beim Durchstich durch echte Antworten ersetzen.
 

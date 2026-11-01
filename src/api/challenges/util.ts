@@ -35,8 +35,9 @@ export const fmtNum = (n: number) => n.toLocaleString("de-DE");
 /** ZZZ liefert Ranglistenplätze in Hundertstel Prozent, z. B. 123 für 1,23 %. */
 export const fmtRank = (v: number) => `Top ${(v / 100).toLocaleString("de-DE", { maximumFractionDigits: 2 })} %`;
 
-/** Manche Namen enthalten Formatierungs-Tags wie `<unbreak>`. */
-export const plain = (s: string | null | undefined) => (s ?? "").replace(/<[^>]+>/g, "").trim();
+/** Manche Namen enthalten Formatierungs-Tags wie `<unbreak>`. Übrige spitze Klammern fallen ebenfalls weg. */
+export const plain = (s: string | null | undefined) =>
+  (s ?? "").replace(/<[^>]*>/g, "").replace(/[<>]/g, "").trim();
 
 export function challenge(part: Partial<Challenge>): Challenge {
   const c: Challenge = { state: "ok", facts: [], ...part };
