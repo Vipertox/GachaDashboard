@@ -71,9 +71,12 @@ jobs:
       - uses: android-actions/setup-android@be39fa834029ff78f1a44aa3bb0819b8fc2bd8fd # v4.0.4
         with:
           # Standard ist "tools platform-tools"; das Paket "tools" gibt es nicht mehr
-          packages: platform-tools ndk;29.0.14206865
+          # build-tools liefern aapt2 für die Manifest-Prüfung
+          packages: platform-tools build-tools;36.0.0 ndk;29.0.14206865
       # Runner-Variablen wie ANDROID_HOME stehen nicht im env-Kontext, daher per Shell setzen
-      - run: echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+      - run: |
+          echo "NDK_HOME=$ANDROID_HOME/ndk/29.0.14206865" >> "$GITHUB_ENV"
+          echo "$ANDROID_HOME/build-tools/36.0.0" >> "$GITHUB_PATH"
       - uses: dtolnay/rust-toolchain@b725eda525362e7cf34af9a7243cac1e3f01a7ec # stable
         with:
           toolchain: stable
@@ -84,6 +87,11 @@ jobs:
       - run: npm ci
       - run: npx tauri android init --ci
       - run: npx tauri android build --apk
+      # Ohne diese Activity stürzt die App beim HoYoLAB-Login ab (hoyolab_login.rs)
+      - name: Login-Activity im Manifest prüfen
+        run: |
+          apk=src-tauri/gen/android/app/build/outputs/apk/universal/release/app-universal-release-unsigned.apk
+          aapt2 dump xmltree --file AndroidManifest.xml "$apk" | grep -q HoyolabLoginActivity
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: android
