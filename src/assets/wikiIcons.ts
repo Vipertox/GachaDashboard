@@ -4,6 +4,7 @@
  * Die Eintrags-ID steht jeweils dahinter, falls eine URL neu nachgeschlagen werden muss.
  * Wuthering Waves nutzt das Fandom-Wiki (CC BY-SA), dahinter steht der Dateiname; die URL liefert
  * `wutheringwaves.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:<Name>`.
+ * Das Spiel-Icon von Wuthering Waves ist das App-Icon aus Google Play (die HoYoLAB-Spielkarte kennt das Spiel nicht).
  * Ohne passenden Eintrag (Genshin-Aufträge, ZZZ-Engagement und -Survey Points, Waveplate Crystal,
  * Musiktitel) bleibt es beim Ersatzsymbol.
  */
@@ -32,6 +33,9 @@ export const WIKI_ICONS: Record<string, string> = {
   // zzz 593 "Battery Charge"
   "zzz/battery":
     "https://act-upload.hoyoverse.com/event-ugc-hoyowiki/2025/02/08/167256510/d863d49f931ca0dbac3b0ec563657368_2411518699554855175.png",
+  // Google Play, App com.kurogame.wutheringwaves.global (Feld og:image, "=s128" für 128 px)
+  "games/wuwa":
+    "https://play-lh.googleusercontent.com/S4HjezIFmL17FpPu7Z8VzxZvFMABYUjfLkcrDSEKxpjCYIL3tWLQK76_16SDOTiZlVHm_KeoMawvC7BPcyW_=s128",
   // wuwa "Item Waveplate.png"
   "wuwa/waveplate":
     "https://static.wikia.nocookie.net/wutheringwaves/images/e/e9/Item_Waveplate.png/revision/latest/scale-to-width-down/128?cb=20240712182653",
