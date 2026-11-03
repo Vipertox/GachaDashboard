@@ -18,7 +18,7 @@ Eine Codebasis für Android, Windows und den lokalen Browser.
 | Genshin Impact | ✓ | ✓ | Spiral Abyss, Imaginarium Theater, Stygian Onslaught | ✓ |
 | Honkai: Star Rail | ✓ | ✓ | Memory of Chaos, Pure Fiction, Apocalyptic Shadow, Anomaly Arbitration | ✓ |
 | Zenless Zone Zero | ✓ | ✓, Details beim Antippen | Shiyu Defense, Deadly Assault, Threshold Simulation | ✓ |
-| Wuthering Waves | ✓, dazu Sammlung (Musikalben, Fahrzeug, Schatztruhen) und Konto (Union-Stufe, Weltstufe, aktive Tage) | Nur Anzahl der Resonatoren, die Kuro-Schnittstelle liefert keine Figurendaten | –, die Kuro-Schnittstelle liefert dazu keine Daten | – |
+| Wuthering Waves | ✓, dazu Sammlung (Musikalben, Fahrzeug, Schatztruhen) und Konto (Union-Stufe, Weltstufe, aktive Tage) | Nur Anzahl der Resonatoren, die Kuro-Schnittstelle liefert keine Figurendaten | –, die Kuro-Schnittstelle liefert dazu keine Daten | Nur Banner, aus dem [Wuthering Waves Wiki](https://wutheringwaves.fandom.com) (CC BY-SA) |
 
 ## Stack
 
