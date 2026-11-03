@@ -5,8 +5,8 @@
  * Wuthering Waves nutzt das Fandom-Wiki (CC BY-SA), dahinter steht der Dateiname; die URL liefert
  * `wutheringwaves.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:<Name>`.
  * Das Spiel-Icon von Wuthering Waves ist das App-Icon aus Google Play (die HoYoLAB-Spielkarte kennt das Spiel nicht).
- * Ohne passenden Eintrag (Genshin-Aufträge, ZZZ-Engagement und -Survey Points, Waveplate Crystal,
- * Musiktitel) bleibt es beim Ersatzsymbol.
+ * Ohne passenden Eintrag (Genshin-Aufträge, ZZZ-Engagement und -Survey Points, Waveplate Crystal)
+ * bleibt es beim Ersatzsymbol.
  */
 export const WIKI_ICONS: Record<string, string> = {
   // genshin 2970 "Original Resin"
@@ -45,6 +45,9 @@ export const WIKI_ICONS: Record<string, string> = {
   // wuwa "Icon Pioneer Podcast.png"
   "wuwa/podcast":
     "https://static.wikia.nocookie.net/wutheringwaves/images/8/84/Icon_Pioneer_Podcast.png/revision/latest?cb=20250907182402",
+  // wuwa "Item Melody Box.png" (sammelt im Spiel die Musiktitel)
+  "wuwa/album":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/a/a7/Item_Melody_Box.png/revision/latest/scale-to-width-down/128?cb=20250112144015",
   // wuwa "Icon Expedition Motorbike.png" (MotorData ist das Motorrad aus Lahai-Roi)
   "wuwa/vehicle":
     "https://static.wikia.nocookie.net/wutheringwaves/images/b/bb/Icon_Expedition_Motorbike.png/revision/latest?cb=20260501173804",
