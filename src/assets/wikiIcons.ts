@@ -2,8 +2,10 @@
  * Ressourcen-Icons aus dem HoYoWiki, ermittelt über
  * `sg-wiki-api-static.hoyolab.com/hoyowiki/<wiki>/wapi/entry_page?entry_page_id=<id>` (Feld `icon_url`).
  * Die Eintrags-ID steht jeweils dahinter, falls eine URL neu nachgeschlagen werden muss.
- * Ohne passenden Eintrag (Wuthering Waves, Genshin-Aufträge, ZZZ-Engagement und -Survey Points)
- * bleibt es beim Ersatzsymbol.
+ * Wuthering Waves nutzt das Fandom-Wiki (CC BY-SA), dahinter steht der Dateiname; die URL liefert
+ * `wutheringwaves.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:<Name>`.
+ * Ohne passenden Eintrag (Genshin-Aufträge, ZZZ-Engagement und -Survey Points, Waveplate Crystal,
+ * Musiktitel) bleibt es beim Ersatzsymbol.
  */
 export const WIKI_ICONS: Record<string, string> = {
   // genshin 2970 "Original Resin"
@@ -30,4 +32,16 @@ export const WIKI_ICONS: Record<string, string> = {
   // zzz 593 "Battery Charge"
   "zzz/battery":
     "https://act-upload.hoyoverse.com/event-ugc-hoyowiki/2025/02/08/167256510/d863d49f931ca0dbac3b0ec563657368_2411518699554855175.png",
+  // wuwa "Item Waveplate.png"
+  "wuwa/waveplate":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/e/e9/Item_Waveplate.png/revision/latest/scale-to-width-down/128?cb=20240712182653",
+  // wuwa "Item Activity Points.png"
+  "wuwa/activity":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/4/49/Item_Activity_Points.png/revision/latest/scale-to-width-down/128?cb=20250125202020",
+  // wuwa "Icon Pioneer Podcast.png"
+  "wuwa/podcast":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/8/84/Icon_Pioneer_Podcast.png/revision/latest?cb=20250907182402",
+  // wuwa "Icon Expedition Motorbike.png" (MotorData ist das Motorrad aus Lahai-Roi)
+  "wuwa/vehicle":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/b/bb/Icon_Expedition_Motorbike.png/revision/latest?cb=20260501173804",
 };
