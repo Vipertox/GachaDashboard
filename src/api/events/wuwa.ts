@@ -23,7 +23,9 @@ export function wuwaOffset(region: string): number {
 
 /** Parameter einer Vorlage als Schlüssel/Wert; verschachtelte Vorlagen und Links bleiben unangetastet. */
 export function templateParams(text: string, name: string): Record<string, string> | undefined {
-  const start = text.search(new RegExp(`\\{\\{\\s*${name.replace(/[/]/g, "\\/")}\\s*[|\\n}]`));
+  // Alle Regex-Sonderzeichen im Namen escapen, auch den Backslash.
+  const escaped = name.replace(/[\\^$.*+?()[\]{}|/-]/g, "\\$&");
+  const start = text.search(new RegExp(`\\{\\{\\s*${escaped}\\s*[|\\n}]`));
   if (start < 0) return undefined;
   let depth = 0;
   let end = start;

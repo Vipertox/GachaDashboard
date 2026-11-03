@@ -52,6 +52,9 @@ describe("Wuthering Waves Banner aus dem Wiki", () => {
     expect(templateParams(WEAPON, "Convene/Pool")?.weapon_5_F).toBe("Freeze Frame");
     expect(templateParams(WEAPON, "Convene")?.type).toBe("Featured Weapon");
     expect(templateParams(WEAPON, "Fehlt")).toBeUndefined();
+    // Sonderzeichen im Namen gelten wörtlich
+    expect(templateParams("{{A.B|x=1}}", "A.B")).toEqual({ x: "1" });
+    expect(templateParams("{{AxB|x=1}}", "A.B")).toBeUndefined();
   });
 
   it("rechnet die Serverzeit des Kontos in einen Zeitpunkt um", () => {
