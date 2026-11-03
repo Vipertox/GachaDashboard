@@ -10,6 +10,7 @@ Eine Codebasis für Android, Windows und den lokalen Browser.
 - **Detailseite, Tab Übersicht:** Alle Live-Werte des Spiels, gruppiert nach Täglich, Wöchentlich, Laufend und Weitere. Darunter die laufenden Events mit Fortschritt und Restlaufzeit, kommende Events und die aktuellen Gacha-Banner
 - **Detailseite, Tab Figuren:** Raster aller Figuren mit Element, Duplikaten, Stufe und Waffe, filter- und sortierbar. Ein Tipp öffnet Waffe, Ausrüstung mit Haupt- und Nebenwerten, Sets, Talente und Werte. Hinweise zeigen Lücken in der Ausrüstung, ein Link führt zum Build-Guide der Figur auf [Prydwen](https://www.prydwen.gg/)
 - **Detailseite, Tab Herausforderungen:** Wiederkehrende Endgame-Modi wie Spiral Abyss, Pure Fiction oder Shiyu Defense mit Stand und Restlaufzeit, umschaltbar auf die vorherige Periode. Eine Kurzfassung steht in der Übersicht unter Wöchentlich
+- **Zeitleiste:** Banner, Events und die Perioden der Herausforderungen als Balken auf einer Tagesachse mit Markierung für jetzt, über alle Spiele in der Navigation und je Spiel als eigener Tab. Filter nach Art und Spiel, ein Tipp öffnet Event oder Banner
 - **Profile:** Mehrere HoYoLAB-Logins mit Wechsel per Tipp
 
 | Spiel | Live-Werte | Figuren | Herausforderungen | Events und Banner |
@@ -65,7 +66,7 @@ Bilder für Spiele und Ressourcen sind nicht eingecheckt, siehe [src/assets/READ
 
 ## Hinweis
 
-Rein private App ohne eigenen Server und ohne Store-Veröffentlichung. Gespeichert werden nur HoYoLAB-Tokens und der Kuro-Code (im sicheren Speicher des Betriebssystems) sowie Profil-Einstellungen, keine Spieldaten. Filter und Sortierung des Figurenrasters merkt sich der Browser bzw. Webview im `localStorage`.
+Rein private App ohne eigenen Server und ohne Store-Veröffentlichung. Gespeichert werden nur HoYoLAB-Tokens und der Kuro-Code (im sicheren Speicher des Betriebssystems) sowie Profil-Einstellungen, keine Spieldaten. Filter und Sortierung des Figurenrasters sowie die Filter der Zeitleiste merkt sich der Browser bzw. Webview im `localStorage`.
 
 ## Mitwirken & Lizenz
 

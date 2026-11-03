@@ -122,6 +122,7 @@ Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Ak
 | Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
 | Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel", dazu Events und Banner, siehe "Events und Banner". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
+| Zeitleiste | Banner, Events und Herausforderungen aller sichtbaren Spiele als Balken über die Zeit, siehe "Zeitleiste". Dieselbe Ansicht für ein Spiel als Tab "Zeitleiste" der Spieldetails |
 | Konten | Profile anlegen, bearbeiten und löschen; pro Profil Token-Eingabe, Spiele ein- und ausblenden |
 | Einstellungen | Aktualisierungsintervall, helles oder dunkles Design, Sprache |
 
@@ -649,6 +650,51 @@ interface EventAdapter {
 }
 ```
 
+## Zeitleiste
+
+Die Zeitleiste zeigt Banner, Events und die laufenden Perioden der Herausforderungen als Balken auf einer Tagesachse. So ist auf einen Blick zu sehen, was gerade läuft, was bald endet und was als Nächstes kommt.
+
+**Ort**
+
+- Eigener Punkt **Zeitleiste** in der Navigation, mit allen sichtbaren Spielen des aktiven Profils untereinander. Jedes Spiel hat eine Kopfzeile mit Symbol, Name und Spielername.
+- Tab **Zeitleiste** in der Detailseite von Genshin, Star Rail und ZZZ, dieselbe Ansicht nur für dieses Spiel und ohne Spiele-Filter.
+- Wuthering Waves fehlt, weil die Kuro-Schnittstelle weder Events noch Herausforderungen liefert. Die globale Ansicht nennt das unter der Karte.
+
+**Darstellung**
+
+```
+[Banner] [Events] [Herausforderungen]  [● Genshin] [● Star Rail] [● ZZZ]
+┌──────────────────────────────────────────────┐
+│ Okt Nov Mo  Di  Mi  Do  Fr  Sa  So  Mo  …     │
+│ 31  1   2   3   4   5   6   7   8   9         │
+│ (H) Honkai: Star Rail · Vipertox    │         │
+│ BANNER                              │         │
+│ (◉) Charakter-Aktionssprung · Version 4.6     │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓│▓▓▓▓      │
+│          (◉)(◉) Charakter-… · ab 11.11. · 4.7 │
+│                                     │  ┌╌╌╌╌╌ │
+│ EVENTS                              │         │
+│ ✓ Liebe, Geister und Roboter        │         │
+│ ▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒│▒▒▒▒      │
+│ ⚠ Glut des Schmiedereichs           │         │
+│ ▓▓▓▓▓▓▓▓▓▓▓▓                        │         │
+└──────────────────────────────────────────────┘
+```
+
+- Der Zeitraum beginnt 3 Tage vor heute und reicht bis zum spätesten bekannten Ende bzw. Beginn, mindestens 14 und höchstens 42 Tage. Die Tage sind mindestens 36 px breit. Passt der Zeitraum nicht in die Karte, wird waagerecht gescrollt, sonst füllt er die Breite. Der Tageskopf zeigt Wochentag und Tag, am ersten sichtbaren Tag und am Monatsersten den Monat. Wochenenden sind leicht abgesetzt.
+- Eine senkrechte Linie markiert jetzt, der heutige Tag ist im Kopf hervorgehoben.
+- Je Spiel folgen die Bereiche Banner, Events und Herausforderungen, darin die Einträge nach Beginn, dann nach Ende, dann nach Name. Leere Bereiche entfallen.
+- Jeder Eintrag ist eine Zeile mit Beschriftung über dem Balken. Die Beschriftung steht am Beginn des Balkens und bleibt beim Scrollen am linken bzw. rechten Rand stehen. Auch Einträge außerhalb der Sicht zeigen so ihren Namen.
+- Balken in der Akzentfarbe des Spiels: laufend voll, mit Fortschritt als Füllung auf blasser Spur, kommend gestrichelt mit "ab TT.MM.", erledigt grün mit ✓. Was vor bzw. nach dem Zeitraum weiterläuft, ist an der Seite offen und blendet aus.
+- Endet ein laufender Eintrag in weniger als 3 Tagen, ist die Beschriftung in Warnfarbe mit ⚠, wie bei Events und Herausforderungen.
+- Banner zeigen die Figuren bzw. Waffen der höchsten Seltenheit als kleine Symbole (höchstens 3) und die Version. Herausforderungen zeigen ihre Kurzfassung, z. B. "30/36 Sterne", oder "Nicht gespielt". Gesperrte Modi und Perioden ohne Ende entfallen. Voller Fortschritt gilt als erledigt.
+- Ein Tipp auf die Zeile öffnet bei Events das Event-Blatt, bei Bannern ein Blatt mit Version, Zeitraum und allen Figuren bzw. Waffen. Herausforderungen führen zum Tab Herausforderungen des Spiels.
+- Filter-Chips blenden Arten und, in der globalen Ansicht, Spiele aus. Die Auswahl steht im `localStorage` unter `timeline`.
+
+**Laden**
+
+Die Zeitleiste nutzt dieselben Abfragen wie Events und Herausforderungen (`["events", …]` und `["challenge", …, mode, "current"]`), nur gebündelt über `useQueries`. Was die Detailseite schon geladen hat, erscheint sofort. Ein Fehler beim Event-Kalender steht als Zeile unter dem Spiel. Bei den Herausforderungen erscheint ein Hinweis nur, wenn alle Modi eines Spiels scheitern.
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.
@@ -907,6 +953,7 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Figurenübersicht für Genshin, Star Rail und ZZZ, für Wuthering Waves nur die Anzahl
 - [x] Herausforderungen für Genshin, Star Rail und ZZZ
 - [x] Events und Banner für Genshin, Star Rail und ZZZ
+- [x] Zeitleiste für Banner, Events und Herausforderungen, global und je Spiel
 - [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
