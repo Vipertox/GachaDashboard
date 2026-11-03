@@ -115,6 +115,8 @@ Die Schnittstellen liefern die Restzeit bis voll in Sekunden. Der Adapter rechne
 
 Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Aktionen liegen im unteren Bildschirmdrittel und sind mit dem Daumen erreichbar.
 
+Die untere Navigation enthält die häufig genutzten Ansichten Dashboard und Zeitleiste. Konten und Einstellungen liegen im Profilmenü rechts in der Kopfzeile, wie bei einem Kontomenü üblich. Ein Tipp auf den Profilnamen öffnet es. Oben stehen die Profile zum Wechseln, unter einer Trennlinie folgen "Konten verwalten" und "Einstellungen" mit Symbol und Text. Auf dem Smartphone erscheint das Menü als Bottom Sheet, ab `md` als Dropdown unter dem Button. Es schließt sich nach einer Auswahl, bei einem Tipp daneben oder mit Esc. Ohne Profil heißt der Button "Menü" und enthält nur Konten und Einstellungen.
+
 &#91;embedded content: Dashboard-Skizze · Smartphone, Hochformat\]
 
 | Screen | Inhalt |
@@ -855,7 +857,7 @@ interface ProfileState {
 **Abläufe:**
 
 1. **Anlegen:** Name vergeben, Tokens per Hand eintragen oder per HoYoLAB-Login auslesen lassen, die App ruft die verknüpften Spielkonten ab und übernimmt sie automatisch ins Profil. Optional den Kuro-Code eintragen oder aus dem Launcher übernehmen, dann kommt das Wuthering-Waves-Konto dazu.
-2. **Wechseln:** Tipp auf den Profilnamen in der Kopfzeile öffnet ein Bottom Sheet mit allen Profilen. Ein Tipp auf ein Profil macht es aktiv und lädt dessen Daten.
+2. **Wechseln:** Tipp auf den Profilnamen in der Kopfzeile öffnet das Profilmenü mit allen Profilen. Ein Tipp auf ein Profil macht es aktiv und lädt dessen Daten.
 3. **Bearbeiten:** Name, Farbe, Spielauswahl und Reihenfolge ändern, Tokens erneuern.
 4. **Löschen:** Entfernt die Profil-Einstellungen und die Tokens aus dem sicheren Speicher. Danach wird das nächste Profil aktiv, ohne Profil startet die Einrichtung.
 
@@ -954,6 +956,7 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Herausforderungen für Genshin, Star Rail und ZZZ
 - [x] Events und Banner für Genshin, Star Rail und ZZZ
 - [x] Zeitleiste für Banner, Events und Herausforderungen, global und je Spiel
+- [x] Konten und Einstellungen aus der unteren Navigation ins Profilmenü der Kopfzeile verschieben
 - [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows
