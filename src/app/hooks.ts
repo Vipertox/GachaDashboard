@@ -237,10 +237,14 @@ export function challengeKey(profileId: string, ref: Pick<GameAccountRef, "game"
   return ["challenge", profileId, ref.game, ref.uid] as const;
 }
 
-/** Eine Periode eines Modus, pro Modus ein eigener Aufruf, damit ein Fehler nur dessen Karte betrifft. */
-export function useChallenge(profile: Profile, ref: GameAccountRef, mode: ChallengeMode, period: ChallengePeriod) {
+function useChallengeOptions() {
   const qc = useQueryClient();
-  return useQuery<Challenge, ApiError>({
+  return (
+    profile: Profile,
+    ref: GameAccountRef,
+    mode: ChallengeMode,
+    period: ChallengePeriod,
+  ): UseQueryOptions<Challenge, ApiError> => ({
     queryKey: [...challengeKey(profile.id, ref), mode.key, period],
     queryFn: async ({ signal }) => {
       try {
@@ -255,22 +259,47 @@ export function useChallenge(profile: Profile, ref: GameAccountRef, mode: Challe
   });
 }
 
+/** Eine Periode eines Modus, pro Modus ein eigener Aufruf, damit ein Fehler nur dessen Karte betrifft. */
+export function useChallenge(profile: Profile, ref: GameAccountRef, mode: ChallengeMode, period: ChallengePeriod) {
+  const options = useChallengeOptions();
+  return useQuery<Challenge, ApiError>(options(profile, ref, mode, period));
+}
+
+/** Aktuelle Periode mehrerer Modi für die Zeitleiste; teilt sich den Cache mit `useChallenge`. */
+export function useCurrentChallenges(profile: Profile, list: { ref: GameAccountRef; mode: ChallengeMode }[]) {
+  const options = useChallengeOptions();
+  return useQueries({ queries: list.map((x) => options(profile, x.ref, x.mode, "current")) });
+}
+
+function useEventOptions() {
+  const qc = useQueryClient();
+  return (profile: Profile, ref: GameAccountRef): UseQueryOptions<EventCalendar, ApiError> => {
+    const adapter = EVENT_ADAPTERS[ref.game];
+    return {
+      queryKey: ["events", profile.id, ref.game, ref.uid],
+      queryFn: async ({ signal }) => {
+        try {
+          return await adapter!.fetchCalendar(await loadAccount(qc, profile, ref), signal);
+        } catch (e) {
+          throw asApiError(e);
+        }
+      },
+      enabled: !!adapter,
+      staleTime: CHARACTER_STALE,
+      refetchOnWindowFocus: false,
+      retry: false,
+    };
+  };
+}
+
 /** Event-Kalender: ein Aufruf pro Spiel, wie Figuren und Herausforderungen 30 Minuten frisch. */
 export function useEvents(profile: Profile, ref: GameAccountRef) {
-  const qc = useQueryClient();
-  const adapter = EVENT_ADAPTERS[ref.game];
-  return useQuery<EventCalendar, ApiError>({
-    queryKey: ["events", profile.id, ref.game, ref.uid],
-    queryFn: async ({ signal }) => {
-      try {
-        return await adapter!.fetchCalendar(await loadAccount(qc, profile, ref), signal);
-      } catch (e) {
-        throw asApiError(e);
-      }
-    },
-    enabled: !!adapter,
-    staleTime: CHARACTER_STALE,
-    refetchOnWindowFocus: false,
-    retry: false,
-  });
+  const options = useEventOptions();
+  return useQuery<EventCalendar, ApiError>(options(profile, ref));
+}
+
+/** Event-Kalender mehrerer Spiele für die Zeitleiste; teilt sich den Cache mit `useEvents`. */
+export function useEventCalendars(profile: Profile, refs: GameAccountRef[]) {
+  const options = useEventOptions();
+  return useQueries({ queries: refs.map((r) => options(profile, r)) });
 }

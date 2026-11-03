@@ -5,6 +5,7 @@ import { Dashboard } from "../features/dashboard/Dashboard";
 import { CharacterView } from "../features/game-detail/CharacterView";
 import { GameDetail } from "../features/game-detail/GameDetail";
 import { Settings } from "../features/settings/Settings";
+import { TimelinePage } from "../features/timeline/Timeline";
 import { UpdateBanner } from "../features/settings/Updates";
 import { BottomSheet } from "../components/ui";
 import { useApp } from "./state";
@@ -61,6 +62,7 @@ function Nav() {
     >
       <div className="max-w-5xl mx-auto flex">
         <NavLink to="/" end className={item}>Dashboard</NavLink>
+        <NavLink to="/zeitleiste" className={item}>Zeitleiste</NavLink>
         <NavLink to="/accounts" className={item}>Konten</NavLink>
         <NavLink to="/settings" className={item}>Einstellungen</NavLink>
       </div>
@@ -85,6 +87,7 @@ export function App() {
           <Route path="/" element={<Dashboard />} />
           <Route path="/game/:game/:uid" element={<GameDetail />} />
           <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
+          <Route path="/zeitleiste" element={<TimelinePage />} />
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>
