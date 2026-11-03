@@ -9,7 +9,7 @@
     "secure-keystore:default",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://www.prydwen.gg/*" }]
+      "allow": [{ "url": "https://www.prydwen.gg/*" }, { "url": "https://wutheringwaves.fandom.com/*" }]
     },
     {
       "identifier": "http:default",
@@ -17,7 +17,8 @@
         { "url": "https://bbs-api-os.hoyolab.com/*" },
         { "url": "https://sg-act-nap-api.hoyolab.com/*" },
         { "url": "https://api-account-os.hoyolab.com/*" },
-        { "url": "https://pc-launcher-sdk-api.kurogame.net/*" }
+        { "url": "https://pc-launcher-sdk-api.kurogame.net/*" },
+        { "url": "https://wutheringwaves.fandom.com/api.php*" }
       ]
     }
   ]
