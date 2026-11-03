@@ -957,6 +957,7 @@ Die App fragt die Server sparsam an und rechnet dazwischen lokal weiter. Fehler 
 | Kuro-Daten nicht bereit | `code` 1005 ("retrying"), falscher Server oder Daten im Abgleich | Bis zu dreimal nach kurzer Pause erneut versuchen, sonst letzten Stand behalten |
 | Live-Notizen nicht freigegeben | `retcode` 10102 | Hinweis, die Echtzeit-Notizen in HoYoLAB zu aktivieren |
 | Zu viele Anfragen | `retcode` 10101 | Letzten Stand behalten, später erneut versuchen |
+| Wartung beim Spiel-Update | `retcode` 10307 | "Wartung, Server gerade nicht erreichbar", kein sofortiger Neuversuch. Der nächste Abruf im Intervall lädt nach dem Update wieder |
 | Netzwerkfehler | Exception | Letzten Stand grau markieren mit Zeitpunkt des Abrufs |
 | Unbekannte Antwort | Schema-Prüfung schlägt fehl | Karte zeigt "Schnittstelle geändert" |
 | Figurendaten nicht öffentlich | `retcode` 10102 im Figuren-Tab | Hinweis, in HoYoLAB unter Datenschutz die Charakterdetails freizugeben |
