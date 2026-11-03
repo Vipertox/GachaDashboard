@@ -5,6 +5,7 @@ describe("Proxy-Sicherheit", () => {
   it("erlaubt nur bekannte https-Hosts", () => {
     expect(isAllowedUrl("https://bbs-api-os.hoyolab.com/x")).toBe(true);
     expect(isAllowedUrl("http://bbs-api-os.hoyolab.com/x")).toBe(false);
+    expect(isAllowedUrl("https://wutheringwaves.fandom.com/api.php?action=query")).toBe(true);
     expect(isAllowedUrl("https://evil.example.com/")).toBe(false);
     expect(isAllowedUrl("https://bbs-api-os.hoyolab.com.evil.com/")).toBe(false);
   });

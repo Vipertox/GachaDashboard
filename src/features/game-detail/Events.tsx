@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useEvents, useNow } from "../../app/hooks";
 import { EVENT_ADAPTERS } from "../../api/events";
 import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../components/ui";
+import { openExternal } from "../../lib/native";
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
 import type { Banner, EventCurrency, GameAccountRef, GameEvent, Profile } from "../../model/types";
@@ -173,12 +174,32 @@ export function EventSheet({ e, onClose }: { e: GameEvent | undefined; onClose: 
   );
 }
 
+/** Link in den Systembrowser, z. B. auf die Wiki-Seite eines Banners. */
+function ExternalLink({ url, children }: { url: string; children: ReactNode }) {
+  return (
+    <a
+      href={url}
+      target="_blank"
+      rel="noopener noreferrer"
+      onClick={(e) => {
+        e.preventDefault();
+        void openExternal(url);
+      }}
+      className="text-indigo-400"
+    >
+      {children}
+    </a>
+  );
+}
+
 function BannerRow({ b, now }: { b: Banner; now: number }) {
   const when = whenText(b, now);
   return (
     <li className="space-y-1.5">
       <div className="flex items-center justify-between gap-3 text-sm">
-        <span className="truncate font-medium">{b.name}</span>
+        <span className="truncate font-medium">
+          {b.sourceUrl ? <ExternalLink url={b.sourceUrl}>{b.name}</ExternalLink> : b.name}
+        </span>
         {when && (
           <span className="shrink-0 text-xs" style={{ color: "var(--muted)" }}>
             {when}
@@ -230,6 +251,11 @@ export function BannerSheet({ b, onClose }: { b: Banner | undefined; onClose: ()
           ) : (
             <p style={{ color: "var(--muted)" }}>Die Schnittstelle liefert keine Figuren zu diesem Banner.</p>
           )}
+          {b.sourceUrl && (
+            <p>
+              <ExternalLink url={b.sourceUrl}>Im Wiki ansehen ↗</ExternalLink>
+            </p>
+          )}
         </div>
       )}
     </BottomSheet>
@@ -267,13 +293,71 @@ function BannerGroupBlock({ g, now }: { g: BannerGroup; now: number }) {
   );
 }
 
+function BannerGroups({ groups, now }: { groups: BannerGroup[]; now: number }) {
+  return (
+    <ul className="px-4 py-2 divide-y divide-[var(--border)]">
+      {groups.map((g) => (
+        <BannerGroupBlock key={g.key} g={g} now={now} />
+      ))}
+    </ul>
+  );
+}
+
+/** Spiele ohne Event-Quelle (Wuthering Waves): nur Banner, mit Lade- und Fehlerzustand und Quellennachweis. */
+function BannersOnlySection({
+  q,
+  now,
+  source,
+}: {
+  q: ReturnType<typeof useEvents>;
+  now: number;
+  source?: { label: string; url: string };
+}) {
+  const groups = groupBanners(q.data?.banners ?? []);
+  return (
+    <section className="space-y-3">
+      <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
+        Banner
+      </h2>
+      <Card>
+        {q.isError ? (
+          <p className="p-4 text-sm" style={{ color: "var(--color-danger)" }}>
+            {eventErrorText(q.error)}
+          </p>
+        ) : !q.data ? (
+          <div className="p-4">
+            <Skeleton className="h-16" />
+          </div>
+        ) : groups.length === 0 ? (
+          <p className="p-4 text-sm" style={{ color: "var(--muted)" }}>
+            Gerade keine Banner.
+          </p>
+        ) : (
+          <BannerGroups groups={groups} now={now} />
+        )}
+      </Card>
+      <p className="text-xs" style={{ color: "var(--muted)" }}>
+        Events liefert keine Quelle.
+        {source && (
+          <>
+            {" "}
+            Banner: <ExternalLink url={source.url}>{source.label}</ExternalLink>
+          </>
+        )}
+      </p>
+    </section>
+  );
+}
+
 /** Abschnitt "Events" in der Übersicht, darunter die Banner nach Version. */
 export function EventsSection({ profile, gameRef, accent }: { profile: Profile; gameRef: GameAccountRef; accent: string }) {
   const q = useEvents(profile, gameRef);
   const now = useNow();
   const [all, setAll] = useState(false);
   const [openId, setOpenId] = useState<string>();
-  if (!EVENT_ADAPTERS[gameRef.game]) return null;
+  const adapter = EVENT_ADAPTERS[gameRef.game];
+  if (!adapter) return null;
+  if (adapter.bannersOnly) return <BannersOnlySection q={q} now={now} source={adapter.source} />;
 
   const events = q.data?.events ?? [];
   const current = events.filter((e) => e.status !== "upcoming").sort(byTime);
@@ -338,11 +422,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
             Banner
           </h2>
           <Card>
-            <ul className="px-4 py-2 divide-y divide-[var(--border)]">
-              {bannerGroups.map((g) => (
-                <BannerGroupBlock key={g.key} g={g} now={now} />
-              ))}
-            </ul>
+            <BannerGroups groups={bannerGroups} now={now} />
           </Card>
         </section>
       )}

@@ -225,6 +225,8 @@ export interface Banner {
   end?: Date;
   status: EventStatus;
   items: BannerItem[];
+  /** Seite des Banners bei der Quelle, z. B. im Wiki. */
+  sourceUrl?: string;
 }
 
 export interface EventCalendar {
@@ -235,6 +237,10 @@ export interface EventCalendar {
 export interface EventAdapter {
   game: GameId;
   fetchCalendar(account: Account, signal?: AbortSignal): Promise<EventCalendar>;
+  /** Die Quelle liefert nur Banner, der Abschnitt Events entfällt. */
+  bannersOnly?: boolean;
+  /** Quellennachweis unter den Bannern, nötig bei Daten aus einem Wiki. */
+  source?: { label: string; url: string };
 }
 
 export interface GameTerms {

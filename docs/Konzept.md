@@ -25,7 +25,7 @@ Nicht in Version 1: Gacha-Historie und Pity-Zähler, Push-Benachrichtigungen, au
 
 ## Datenquellen pro Spiel
 
-Die drei Hoyoverse-Spiele liefern alle Ressourcen live über HoYoLAB. Wuthering Waves liefert sie über die Schnittstelle, die auch die Infokarte im PC-Launcher nutzt.
+Die drei Hoyoverse-Spiele liefern alle Ressourcen live über HoYoLAB. Wuthering Waves liefert sie über die Schnittstelle, die auch die Infokarte im PC-Launcher nutzt. Die Banner von Wuthering Waves kommen aus dem Fandom-Wiki, siehe "Events und Banner".
 
 | Spiel | Hauptressource (Max.) | Weitere Werte | Endpunkt | Authentifizierung |
 | --- | --- | --- | --- | --- |
@@ -542,7 +542,7 @@ Jedes Hoyoverse-Spiel hat einen Event-Kalender in der Battle Chronicle, mit ders
 | Genshin Impact | `POST …/genshin/api/act_calendar` mit `{ role_id, server }` | `act_list[]` mit `name`, `desc`, `start_timestamp`, `end_timestamp`, `is_finished`, `reward_list`, Erkundung in % aus `explore_detail`, doppelte Belohnungen aus `double_detail` | `avatar_card_pool_list`, `weapon_card_pool_list`, `mixed_card_pool_list` mit `pool_name`, `avatars`, `weapon` |
 | Honkai: Star Rail | `GET …/hkrpg/api/get_act_calender?server=&role_id=` | `act_list[]` mit `name`, `panel_desc`, `act_type`, `act_status`, `time_info.start_ts/end_ts`, `current_progress`/`total_progress`, `all_finished`, `reward_list` | `avatar_card_pool_list`, `equip_card_pool_list` mit `name`, `avatar_list`, `equip_list` |
 | Zenless Zone Zero | `GET …/zzz/activity_calendar?uid=&region=` und `GET …/zzz/gacha_calendar?uid=&region=` | `activity_list[]` mit `name`, `state`, `start_ts`/`end_ts` und Polychrome aus `monochrome_got_cnt`/`monochrome_cnt`. Keine Beschreibung, keine Belohnungen | `avatar_gacha_schedule_list`, `weapon_gacha_schedule_list` mit `gacha_type`, `avatar_list`, `weapon_list` |
-| Wuthering Waves | – | Die Kuro-Schnittstelle liefert keine Events, die Abschnitte entfallen | – |
+| Wuthering Waves | Fandom-Wiki, siehe unten | Keine Quelle, der Abschnitt entfällt | Unterseiten der Kategorie `Convene` im Wiki |
 
 Die Endgame-Modi im Kalender (`fixed_act_list` bzw. `challenge_list`) werden nicht übernommen, sie stehen schon unter Herausforderungen. Star Rail liefert als Banner-Namen oft nur "Sprung" oder nichts. Die App nennt die Banner dann nach ihrer Liste "Charakter-Aktionssprung" bzw. "Lichtkegel-Aktionssprung". Bei ZZZ dürfen die Banner fehlen: Schlägt `gacha_calendar` fehl, erscheinen nur die Events. Alle Zeiten kommen als Unix-Sekunden. Abgelaufene Einträge werden ausgefiltert.
 
@@ -613,9 +613,32 @@ Genshin und Star Rail nennen nur die Gesamtmenge eines Events, nicht wie viel da
 
 Unbekannte Kanaltypen in ZZZ gelten als Charakter- oder Waffen-Banner, je nachdem, aus welcher Liste sie kommen.
 
+**Wuthering Waves: Banner aus dem Wiki**
+
+Die Kuro-Schnittstelle liefert weder Events noch Banner. Die Banner kommen deshalb aus der öffentlichen MediaWiki-API des [Wuthering Waves Wiki](https://wutheringwaves.fandom.com) auf Fandom, ohne Anmeldung. Die Inhalte stehen unter CC BY-SA, die App nennt die Quelle unter den Bannern und verlinkt jeden Banner auf seine Wiki-Seite. Jeder Aufruf trägt einen eigenen User-Agent.
+
+| Schritt | Aufruf | Ergebnis |
+| --- | --- | --- |
+| 1 | `list=categorymembers&cmtitle=Category:Convene&cmsort=timestamp&cmdir=desc&cmlimit=20` | Die zuletzt angelegten Banner-Seiten. Nur Unterseiten der Form `<Name>/<YYYY-MM-DD>` zählen |
+| 2 | `prop=revisions&rvprop=content&rvslots=main&titles=…` | Wikitext aller Seiten in einem Aufruf |
+| 3 | `prop=imageinfo&iiurlwidth=96&titles=File:Resonator <Name>.png|File:Weapon <Name>.png…` | Symbole der Figuren und Waffen. Darf fehlen, die Chips bleiben dann ohne Bild |
+
+| Feld im Wikitext | Verwendung |
+| --- | --- |
+| `{{Convene}}` → `type` | "Featured Resonator" wird `character`, "Featured Weapon" wird `weapon`, alles andere `other` |
+| `time_start`, `time_end` | Zeitraum in Serverzeit. Seiten ohne Ende (Dauerbanner) entfallen |
+| `time_start_offset`, `time_end_offset` | Feste Abweichung wie `UTC+8`, gilt vor dem Server des Kontos |
+| `{{Convene/Pool}}` → `resonator_5_F`, `weapon_5_F`, `resonator_4_F`, `weapon_4_F` | Figuren und Waffen mit erhöhter Rate, mehrere Namen mit `;` getrennt. Der übrige Pool wird nicht übernommen |
+| `{{Change History|3.7}}` | Version für die Gruppierung |
+| Seitenname ohne `/Datum` | Name des Banners |
+
+Das Wiki nennt Zeiten in Serverzeit. Die App rechnet sie mit dem Server des Kontos aus `queryPlayerInfo` in einen Zeitpunkt um und zeigt sie wie alle Zeiten in der Zeitzone des Geräts. Die Server kennen keine Sommerzeit: America UTC-5, Europe UTC+1, alle übrigen (Asia, HMT, SEA, TW/HK/MO) UTC+8. Beispiel: Ende 11.11. 11:59 Serverzeit Europe ist 10:59 UTC, auf einem deutschen Gerät 11:59 Uhr.
+
+Events führt das Wiki nur lückenhaft. Die Event-Liste endete am 3. November 2026 bei Version 3.5, aktuelle Event-Seiten waren Platzhalter ohne Zeitraum. Die offiziellen Kuro-News beschreiben Events nur als Bilder. Für Wuthering Waves entfällt der Abschnitt Events deshalb, darunter steht der Hinweis "Events liefert keine Quelle". Seiten wie Gacha Focus pflegen diese Daten offenbar von Hand.
+
 **Laden**
 
-Ein Aufruf pro Spiel (bei ZZZ zwei parallel), Query-Schlüssel `["events", profileId, game, uid]`. Wie Figuren und Herausforderungen 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus. Ein Fehler betrifft nur den Abschnitt Events.
+Ein Aufruf pro Spiel (bei ZZZ zwei parallel), Query-Schlüssel `["events", profileId, game, uid]`. Wie Figuren und Herausforderungen 30 Minuten frisch, kein Neuladen im Intervall oder bei Fokus. Ein Fehler betrifft nur den Abschnitt Events, bei Wuthering Waves den Abschnitt Banner.
 
 **Datenmodell**
 
@@ -659,8 +682,8 @@ Die Zeitleiste zeigt Banner, Events und die laufenden Perioden der Herausforderu
 **Ort**
 
 - Eigener Punkt **Zeitleiste** in der Navigation, mit allen sichtbaren Spielen des aktiven Profils untereinander. Jedes Spiel hat eine Kopfzeile mit Symbol, Name und Spielername.
-- Tab **Zeitleiste** in der Detailseite von Genshin, Star Rail und ZZZ, dieselbe Ansicht nur für dieses Spiel und ohne Spiele-Filter.
-- Wuthering Waves fehlt, weil die Kuro-Schnittstelle weder Events noch Herausforderungen liefert. Die globale Ansicht nennt das unter der Karte.
+- Tab **Zeitleiste** in der Detailseite jedes Spiels, dieselbe Ansicht nur für dieses Spiel und ohne Spiele-Filter.
+- Wuthering Waves zeigt nur Banner, siehe "Wuthering Waves: Banner aus dem Wiki". Ein Spiel ganz ohne Daten nennt die globale Ansicht unter der Karte.
 
 **Darstellung**
 
@@ -901,10 +924,11 @@ gacha-dashboard/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
 │  │  ├─ hoyolab.ts   # DS-Header, GET/POST, Konten-Endpunkt
 │  │  ├─ kuro.ts      # queryPlayerInfo, queryRole, doppeltes JSON-Parsen
+│  │  ├─ fandom.ts    # MediaWiki-API des Wuthering Waves Wiki
 │  │  ├─ adapters/    # Live-Werte: genshin.ts, starrail.ts, zzz.ts, wuwa.ts
 │  │  ├─ characters/  # Figurendaten: genshin.ts, starrail.ts, zzz.ts
 │  │  ├─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
-│  │  └─ events/      # Event-Kalender und Banner: genshin.ts, starrail.ts, zzz.ts
+│  │  └─ events/      # Event-Kalender und Banner: genshin.ts, starrail.ts, zzz.ts, wuwa.ts (nur Banner aus dem Wiki)
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
 │  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
@@ -957,6 +981,7 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Events und Banner für Genshin, Star Rail und ZZZ
 - [x] Zeitleiste für Banner, Events und Herausforderungen, global und je Spiel
 - [x] Konten und Einstellungen aus der unteren Navigation ins Profilmenü der Kopfzeile verschieben
+- [x] Banner für Wuthering Waves aus dem Fandom-Wiki, in Übersicht und Zeitleiste
 - [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows

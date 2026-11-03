@@ -20,6 +20,7 @@ export const ALLOWED_HOSTS = new Set([
   "sg-act-nap-api.hoyolab.com",
   "api-account-os.hoyolab.com",
   "pc-launcher-sdk-api.kurogame.net",
+  "wutheringwaves.fandom.com",
 ]);
 
 export const KEY_PATTERN = /^[A-Za-z0-9_\-/.]{1,128}$/;

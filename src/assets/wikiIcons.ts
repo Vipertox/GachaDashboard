@@ -2,7 +2,10 @@
  * Ressourcen-Icons aus dem HoYoWiki, ermittelt über
  * `sg-wiki-api-static.hoyolab.com/hoyowiki/<wiki>/wapi/entry_page?entry_page_id=<id>` (Feld `icon_url`).
  * Die Eintrags-ID steht jeweils dahinter, falls eine URL neu nachgeschlagen werden muss.
- * Ohne passenden Eintrag (Wuthering Waves, Genshin-Aufträge, ZZZ-Engagement und -Survey Points)
+ * Wuthering Waves nutzt das Fandom-Wiki (CC BY-SA), dahinter steht der Dateiname; die URL liefert
+ * `wutheringwaves.fandom.com/api.php?action=query&prop=imageinfo&iiprop=url&titles=File:<Name>`.
+ * Das Spiel-Icon von Wuthering Waves ist das App-Icon aus Google Play (die HoYoLAB-Spielkarte kennt das Spiel nicht).
+ * Ohne passenden Eintrag (Genshin-Aufträge, ZZZ-Engagement und -Survey Points, Waveplate Crystal)
  * bleibt es beim Ersatzsymbol.
  */
 export const WIKI_ICONS: Record<string, string> = {
@@ -30,4 +33,22 @@ export const WIKI_ICONS: Record<string, string> = {
   // zzz 593 "Battery Charge"
   "zzz/battery":
     "https://act-upload.hoyoverse.com/event-ugc-hoyowiki/2025/02/08/167256510/d863d49f931ca0dbac3b0ec563657368_2411518699554855175.png",
+  // Google Play, App com.kurogame.wutheringwaves.global (Feld og:image, "=s128" für 128 px)
+  "games/wuwa":
+    "https://play-lh.googleusercontent.com/S4HjezIFmL17FpPu7Z8VzxZvFMABYUjfLkcrDSEKxpjCYIL3tWLQK76_16SDOTiZlVHm_KeoMawvC7BPcyW_=s128",
+  // wuwa "Item Waveplate.png"
+  "wuwa/waveplate":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/e/e9/Item_Waveplate.png/revision/latest/scale-to-width-down/128?cb=20240712182653",
+  // wuwa "Item Activity Points.png"
+  "wuwa/activity":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/4/49/Item_Activity_Points.png/revision/latest/scale-to-width-down/128?cb=20250125202020",
+  // wuwa "Icon Pioneer Podcast.png"
+  "wuwa/podcast":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/8/84/Icon_Pioneer_Podcast.png/revision/latest?cb=20250907182402",
+  // wuwa "Item Melody Box.png" (sammelt im Spiel die Musiktitel)
+  "wuwa/album":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/a/a7/Item_Melody_Box.png/revision/latest/scale-to-width-down/128?cb=20250112144015",
+  // wuwa "Icon Expedition Motorbike.png" (MotorData ist das Motorrad aus Lahai-Roi)
+  "wuwa/vehicle":
+    "https://static.wikia.nocookie.net/wutheringwaves/images/b/bb/Icon_Expedition_Motorbike.png/revision/latest?cb=20260501173804",
 };
