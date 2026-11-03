@@ -22,11 +22,13 @@ import { formatClock, formatCountdown, formatDuration, fraction, isFull, liveVal
 import { GAME_ACCENT, GAME_META, GAME_TERMS } from "../../model/games";
 import type { DetailSection, GameAccountRef, GameId, GameStatus, Profile, Resource } from "../../model/types";
 import { CHALLENGE_MODES } from "../../api/challenges";
+import { EVENT_ADAPTERS } from "../../api/events";
+import { Timeline } from "../timeline/Timeline";
 import { ChallengeSummary, Challenges } from "./Challenges";
 import { EventsSection } from "./Events";
 import { Roster } from "./Roster";
 
-type Tab = "uebersicht" | "figuren" | "herausforderungen";
+type Tab = "uebersicht" | "figuren" | "herausforderungen" | "zeitleiste";
 
 const TITLES: Record<DetailSection["kind"], string> = {
   daily: "Täglich",
@@ -236,6 +238,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
     ["figuren", GAME_TERMS[game].characters],
   ];
   if (CHALLENGE_MODES[game]) tabList.push(["herausforderungen", "Herausforderungen"]);
+  if (EVENT_ADAPTERS[game] || CHALLENGE_MODES[game]) tabList.push(["zeitleiste", "Zeitleiste"]);
   const tab = tabList.find(([key]) => key === params.get("tab"))?.[0] ?? "uebersicht";
   const openTab = (key: Tab) => setParams(key === "uebersicht" ? {} : { tab: key }, { replace: true });
   const tabs = (
@@ -271,6 +274,15 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
         {s && <CompactHead s={s} now={now} accent={accent} />}
         {tabs}
         <Challenges profile={profile} gameRef={gameRef} accent={accent} />
+      </div>
+    );
+  }
+  if (tab === "zeitleiste") {
+    return (
+      <div className="space-y-4">
+        {s && <CompactHead s={s} now={now} accent={accent} />}
+        {tabs}
+        <Timeline profile={profile} refs={[gameRef]} showGames={false} />
       </div>
     );
   }

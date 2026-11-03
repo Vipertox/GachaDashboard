@@ -133,7 +133,7 @@ function CurrencyTotals({ sums }: { sums: CurrencySummary[] }) {
   );
 }
 
-function EventSheet({ e, onClose }: { e: GameEvent | undefined; onClose: () => void }) {
+export function EventSheet({ e, onClose }: { e: GameEvent | undefined; onClose: () => void }) {
   return (
     <BottomSheet open={!!e} onClose={onClose} title={e?.name ?? ""}>
       {e && (
@@ -185,22 +185,54 @@ function BannerRow({ b, now }: { b: Banner; now: number }) {
           </span>
         )}
       </div>
-      <div className="flex flex-wrap gap-1.5">
-        {[...b.items]
-          .sort((x, y) => y.rarity - x.rarity)
-          .map((i, n) => (
-            <span
-              key={`${i.name}-${n}`}
-              title={i.name}
-              className="flex items-center gap-1 rounded-full pl-0.5 pr-2 text-xs min-h-7"
-              style={{ background: "var(--surface-2)", boxShadow: `inset 0 0 0 1px ${RARITY_COLOR[i.rarity] ?? "transparent"}` }}
-            >
-              <GameIcon url={i.iconUrl} size={24} round label={i.name} />
-              {i.name}
-            </span>
-          ))}
-      </div>
+      <BannerItems b={b} />
     </li>
+  );
+}
+
+/** Figuren und Waffen eines Banners, die höchste Seltenheit zuerst. */
+function BannerItems({ b }: { b: Banner }) {
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {[...b.items]
+        .sort((x, y) => y.rarity - x.rarity)
+        .map((i, n) => (
+          <span
+            key={`${i.name}-${n}`}
+            title={i.name}
+            className="flex items-center gap-1 rounded-full pl-0.5 pr-2 text-xs min-h-7"
+            style={{ background: "var(--surface-2)", boxShadow: `inset 0 0 0 1px ${RARITY_COLOR[i.rarity] ?? "transparent"}` }}
+          >
+            <GameIcon url={i.iconUrl} size={24} round label={i.name} />
+            {i.name}
+          </span>
+        ))}
+    </div>
+  );
+}
+
+/** Blatt für ein Banner aus der Zeitleiste: Version, Zeitraum und alle Figuren bzw. Waffen. */
+export function BannerSheet({ b, onClose }: { b: Banner | undefined; onClose: () => void }) {
+  return (
+    <BottomSheet open={!!b} onClose={onClose} title={b?.name ?? ""}>
+      {b && (
+        <div className="space-y-3 text-sm max-h-[60vh] overflow-y-auto">
+          <p style={{ color: "var(--muted)" }}>
+            {[
+              b.version ? `Version ${b.version}` : undefined,
+              [b.start && fmtDate(b.start), b.end && fmtDate(b.end)].filter(Boolean).join(" – ") || undefined,
+            ]
+              .filter(Boolean)
+              .join(" · ")}
+          </p>
+          {b.items.length > 0 ? (
+            <BannerItems b={b} />
+          ) : (
+            <p style={{ color: "var(--muted)" }}>Die Schnittstelle liefert keine Figuren zu diesem Banner.</p>
+          )}
+        </div>
+      )}
+    </BottomSheet>
   );
 }
 
