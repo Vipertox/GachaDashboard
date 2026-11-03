@@ -114,8 +114,24 @@ body {
     transform: translateY(0);
   }
 }
-.sheet {
+.sheet,
+.menu-panel {
   animation: sheet-up 0.22s ease-out;
+}
+@keyframes menu-drop {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@media (min-width: 768px) {
+  .menu-panel {
+    animation: menu-drop 0.12s ease-out;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -126,7 +142,8 @@ body {
   }
   .pulse-dot,
   .skeleton,
-  .sheet {
+  .sheet,
+  .menu-panel {
     animation: none;
   }
 }
