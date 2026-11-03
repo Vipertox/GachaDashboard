@@ -141,16 +141,20 @@ function Bar({ i, left, width, openStart, openEnd, now, onOpen }: {
     : done
       ? { background: "color-mix(in srgb, var(--color-ok) 40%, transparent)" }
       : { background: i.progress === undefined ? accent : `color-mix(in srgb, ${accent} 30%, transparent)` };
+  // Die ganze Zeile ist Tippfläche. Die Beschriftung steht über dem Balken und bleibt beim Scrollen
+  // links bzw. rechts am Rand stehen, damit auch Balken außerhalb der Sicht ihren Namen zeigen.
   return (
     <button
-      className="absolute top-0 h-full text-left active:opacity-70 overflow-visible"
-      style={{ left, width: Math.max(width, 6) }}
+      className="relative w-full flex items-start text-left active:opacity-70"
+      style={{ height: ROW_PX }}
       aria-label={`${i.name}, ${whenText(i, now)}`}
       title={whenText(i, now)}
       onClick={onOpen}
     >
+      {/* Abstandhalter statt margin-left: Sticky schiebt nicht über den eigenen Außenabstand hinaus. */}
+      <span className="shrink-0" style={{ width: left }} aria-hidden />
       <span
-        className="sticky left-2 inline-flex items-center gap-1 max-w-[80vw] whitespace-nowrap text-xs h-6 pr-1"
+        className="sticky left-2 right-2 shrink-0 inline-flex items-center gap-1 max-w-[80vw] whitespace-nowrap text-xs h-5 px-1 rounded"
         style={{ color: done ? "var(--muted)" : soon ? "var(--color-warn)" : undefined }}
       >
         {done && <span style={{ color: "var(--color-ok)" }}>✓</span>}
@@ -159,11 +163,12 @@ function Bar({ i, left, width, openStart, openEnd, now, onOpen }: {
           <GameIcon key={`${ic.label}-${n}`} url={ic.url} size={18} round label={ic.label} />
         ))}
         <span className="font-medium truncate">{i.name}</span>
+        {upcoming && i.start && <span style={{ color: "var(--muted)" }}>· ab {fmtDay(i.start)}</span>}
         {i.note && <span style={{ color: "var(--muted)" }}>· {i.note}</span>}
       </span>
       <span
-        className="absolute bottom-1.5 inset-x-0 h-3 overflow-hidden"
-        style={{ ...track, borderRadius: radius, maskImage: fade, WebkitMaskImage: fade }}
+        className="absolute bottom-1 h-3 overflow-hidden"
+        style={{ left, width: Math.max(width, 6), ...track, borderRadius: radius, maskImage: fade, WebkitMaskImage: fade }}
       >
         {!upcoming && !done && i.progress !== undefined && (
           <span className="absolute inset-y-0 left-0" style={{ width: `${i.progress * 100}%`, background: accent }} />
@@ -271,6 +276,12 @@ export function Timeline({ profile, refs, showGames }: { profile: Profile; refs:
           <div className="relative pb-2" style={{ width: total }}>
             <DayGrid ticks={ticks} dayPx={dayPx} />
             <DayHeader ticks={ticks} dayPx={dayPx} now={now} />
+            {/* Vor den Zeilen, damit Beschriftungen über der Linie liegen. */}
+            <div
+              className="absolute top-0 bottom-0 w-0.5 pointer-events-none opacity-70"
+              style={{ left: x(position(now, win)), background: NOW_COLOR }}
+              aria-hidden
+            />
             {lanes.length === 0 && (
               <StickyRow className="py-4 text-sm" style={{ color: "var(--muted)" }}>
                 Kein Spiel ausgewählt.
@@ -312,17 +323,16 @@ export function Timeline({ profile, refs, showGames }: { profile: Profile; refs:
                         {KIND_LABEL[k]}
                       </StickyRow>
                       {rows.map(({ i, span }) => (
-                        <div key={i.key} className="relative" style={{ height: ROW_PX }}>
-                          <Bar
-                            i={i}
-                            left={x(span!.left)}
-                            width={x(span!.width)}
-                            openStart={span!.openStart}
-                            openEnd={span!.openEnd}
-                            now={now}
-                            onOpen={() => openItem(i, l.ref)}
-                          />
-                        </div>
+                        <Bar
+                          key={i.key}
+                          i={i}
+                          left={x(span!.left)}
+                          width={x(span!.width)}
+                          openStart={span!.openStart}
+                          openEnd={span!.openEnd}
+                          now={now}
+                          onOpen={() => openItem(i, l.ref)}
+                        />
                       ))}
                     </div>
                   );
@@ -339,11 +349,6 @@ export function Timeline({ profile, refs, showGames }: { profile: Profile; refs:
                 )}
               </div>
             ))}
-            <div
-              className="absolute top-0 bottom-0 w-0.5 pointer-events-none"
-              style={{ left: x(position(now, win)), background: NOW_COLOR }}
-              aria-hidden
-            />
           </div>
         </div>
       </Card>
