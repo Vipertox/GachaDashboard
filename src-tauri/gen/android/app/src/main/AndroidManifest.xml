@@ -5,7 +5,10 @@
     <!-- AndroidTV support -->
     <uses-feature android:name="android.software.leanback" android:required="false" />
 
+    <!-- Keine Sicherung der App-Daten (Webview-Cookies der HoYoLAB-Sitzung, Einstellungen) über
+         adb oder Cloud-Backup. Die Tokens im Android-Keystore lassen sich ohnehin nicht mitsichern. -->
     <application
+        android:allowBackup="false"
         android:icon="@mipmap/ic_launcher"
         android:label="@string/app_name"
         android:theme="@style/Theme.gacha_dashboard"

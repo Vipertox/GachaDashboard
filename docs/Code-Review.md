@@ -85,6 +85,21 @@ Ein Befund der Stufe H wurde nicht gefunden.
 2. M-6, M-7, M-8 (Schema-Strenge) – verhindert stille Falschanzeigen bei API-Änderungen. **Behoben** auf diesem Branch, mit Tests in `adapters.test.ts` und `events.test.ts`; gegen echte API-Antworten noch nicht geprüft. **M-9 behoben:** `pickPeriod` sortiert nach Startzeit statt nach Listenposition, mit Tests für aufsteigende und gemischte Listen und mit echten Genshin-Daten geprüft. Nicht umgesetzt ist die Wahl über `start <= jetzt < end`, weil sie zwischen zwei Saisons „aktuell“ leer ließe.
 3. M-10 (Neu laden) und N-16/N-17 (Absturzschutz). **Behoben** auf diesem Branch; N-16 mit Tests, M-10 und N-17 ohne Komponententests und ohne Lauf mit echtem Konto.
 4. M-4 und N-1 (Härtung Browser-Modus), M-5 (Rust-Login). **N-1 behoben, M-4 entschärft:** Token- und Einstellungsdatei werden mit `0o600` geschrieben, die Einsatzgrenze (nur Einzelbenutzer-Rechner) und die Proxy-Endpunkte stehen in README und SECURITY. Die Ursache selbst – die Seite holt das Token ohne Prüfung – bleibt, weil der Proxy einen anderen lokalen Benutzer nicht erkennen kann. N-19 ebenfalls behoben. **M-5, N-5 und N-6 behoben:** Eine Sperre lässt nur einen Webview-Login gleichzeitig zu, ein zweiter Aufruf holt das offene Fenster nach vorn. Ein Guard schließt das Fenster auf jedem Rückweg, auch bei Fehlern beim Auslesen der Cookies. Die Host-Prüfung akzeptiert nur noch `hoyolab.com` und echte Subdomains. Geprüft mit `cargo test`, `cargo clippy` und einem Unit-Test für die Host-Prüfung; ein Lauf mit echtem Fenster und ein Android-Build stehen aus.
-5. Barrierefreiheit M-11/M-12, danach die Aufräumpunkte. **M-11 und M-12 behoben:** BottomSheet nutzt `<dialog>` mit `showModal()` (Fokusfalle, Escape, gesperrter Hintergrund, Fokus-Rückgabe; Fokus startet auf der Überschrift). Das Profilmenü ist eine Disclosure ohne ARIA-Menürollen, mit Fokus auf den ersten Eintrag, Escape zurück zum Auslöser und Schließen beim Verlassen per Tab. Beides im Browser mit Tastatur geprüft.
+5. Barrierefreiheit M-11/M-12, danach die Aufräumpunkte.
+
+**Nachtrag niedrige Befunde:**
+- Behoben:
+  - Proxy: N-2, N-3, N-4
+  - API-Schicht: N-13, doppeltes `toRarity`, URL-Kodierung, „morgen“ bei Zeitumstellung, Wiki-Rate-Limit, `ApiError` mit `cause`
+  - UI: N-14 (Haupt-Chunk 448 kB), N-18, gültiges HTML in Buttons, Navigation statt Tab-Rollen, `aria-label` der Figurenansicht, Touch-Abbruch, numerische Sortierung
+  - Android/CI: N-8 (`allowBackup="false"`), N-11 (keine Caches im Release-Workflow)
+- Ohne Änderung: N-10. `^0.0.2` erlaubt unter npm und Cargo nur 0.0.2, die Lockfiles halten 0.0.2 fest. Den Quelltext des Plugins habe ich nicht gesichtet.
+- Offen:
+  - N-12 (Release erst nach der APK veröffentlichen): Ob `gh release upload` einen Entwurf über den Tag findet, ist ungeprüft, und der Ablauf lässt sich nur mit einem echten Tag testen.
+  - N-9 (FileProvider der Tauri-Vorlage, nicht exportiert)
+  - N-7 (SSO-Cookies beim Webview-Login): braucht einen Test mit zwei Konten
+  - der Umbau der verstreuten Hilfsfunktionen, das sekündliche Neuberechnen und die Keys aus Labels
+  - die systemabhängige Browser-Prüfung in `login.test.ts`
+  - Unter `targetSdk` 31 und höher hält `allowBackup="false"` die Übertragung von Gerät zu Gerät nicht auf. Dafür bräuchte es `dataExtractionRules` (Android-Doku „Back up user data with Auto Backup“, hier nicht nachgeschlagen). **M-11 und M-12 behoben:** BottomSheet nutzt `<dialog>` mit `showModal()` (Fokusfalle, Escape, gesperrter Hintergrund, Fokus-Rückgabe; Fokus startet auf der Überschrift). Das Profilmenü ist eine Disclosure ohne ARIA-Menürollen, mit Fokus auf den ersten Eintrag, Escape zurück zum Auslöser und Schließen beim Verlassen per Tab. Beides im Browser mit Tastatur geprüft.
 
 **Nachtrag Linter:** oxlint ist eingerichtet (`npm run lint`, in der CI). ESLint scheidet aus, weil `typescript-eslint` 8.72 nur TypeScript `<6.1` unterstützt. Der erste Lauf fand zehn Befunde. Davon sind behoben: N-15 (Ref beim Rendern geschrieben), `useCountUp` (Zeitmessung beim Rendern), ein Button ohne Namen, ein überflüssiger Fallback und zwei Testmängel. Drei Hinweise zu `prefer-tag-over-role` bleiben als Warnung stehen, darunter der Dialog aus M-11. Bewusst abgeschaltet sind `react-in-jsx-scope` (neue JSX-Transformation), `no-array-sort` (`toSorted` ist ES2023) und vorerst `consistent-function-scoping` (16 Stil-Hinweise).
