@@ -176,7 +176,7 @@ export function EventSheet({ e, onClose }: { e: GameEvent | undefined; onClose: 
 }
 
 /** Link in den Systembrowser, z. B. auf die Wiki-Seite eines Banners. */
-function ExternalLink({ url, children }: { url: string; children: ReactNode }) {
+export function ExternalLink({ url, children }: { url: string; children: ReactNode }) {
   return (
     <a
       href={url}

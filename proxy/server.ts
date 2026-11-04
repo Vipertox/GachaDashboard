@@ -37,6 +37,13 @@ export const ALLOWED_HOSTS = new Set([
   "api-account-os.hoyolab.com",
   "pc-launcher-sdk-api.kurogame.net",
   "wutheringwaves.fandom.com",
+  // Countdown: offizielle Ankündigungen und Versionsseiten der Wikis
+  "sg-hk4e-api.hoyoverse.com",
+  "sg-hkrpg-api.hoyoverse.com",
+  "hw-media-cdn-mingchao.kurogame.com",
+  "genshin-impact.fandom.com",
+  "honkai-star-rail.fandom.com",
+  "zenless-zone-zero.fandom.com",
 ]);
 
 export const KEY_PATTERN = /^[A-Za-z0-9_\-/.]{1,128}$/;

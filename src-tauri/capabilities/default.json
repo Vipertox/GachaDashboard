@@ -9,7 +9,17 @@
     "secure-keystore:default",
     {
       "identifier": "opener:allow-open-url",
-      "allow": [{ "url": "https://www.prydwen.gg/*" }, { "url": "https://wutheringwaves.fandom.com/*" }]
+      "allow": [
+        { "url": "https://www.prydwen.gg/*" },
+        { "url": "https://wutheringwaves.fandom.com/*" },
+        { "url": "https://genshin-impact.fandom.com/*" },
+        { "url": "https://honkai-star-rail.fandom.com/*" },
+        { "url": "https://zenless-zone-zero.fandom.com/*" },
+        { "url": "https://genshin.hoyoverse.com/*" },
+        { "url": "https://hsr.hoyoverse.com/*" },
+        { "url": "https://wutheringwaves.kurogames.com/*" },
+        { "url": "https://www.hoyolab.com/*" }
+      ]
     },
     {
       "identifier": "http:default",
@@ -18,7 +28,13 @@
         { "url": "https://sg-act-nap-api.hoyolab.com/*" },
         { "url": "https://api-account-os.hoyolab.com/*" },
         { "url": "https://pc-launcher-sdk-api.kurogame.net/*" },
-        { "url": "https://wutheringwaves.fandom.com/api.php*" }
+        { "url": "https://wutheringwaves.fandom.com/api.php*" },
+        { "url": "https://genshin-impact.fandom.com/api.php*" },
+        { "url": "https://honkai-star-rail.fandom.com/api.php*" },
+        { "url": "https://zenless-zone-zero.fandom.com/api.php*" },
+        { "url": "https://sg-hk4e-api.hoyoverse.com/common/*" },
+        { "url": "https://sg-hkrpg-api.hoyoverse.com/common/*" },
+        { "url": "https://hw-media-cdn-mingchao.kurogame.com/akiwebsite/*" }
       ]
     }
   ]

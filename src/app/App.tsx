@@ -11,6 +11,7 @@ const Accounts = lazy(() => import("../features/accounts/Accounts").then((m) => 
 const CharacterView = lazy(() => import("../features/game-detail/CharacterView").then((m) => ({ default: m.CharacterView })));
 const GameDetail = lazy(() => import("../features/game-detail/GameDetail").then((m) => ({ default: m.GameDetail })));
 const Settings = lazy(() => import("../features/settings/Settings").then((m) => ({ default: m.Settings })));
+const CountdownPage = lazy(() => import("../features/countdown/Countdown").then((m) => ({ default: m.CountdownPage })));
 const TimelinePage = lazy(() => import("../features/timeline/Timeline").then((m) => ({ default: m.TimelinePage })));
 
 function GearIcon() {
@@ -157,6 +158,7 @@ function Nav() {
       <div className="max-w-5xl mx-auto flex">
         <NavLink to="/" end className={item}>Dashboard</NavLink>
         <NavLink to="/zeitleiste" className={item}>Zeitleiste</NavLink>
+        <NavLink to="/countdown" className={item}>Countdown</NavLink>
       </div>
     </nav>
   );
@@ -182,6 +184,7 @@ export function App() {
             <Route path="/game/:game/:uid" element={<GameDetail />} />
             <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
             <Route path="/zeitleiste" element={<TimelinePage />} />
+            <Route path="/countdown" element={<CountdownPage />} />
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>

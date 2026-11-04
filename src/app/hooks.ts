@@ -14,6 +14,7 @@ import { EVENT_ADAPTERS } from "../api/events";
 import { chunk } from "../api/characters/util";
 import { ApiError } from "../api/errors";
 import { fetchGameArt, type GameArt } from "../api/gameArt";
+import { fetchVersionFacts } from "../api/versions";
 import { loadSecrets } from "../credentials";
 import type {
   Account,
@@ -320,4 +321,17 @@ export function useEvents(profile: Profile, ref: GameAccountRef) {
 export function useEventCalendars(profile: Profile, refs: GameAccountRef[]) {
   const options = useEventOptions();
   return useQueries({ queries: refs.map((r) => options(profile, r)) });
+}
+
+/** Versionsstand pro Spiel ohne Konto; die Quellen ändern sich selten, eine Stunde frisch. */
+export function useVersionFacts(games: GameId[]) {
+  return useQueries({
+    queries: games.map((game) => ({
+      queryKey: ["versions", game],
+      queryFn: ({ signal }: { signal: AbortSignal }) => fetchVersionFacts(game, signal),
+      staleTime: 60 * 60_000,
+      refetchOnWindowFocus: false,
+      retry: 1,
+    })),
+  });
 }
