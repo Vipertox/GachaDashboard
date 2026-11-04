@@ -4,17 +4,16 @@ import { EVENT_ADAPTERS } from "../../api/events";
 import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { BottomSheet, Card, GameIcon, ProgressBar, Skeleton } from "../../components/ui";
 import { openExternal } from "../../lib/native";
+import { eventEndingSoon as endingSoon } from "../../lib/endingSoon";
 import { formatDuration } from "../../lib/time";
 import { RARITY_COLOR } from "../../model/games";
 import type { Banner, EventCurrency, GameAccountRef, GameEvent, Profile } from "../../model/types";
 import { byTime, currencySummary, groupBanners, type BannerGroup, type CurrencySummary } from "./eventView";
 
-// Wie bei den Herausforderungen: ab drei Tagen vor Ende wird ein offenes Event hervorgehoben.
-const ENDING_SOON_MS = 3 * 86400_000;
 const VISIBLE = 5;
 
 /** 10102 heißt hier, dass die Kampfchronik in HoYoLAB nicht öffentlich ist. */
-function eventErrorText(e: ApiError): string {
+export function eventErrorText(e: ApiError): string {
   return e.kind === "notes_disabled"
     ? "Kampfchronik in HoYoLAB unter Datenschutz freigeben"
     : `${ERROR_TEXT[e.kind]}: ${e.message}`;
@@ -23,18 +22,12 @@ function eventErrorText(e: ApiError): string {
 const fmtDate = (d: Date) =>
   d.toLocaleString("de-DE", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" });
 
-function endingSoon(e: GameEvent, now: number): boolean {
-  if (e.status !== "running" || !e.end) return false;
-  const left = e.end.getTime() - now;
-  return left > 0 && left < ENDING_SOON_MS;
-}
-
-function progressText(p: NonNullable<GameEvent["progress"]>): string {
+export function progressText(p: NonNullable<GameEvent["progress"]>): string {
   if (p.unit === "%") return `${p.current} %`;
   return `${p.current}/${p.max}${p.unit ? ` ${p.unit}` : ""}`;
 }
 
-function whenText(x: { status: GameEvent["status"]; start?: Date; end?: Date }, now: number): string | undefined {
+export function whenText(x: { status: GameEvent["status"]; start?: Date; end?: Date }, now: number): string | undefined {
   if (x.status === "upcoming" && x.start) return `startet in ${formatDuration(x.start.getTime() - now)}`;
   if (x.end) return `endet in ${formatDuration(x.end.getTime() - now)}`;
   return undefined;
@@ -87,7 +80,7 @@ function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accen
 const fmtNum = (n: number) => n.toLocaleString("de-DE");
 
 /** "noch 420 Primogems" oder, wenn alles eingesammelt ist, "420 Primogems ✓". */
-function CurrencyBadge({ c }: { c: EventCurrency }) {
+export function CurrencyBadge({ c }: { c: EventCurrency }) {
   const open = c.remaining > 0;
   return (
     <span

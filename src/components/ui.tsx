@@ -164,16 +164,24 @@ export function ValueText({ r, now, className = "" }: { r: Resource; now: number
   );
 }
 
-export function Chip({ done, iconKey, children }: { done: boolean; iconKey?: string; children: ReactNode }) {
+/** `warn`: Offenes endet bald, der Chip erscheint dann in der Warnfarbe wie die Hinweise auf der Detailseite. */
+export function Chip({ done, warn, iconKey, children }: { done: boolean; warn?: boolean; iconKey?: string; children: ReactNode }) {
+  const tone = done ? "var(--color-ok)" : warn ? "var(--color-warn)" : undefined;
   return (
     <span
       className="inline-flex items-center gap-1 rounded-full px-3 text-sm min-h-8"
       style={{
-        background: done ? "color-mix(in srgb, var(--color-ok) 22%, transparent)" : "var(--surface-2)",
-        color: done ? "var(--color-ok)" : "var(--text)",
+        background: tone ? `color-mix(in srgb, ${tone} 22%, transparent)` : "var(--surface-2)",
+        color: tone ?? "var(--text)",
       }}
     >
-      {done ? <span aria-hidden>✓</span> : iconKey && imageFor(iconKey) && <GameIcon iconKey={iconKey} size={18} round />}
+      {done ? (
+        <span aria-hidden>✓</span>
+      ) : warn ? (
+        <span aria-hidden>⚠</span>
+      ) : (
+        iconKey && imageFor(iconKey) && <GameIcon iconKey={iconKey} size={18} round />
+      )}
       {children}
     </span>
   );

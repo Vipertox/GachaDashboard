@@ -312,9 +312,10 @@ function useEventOptions() {
 }
 
 /** Event-Kalender: ein Aufruf pro Spiel, wie Figuren und Herausforderungen 30 Minuten frisch. */
-export function useEvents(profile: Profile, ref: GameAccountRef) {
+export function useEvents(profile: Profile, ref: GameAccountRef, enabled = true) {
   const options = useEventOptions();
-  return useQuery<EventCalendar, ApiError>(options(profile, ref));
+  const o = options(profile, ref);
+  return useQuery<EventCalendar, ApiError>({ ...o, enabled: o.enabled !== false && enabled });
 }
 
 /** Event-Kalender mehrerer Spiele für die Zeitleiste; teilt sich den Cache mit `useEvents`. */

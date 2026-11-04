@@ -110,6 +110,18 @@ describe("Wuthering Waves", () => {
     expect(s.sections.map((x) => x.kind)).toEqual(["daily", "weekly"]);
     expect(s.secondary.map((r) => r.label)).toEqual(["Waveplate Crystal"]);
   });
+  it("zeigt den Pioneer Podcast unter der Höchststufe als Wochen-EXP", () => {
+    const s = parseWuwa({ Base: base, BattlePass: { IsOpen: true, Level: 69, WeekExp: 10, WeekMaxExp: 100 } }, acc("wuwa"), now);
+    const weekly = s.sections.find((x) => x.kind === "weekly");
+    expect(weekly?.resources.map((r) => [r.label, r.current, r.max])).toEqual([["Pioneer Podcast (Stufe 69)", 10, 100]]);
+    expect(weekly?.flags.map((f) => f.label)).toEqual(["Wochenboss-Belohnungen"]);
+  });
+  it("wertet den Pioneer Podcast auf der Höchststufe als erledigt", () => {
+    const s = parseWuwa({ Base: base, BattlePass: { IsOpen: true, Level: 70, WeekExp: 0, WeekMaxExp: 100 } }, acc("wuwa"), now);
+    const weekly = s.sections.find((x) => x.kind === "weekly");
+    expect(weekly?.resources).toEqual([]);
+    expect(weekly?.flags).toContainEqual({ label: "Pioneer Podcast", done: true, text: "Höchststufe 70" });
+  });
   it("liest Konto und Sammlung", () => {
     const s = parseWuwa(
       {

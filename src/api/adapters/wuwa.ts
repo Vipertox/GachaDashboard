@@ -1,8 +1,11 @@
 import { z } from "zod";
 import { ApiError } from "../errors";
 import { queryRole } from "../kuro";
-import { makeResource, nonEmpty, num, optNum, parseOrThrow, section } from "./util";
+import { battlePass, makeResource, nonEmpty, num, optNum, parseOrThrow, section } from "./util";
 import type { Account, GameAdapter, GameStatus } from "../../model/types";
+
+/** Pioneer Podcast endet auf Stufe 70; die Schnittstelle liefert die Höchststufe nicht mit. */
+const PODCAST_MAX_LEVEL = 70;
 
 const counts = z.record(z.string(), num).optional().nullable();
 
@@ -94,9 +97,20 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
   });
 
   const bp = d.BattlePass;
+  const podcast = bp?.IsOpen
+    ? battlePass({
+        label: "Pioneer Podcast",
+        iconKey: "wuwa/podcast",
+        level: bp.Level ?? 0,
+        maxLevel: PODCAST_MAX_LEVEL,
+        weekExp: bp.WeekExp,
+        weekMaxExp: bp.WeekMaxExp,
+        now,
+      })
+    : { resources: [], flags: [] };
   const weekly = section("weekly", {
-    flags:
-      b.WeeklyInstCount !== undefined
+    flags: [
+      ...(b.WeeklyInstCount !== undefined
         ? [
             {
               label: "Wochenboss-Belohnungen",
@@ -104,19 +118,10 @@ export function parseWuwa(data: unknown, account: Account, now = new Date()): Ga
               text: `${b.WeeklyInstCount} übrig`,
             },
           ]
-        : [],
-    resources:
-      bp?.IsOpen && bp.WeekMaxExp
-        ? [
-            makeResource({
-              label: `Pioneer Podcast (Stufe ${bp.Level ?? 0})`,
-              iconKey: "wuwa/podcast",
-              current: bp.WeekExp ?? 0,
-              max: bp.WeekMaxExp,
-              now,
-            }),
-          ]
-        : [],
+        : []),
+      ...podcast.flags,
+    ],
+    resources: podcast.resources,
   });
 
   const motor = d.MotorData;
