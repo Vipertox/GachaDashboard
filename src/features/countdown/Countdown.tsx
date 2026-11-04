@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useApp } from "../../app/state";
 import { useEventCalendars, useGameArt, useNow, useVersionFacts, visibleGames } from "../../app/hooks";
 import { EVENT_ADAPTERS } from "../../api/events";
@@ -7,7 +8,7 @@ import { Card, GameIcon, Skeleton } from "../../components/ui";
 import { GAME_ACCENT, GAME_META } from "../../model/games";
 import type { Banner, GameAccountRef, GameId, Profile, VersionInfo } from "../../model/types";
 import { ExternalLink } from "../game-detail/Events";
-import { countdownParts } from "./countdownView";
+import { countdownParts, loadSortByTime, saveSortByTime, sortByCountdown } from "./countdownView";
 
 /** Bannerkalender von HoYoLAB als Quelle; der Kalender von Wuthering Waves stammt aus dem Wiki und zählt nicht. */
 const BANNER_GAMES: GameId[] = ["genshin", "starrail", "zzz"];
@@ -17,11 +18,42 @@ const fmtDate = (d: Date) =>
 
 export function CountdownPage() {
   const { activeProfile } = useApp();
+  const [sortByTime, setSortByTime] = useState(loadSortByTime);
+  const toggle = () => {
+    setSortByTime(!sortByTime);
+    saveSortByTime(!sortByTime);
+  };
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-bold">Countdown</h1>
-      {activeProfile ? <WithProfile profile={activeProfile} /> : <Countdowns games={VERSION_GAMES} banners={{}} icons={{}} />}
+      <div className="flex items-center justify-between gap-3">
+        <h1 className="text-xl font-bold">Countdown</h1>
+        <Switch on={sortByTime} onToggle={toggle} label="Nach Countdown sortieren" />
+      </div>
+      {activeProfile ? (
+        <WithProfile profile={activeProfile} sortByTime={sortByTime} />
+      ) : (
+        <Countdowns games={VERSION_GAMES} banners={{}} icons={{}} sortByTime={sortByTime} />
+      )}
     </div>
+  );
+}
+
+/** An/Aus-Schalter; die ganze Zeile ist die Fläche zum Tippen. */
+function Switch({ on, onToggle, label }: { on: boolean; onToggle: () => void; label: string }) {
+  return (
+    <button role="switch" aria-checked={on} onClick={onToggle} className="min-h-11 flex items-center gap-2 text-sm">
+      <span className="whitespace-nowrap" style={{ color: on ? "var(--text)" : "var(--muted)" }}>{label}</span>
+      <span
+        aria-hidden
+        className="relative w-11 h-6 rounded-full shrink-0 transition-colors"
+        style={{ background: on ? "#6366f1" : "var(--surface-2)", border: "1px solid var(--border)" }}
+      >
+        <span
+          className="absolute top-0.5 w-[18px] h-[18px] rounded-full bg-white transition-all"
+          style={{ left: on ? 22 : 2 }}
+        />
+      </span>
+    </button>
   );
 }
 
@@ -29,7 +61,7 @@ export function CountdownPage() {
  * Mit Profil: dessen sichtbare Spiele in der Reihenfolge des Dashboards (Einstellungen), dazu der
  * Bannerkalender des ersten Kontos je Spiel.
  */
-function WithProfile({ profile }: { profile: Profile }) {
+function WithProfile({ profile, sortByTime }: { profile: Profile; sortByTime: boolean }) {
   const refs = visibleGames(profile);
   const games = refs.length ? [...new Set(refs.map((r) => r.game))].filter((g) => VERSION_GAMES.includes(g)) : VERSION_GAMES;
   const bannerRefs = games
@@ -45,12 +77,22 @@ function WithProfile({ profile }: { profile: Profile }) {
   });
   const icons: IconUrls = {};
   for (const g of games) icons[g] = art?.[g]?.iconUrl;
-  return <Countdowns games={games} banners={banners} icons={icons} />;
+  return <Countdowns games={games} banners={banners} icons={icons} sortByTime={sortByTime} />;
 }
 
 type IconUrls = Partial<Record<GameId, string>>;
 
-function Countdowns({ games, banners, icons }: { games: GameId[]; banners: Partial<Record<GameId, Banner[]>>; icons: IconUrls }) {
+function Countdowns({
+  games,
+  banners,
+  icons,
+  sortByTime,
+}: {
+  games: GameId[];
+  banners: Partial<Record<GameId, Banner[]>>;
+  icons: IconUrls;
+  sortByTime: boolean;
+}) {
   const now = useNow();
   const queries = useVersionFacts(games);
   const rows = games.map((game, i) => {
@@ -59,10 +101,11 @@ function Countdowns({ games, banners, icons }: { games: GameId[]; banners: Parti
     const info = q.data ? mergeVersionFacts(game, rankFacts(q.data, fromBanners), new Date(now)) : undefined;
     return { game, info, loading: q.isPending, error: q.error as ApiError | null };
   });
+  const shown = sortByTime ? sortByCountdown(rows) : rows;
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
-      {rows.map((r) => (
+      {shown.map((r) => (
         <Card key={r.game} accent={GAME_ACCENT[r.game]}>
           <div className="p-4 space-y-3">
             <div className="flex items-center gap-3">

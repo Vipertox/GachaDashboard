@@ -72,6 +72,16 @@ describe("HoYoverse-Ankündigungen", () => {
     expect(f.next).toBe("4.7");
   });
 
+  it("gleicht um 7 Stunden verschobene Zeiten aus", () => {
+    const shifted = JSON.parse(JSON.stringify(starrail));
+    for (const a of shifted.data.list[0].list) {
+      a.start_time = a.start_time.replace(/ dd:/, (m: string) => ` ${String((+m.slice(1, 3) + 17) % 24).padStart(2, "0")}:`);
+    }
+    shifted.data.list[0].list[1].end_time = "2026-11-11 00:00:00";
+    const f = parseHoyoAnnouncements(shifted, src, new Date("2026-11-04T12:00:00Z"));
+    expect(iso(f.end)).toBe("2026-11-10T22:00:00.000Z");
+  });
+
   it("nimmt bei Genshin das Ende von Update Details ohne Folgeversion", () => {
     const genshin = {
       retcode: 0,

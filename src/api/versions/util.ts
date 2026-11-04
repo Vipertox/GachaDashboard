@@ -80,6 +80,14 @@ export function parseWikiDate(raw: string | undefined, defaultHour: number): Dat
   return new Date(Date.UTC(+m[3], month, +m[2], defaultHour - SERVER_TZ));
 }
 
+/**
+ * Nächstgelegener Wartungsbeginn zu `d`, höchstens 12 Stunden entfernt. getAnnList liefert die Zeiten mal in UTC+8,
+ * mal um 7 Stunden verschoben (z. B. 00:00 statt 07:00), obwohl `timezone` immer 8 meldet.
+ */
+export function nearestUpdate(d: Date, hour: number): Date {
+  return nextUpdateAfter(new Date(d.getTime() - 12 * 3_600_000), hour);
+}
+
 export function addDays(d: Date, days: number): Date {
   return new Date(d.getTime() + days * 86_400_000);
 }

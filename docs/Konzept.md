@@ -724,6 +724,8 @@ Die Zeitleiste nutzt dieselben Abfragen wie Events und Herausforderungen (`["eve
 
 Eigener Punkt **Countdown** in der Navigation (`/countdown`). Pro Spiel zeigt eine Karte die aktuelle und die nächste Version und einen sekundengenauen Countdown bis zum Update. Ohne Profil erscheinen alle vier Spiele, mit Profil dessen sichtbare Spiele in derselben Reihenfolge wie im Dashboard (einstellbar unter Einstellungen).
 
+Oben rechts schaltet der Schalter **Nach Countdown sortieren** auf den kürzesten Countdown zuerst. Ein laufendes Update steht ganz oben, noch ladende oder fehlerhafte Spiele am Schluss, bei Gleichstand gilt die Reihenfolge des Dashboards. Die Wahl steht im `localStorage` unter `countdown:sortByTime`, ohne Eintrag ist der Schalter aus.
+
 **Vorbild und Abgrenzung**
 
 gachacountdown.online hat keine Schnittstelle. Die Werte (aktuelle und nächste Version, `fecha_inicio`, `duracion_dias`) stehen von Hand gepflegt als Props in der statischen Astro-Seite, die Uhrzeit ist pauschal. Das Dashboard liest stattdessen die Quellen selbst.
@@ -732,7 +734,7 @@ gachacountdown.online hat keine Schnittstelle. Die Werte (aktuelle und nächste 
 
 | Rang | Quelle | Spiele | Was sie liefert |
 | --- | --- | --- | --- |
-| 1 | Ankündigungen im Spiel, `getAnnList` auf `sg-hk4e-api.hoyoverse.com` bzw. `sg-hkrpg-api.hoyoverse.com`, Region Asien | Genshin, Star Rail | Ohne Anmeldung. Aktuelle Version aus "Version X.Y … Update Details". Sie läuft bis kurz nach dem nächsten Update (Genshin 06:00, Star Rail 07:00 UTC+8), Ende ist der letzte Wartungsbeginn davor. Eine höhere Version in einem Titel ("Version 4.7 Store Update") ist die nächste. Zeiten in `data.timezone` |
+| 1 | Ankündigungen im Spiel, `getAnnList` auf `sg-hk4e-api.hoyoverse.com` bzw. `sg-hkrpg-api.hoyoverse.com`, Region Asien | Genshin, Star Rail | Ohne Anmeldung. Aktuelle Version aus "Version X.Y … Update Details". Sie läuft bis kurz nach dem nächsten Update (Genshin 06:00, Star Rail 07:00 UTC+8), Ende ist der nächstgelegene Wartungsbeginn. Das gleicht auch aus, dass die Schnittstelle die Zeiten gelegentlich um 7 Stunden verschoben liefert (00:00 statt 07:00), obwohl sie immer `timezone: 8` meldet. Eine höhere Version in einem Titel ("Version 4.7 Store Update") ist die nächste. Zeiten in `data.timezone` |
 | 1 | News-JSON der offiziellen Website, `hw-media-cdn-mingchao.kurogame.com/…/G152/en/ArticleMenu.json` | Wuthering Waves | Aktuelle Version und Beginn aus den neuesten "Patch Notes". Nächste Version aus jüngeren Titeln mit höherer Nummer, Ende in dieser Rangfolge: "Maintenance Time" aus der "Update Maintenance Notice" der nächsten Version, der Tag aus "Scheduled for Release on …" um 04:00 UTC+8, sonst der nächste Wartungsbeginn nach dem Ende von "Convene: Phase Ⅱ" (`article/<id>.json`) |
 | 2 | Banner-Kalender von HoYoLAB (mit Konto, dieselbe Abfrage wie Events) | Genshin, Star Rail, ZZZ | Version der laufenden Banner. Ende ist der nächste Wartungsbeginn nach dem spätesten Bannerende dieser Version (ZZZ: Banner bis 14:59 Serverzeit, Wartung am nächsten Morgen). Für ZZZ die einzige offizielle Quelle, eine öffentliche Ankündigungs-Schnittstelle gibt es dort nicht |
 | 3 | Fandom-Wiki, Seiten `Version/X.Y` (Infobox `date` bzw. `release_date`, `next`) | alle | Füllt Lücken. Aktuell ist die höchste Version mit Datum in der Vergangenheit, der Tag der folgenden Seite ist das Ende. Eine Uhrzeit im Wiki (WuWa: Freigabe nach der Wartung) wird ignoriert, es gilt der Wartungsbeginn |
