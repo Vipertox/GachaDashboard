@@ -60,7 +60,7 @@ export function WeeklySheet({
         </ul>
         {/* Wöchentliches steht im Übersicht-Tab der Detailseite, dem Standard-Tab */}
         <Link to={detailPath} className="inline-flex items-center min-h-11 text-indigo-400 underline" onClick={onClose}>
-          Alle Details
+          Alle Wöchentlichen
         </Link>
       </div>
     </BottomSheet>
