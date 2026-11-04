@@ -38,8 +38,4 @@ export function currencyFromRewards(
 /** HoYoLAB liefert Zeilenumbrüche in Beschreibungen teils als `\n`-Text. */
 export const multiline = (s: string) => s.replace(/\\n/g, "\n").trim();
 
-/** Seltenheit als Zahl oder Buchstabe (ZZZ: S, A, B). */
-export const rarity = z.union([z.string(), z.number()]).optional().nullable();
-const LETTER: Record<string, number> = { S: 5, A: 4, B: 3 };
-export const toRarity = (r: string | number | null | undefined) =>
-  typeof r === "number" ? r : (LETTER[String(r ?? "").toUpperCase()] ?? (Number(r) || 0));
+export { rarity, toRarity } from "../characters/util";

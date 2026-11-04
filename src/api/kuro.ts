@@ -1,13 +1,15 @@
+import { z } from "zod";
 import { ApiError } from "./errors";
 import { httpJson } from "./http";
 
 const BASE = "https://pc-launcher-sdk-api.kurogame.net/game";
 
-interface KuroEnvelope {
-  code?: number;
-  msg?: string;
-  data?: Record<string, unknown> | null;
-}
+const envelopeSchema = z.object({
+  code: z.number(),
+  msg: z.string().nullish(),
+  data: z.record(z.string(), z.unknown()).nullish(),
+});
+type KuroEnvelope = z.infer<typeof envelopeSchema>;
 
 function mapCode(code: number, msg: string): ApiError {
   if (code === 1001) return new ApiError("auth", msg || "invalid token", code);
@@ -20,16 +22,17 @@ async function post(
   body: Record<string, unknown>,
   signal?: AbortSignal,
 ): Promise<KuroEnvelope> {
-  const json = (await httpJson({
+  const json = await httpJson({
     url: `${BASE}/${endpoint}?_t=${Math.floor(Date.now() / 1000)}`,
     method: "POST",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(body),
     signal,
-  })) as KuroEnvelope;
-  if (typeof json?.code !== "number") throw new ApiError("schema", "Antwort ohne code");
-  if (json.code !== 0) throw mapCode(json.code, json.msg ?? "");
-  return json;
+  });
+  const envelope = envelopeSchema.safeParse(json);
+  if (!envelope.success) throw new ApiError("schema", "Antwort ohne code");
+  if (envelope.data.code !== 0) throw mapCode(envelope.data.code, envelope.data.msg ?? "");
+  return envelope.data;
 }
 
 export interface KuroPlayer {

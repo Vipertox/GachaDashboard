@@ -14,10 +14,19 @@ import { join } from "node:path";
 
 const LOGIN_URL = "https://www.hoyolab.com/home";
 const TIMEOUT_MS = 10 * 60_000;
+const CDP_TIMEOUT_MS = 5_000;
+// Windows gibt das Profilverzeichnis erst nach dem Beenden des Browsers frei.
+const PROFILE_CLEANUP_DELAY_MS = 2_000;
 
 export interface HoyoTokens {
   ltuid: string;
   ltoken: string;
+}
+
+interface CdpCookie {
+  name: string;
+  value: string;
+  domain: string;
 }
 
 export function findBrowser(env = process.env): string | undefined {
@@ -37,7 +46,7 @@ export function findBrowser(env = process.env): string | undefined {
   return candidates.find((c): c is string => !!c && existsSync(c));
 }
 
-export function pickTokens(cookies: { name: string; value: string; domain: string }[]): HoyoTokens | null {
+export function pickTokens(cookies: CdpCookie[]): HoyoTokens | null {
   // Nur hoyolab.com selbst und echte Subdomains, nicht etwa "evilhoyolab.com"
   const hoyo = cookies.filter((c) => /(^|\.)hoyolab\.com$/.test(c.domain));
   const ltuid = hoyo.find((c) => c.name === "ltuid_v2")?.value;
@@ -58,9 +67,9 @@ function freePort(): Promise<number> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-async function browserWsUrl(port: number, child: ChildProcess): Promise<string> {
+async function browserWsUrl(port: number, assertRunning: (message: string) => void): Promise<string> {
   for (let i = 0; i < 50; i++) {
-    if (child.exitCode !== null) throw new Error("Browser wurde beendet");
+    assertRunning("Browser wurde beendet");
     try {
       const res = await fetch(`http://127.0.0.1:${port}/json/version`);
       return ((await res.json()) as { webSocketDebuggerUrl: string }).webSocketDebuggerUrl;
@@ -71,19 +80,61 @@ async function browserWsUrl(port: number, child: ChildProcess): Promise<string> 
   throw new Error("Browser-Debugging nicht erreichbar");
 }
 
-function cdpGetCookies(ws: WebSocket): Promise<{ name: string; value: string; domain: string }[]> {
+/**
+ * Fragt die Cookies per DevTools-Protokoll ab. Bricht ab, wenn die Verbindung
+ * schließt oder der Browser nicht antwortet, damit die Login-Schleife nie hängt.
+ */
+export function cdpGetCookies(ws: WebSocket, timeoutMs = CDP_TIMEOUT_MS): Promise<CdpCookie[]> {
   return new Promise((resolve, reject) => {
     const id = Math.floor(Math.random() * 1e9);
-    const onMessage = (ev: MessageEvent) => {
-      const msg = JSON.parse(String(ev.data)) as { id?: number; result?: { cookies: never[] }; error?: { message: string } };
-      if (msg.id !== id) return;
+    const cleanup = () => {
+      clearTimeout(timer);
       ws.removeEventListener("message", onMessage);
+      ws.removeEventListener("close", onDisconnect);
+      ws.removeEventListener("error", onDisconnect);
+    };
+    const fail = (message: string) => {
+      cleanup();
+      reject(new Error(message));
+    };
+    const onMessage = (ev: MessageEvent) => {
+      let msg: { id?: number; result?: { cookies: CdpCookie[] }; error?: { message: string } };
+      try {
+        msg = JSON.parse(String(ev.data));
+      } catch {
+        return;
+      }
+      if (msg.id !== id) return;
+      cleanup();
       if (msg.error) reject(new Error(msg.error.message));
       else resolve(msg.result?.cookies ?? []);
     };
+    const onDisconnect = () => fail("DevTools-Verbindung wurde getrennt");
+    const timer = setTimeout(() => fail("Browser antwortet nicht auf DevTools-Anfrage"), timeoutMs);
+
     ws.addEventListener("message", onMessage);
+    ws.addEventListener("close", onDisconnect);
+    ws.addEventListener("error", onDisconnect);
+    if (ws.readyState !== WebSocket.OPEN) {
+      onDisconnect();
+      return;
+    }
     ws.send(JSON.stringify({ id, method: "Storage.getCookies" }));
   });
+}
+
+/**
+ * Löscht das temporäre Profil verzögert. Fehler (etwa EBUSY, solange Hilfsprozesse
+ * des Browsers das Verzeichnis halten) dürfen den Proxy nicht beenden.
+ */
+export function removeProfileLater(dir: string, remove: typeof rmSync = rmSync): void {
+  setTimeout(() => {
+    try {
+      remove(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 });
+    } catch (e) {
+      console.warn(`Temporäres Browserprofil nicht gelöscht: ${dir} (${e instanceof Error ? e.message : String(e)})`);
+    }
+  }, PROFILE_CLEANUP_DELAY_MS);
 }
 
 let running = false;
@@ -94,42 +145,54 @@ export async function hoyolabBrowserLogin(): Promise<HoyoTokens> {
   if (!exe) throw new Error("Weder Edge noch Chrome gefunden. Pfad mit BROWSER_PATH setzen oder Tokens von Hand eintragen.");
 
   running = true;
-  const dir = mkdtempSync(join(tmpdir(), "gacha-login-"));
-  const port = await freePort();
-  const child = spawn(
-    exe,
-    [
-      `--remote-debugging-port=${port}`,
-      "--remote-debugging-address=127.0.0.1",
-      `--user-data-dir=${dir}`,
-      "--no-first-run",
-      "--no-default-browser-check",
-      "--new-window",
-      LOGIN_URL,
-    ],
-    { stdio: "ignore" },
-  );
+  let dir: string | undefined;
+  let child: ChildProcess | undefined;
+  let ws: WebSocket | undefined;
   try {
-    const ws = new WebSocket(await browserWsUrl(port, child));
+    dir = mkdtempSync(join(tmpdir(), "gacha-login-"));
+    const port = await freePort();
+    const browser = spawn(
+      exe,
+      [
+        `--remote-debugging-port=${port}`,
+        "--remote-debugging-address=127.0.0.1",
+        `--user-data-dir=${dir}`,
+        "--no-first-run",
+        "--no-default-browser-check",
+        "--new-window",
+        LOGIN_URL,
+      ],
+      { stdio: "ignore" },
+    );
+    child = browser;
+    // Ohne Listener beendet ein fehlgeschlagener Start (z. B. falscher BROWSER_PATH) den Proxy.
+    let spawnError: Error | undefined;
+    browser.once("error", (e) => {
+      spawnError = e;
+    });
+    const assertRunning = (message: string) => {
+      if (spawnError) throw new Error(`Browser konnte nicht gestartet werden: ${spawnError.message}`);
+      if (browser.exitCode !== null) throw new Error(message);
+    };
+
+    const socket = new WebSocket(await browserWsUrl(port, assertRunning));
+    ws = socket;
     await new Promise<void>((resolve, reject) => {
-      ws.addEventListener("open", () => resolve());
-      ws.addEventListener("error", () => reject(new Error("DevTools-Verbindung fehlgeschlagen")));
+      socket.addEventListener("open", () => resolve());
+      socket.addEventListener("error", () => reject(new Error("DevTools-Verbindung fehlgeschlagen")));
     });
     const deadline = Date.now() + TIMEOUT_MS;
     while (Date.now() < deadline) {
       await sleep(1000);
-      if (child.exitCode !== null) throw new Error("Anmeldefenster wurde geschlossen");
-      const tokens = pickTokens(await cdpGetCookies(ws));
-      if (tokens) {
-        ws.close();
-        return tokens;
-      }
+      assertRunning("Anmeldefenster wurde geschlossen");
+      const tokens = pickTokens(await cdpGetCookies(socket));
+      if (tokens) return tokens;
     }
     throw new Error("Zeitüberschreitung bei der Anmeldung");
   } finally {
     running = false;
-    child.kill();
-    // Windows gibt das Profilverzeichnis erst nach dem Beenden frei.
-    setTimeout(() => rmSync(dir, { recursive: true, force: true, maxRetries: 5, retryDelay: 500 }), 2000);
+    ws?.close();
+    child?.kill();
+    if (dir) removeProfileLater(dir);
   }
 }

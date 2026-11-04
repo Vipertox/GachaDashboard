@@ -32,6 +32,15 @@ export default defineConfig({
     port: 5173,
     strictPort: true,
     proxy: { "/api": `http://127.0.0.1:${PROXY_PORT}` },
+    // Wie beim Proxy: nicht in fremde Seiten einbettbar. Eine volle CSP stünde dem
+    // Hot-Reload im Weg; sie gilt im Produktivbetrieb (Proxy bzw. Tauri).
+    headers: {
+      "X-Frame-Options": "DENY",
+      "Content-Security-Policy": "frame-ancestors 'none'",
+      "X-Content-Type-Options": "nosniff",
+    },
+    // Rust-Builds in src-tauri/target sperren Dateien und lösten sonst Watcher-Fehler und Reloads aus.
+    watch: { ignored: ["**/src-tauri/**"] },
   },
   test: { environment: "node", include: ["src/**/*.test.ts", "proxy/**/*.test.ts"] },
 });

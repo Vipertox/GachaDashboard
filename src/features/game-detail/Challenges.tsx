@@ -1,4 +1,4 @@
-import { useQueryClient } from "@tanstack/react-query";
+import { useIsFetching, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 import { challengeKey, useChallenge, useNow } from "../../app/hooks";
 import { CHALLENGE_MODES } from "../../api/challenges";
@@ -143,7 +143,8 @@ export function Challenges({ profile, gameRef, accent }: { profile: Profile; gam
   const qc = useQueryClient();
   const modes = CHALLENGE_MODES[gameRef.game] ?? [];
   const key = challengeKey(profile.id, gameRef);
-  const fetching = qc.isFetching({ queryKey: key }) > 0;
+  // Abonniert den Ladezustand; qc.isFetching() läse ihn nur einmal beim Rendern
+  const fetching = useIsFetching({ queryKey: key }) > 0;
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-3 text-sm" style={{ color: "var(--muted)" }}>
@@ -169,7 +170,7 @@ function SummaryRow({ profile, gameRef, mode }: { profile: Profile; gameRef: Gam
   if (q.isError) value = "Fehler";
   else if (c) value = c.state === "ok" ? (c.summary ?? "Gespielt") : c.state === "locked" ? "Gesperrt" : "Offen";
   return (
-    <li className="flex items-center justify-between gap-3 text-sm">
+    <span className="flex items-center justify-between gap-3 text-sm">
       <span className="truncate">{mode.label}</span>
       <span className="shrink-0 text-right">
         <span className="font-semibold">{value}</span>
@@ -177,7 +178,7 @@ function SummaryRow({ profile, gameRef, mode }: { profile: Profile; gameRef: Gam
           <span style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}> · endet in {formatDuration(left)}</span>
         )}
       </span>
-    </li>
+    </span>
   );
 }
 
@@ -190,15 +191,14 @@ export function ChallengeSummary({ profile, gameRef, onOpen }: { profile: Profil
       <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
         Herausforderungen
       </h2>
-      <button className="block w-full text-left active:opacity-70" onClick={onOpen}>
-        <Card>
-          <ul className="p-4 space-y-2">
-            {modes.map((m) => (
-              <SummaryRow key={m.key} profile={profile} gameRef={gameRef} mode={m} />
-            ))}
-          </ul>
-        </Card>
-      </button>
+      {/* Button in der Karte statt Karte (div) und Liste (ul) im Button: beides ist dort kein gültiges HTML */}
+      <Card>
+        <button className="block w-full text-left p-4 space-y-2 active:opacity-70" onClick={onOpen} aria-label="Herausforderungen öffnen">
+          {modes.map((m) => (
+            <SummaryRow key={m.key} profile={profile} gameRef={gameRef} mode={m} />
+          ))}
+        </button>
+      </Card>
     </section>
   );
 }

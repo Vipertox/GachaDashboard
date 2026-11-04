@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { num, optNum, parseOrThrow } from "../adapters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { optStr, propertyNames, splitStats, stat, str } from "./util";
 import type { Character, CharacterAdapter, GearPiece } from "../../model/types";
 
@@ -138,7 +138,7 @@ export const starrailCharacters: CharacterAdapter = {
     fetchWithCredentials(account, async (creds) => {
       const details = parseStarRailCharacters(
         await hoyoGet(
-          `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/avatar/info?server=${account.region}&role_id=${account.uid}&need_wiki=true`,
+          `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/avatar/info?${roleParams(account)}&need_wiki=true`,
           creds,
           signal,
         ),

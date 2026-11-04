@@ -8,6 +8,7 @@ Beiträge laufen über Forks und Pull Requests gegen `main`.
    ```bash
    npm ci
    npm run typecheck
+   npm run lint
    npm test
    npm run build
    ```
@@ -18,6 +19,7 @@ Beiträge laufen über Forks und Pull Requests gegen `main`.
 Die CI für Pull Requests aus Forks startet erst nach Freigabe durch den Maintainer.
 
 - Neue Abhängigkeiten nur mit Begründung.
+- Linter ist [oxlint](https://oxc.rs) (`.oxlintrc.json`), nicht ESLint: `typescript-eslint` unterstützt TypeScript 7 nicht. Fehler brechen die CI ab, Warnungen nicht.
 - Keine echten Cookies, Tokens oder Schlüssel committen – auch nicht in Tests.
 - Sicherheitslücken nicht als Issue melden, sondern wie in [SECURITY.md](SECURITY.md) beschrieben.
 

@@ -1,7 +1,7 @@
 {
   "name": "gacha-dashboard",
   "private": true,
-  "version": "0.1.9",
+  "version": "0.1.10",
   "license": "MIT",
   "type": "module",
   "scripts": {
@@ -10,6 +10,7 @@
     "start": "vite build && tsx proxy/server.ts",
     "build": "tsc --noEmit && vite build",
     "typecheck": "tsc --noEmit",
+    "lint": "oxlint",
     "test": "vitest run",
     "tauri": "tauri"
   },
@@ -39,6 +40,7 @@
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
     "concurrently": "^10.0.6",
+    "oxlint": "^1.91.0",
     "tailwindcss": "^4.3.3",
     "tsx": "^4.23.15",
     "typescript": "^7.0.2",

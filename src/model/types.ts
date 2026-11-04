@@ -1,3 +1,5 @@
+import type { ApiError } from "../api/errors";
+
 export type GameId = "genshin" | "starrail" | "zzz" | "wuwa";
 
 export const GAME_IDS: GameId[] = ["genshin", "starrail", "zzz", "wuwa"];
@@ -232,6 +234,8 @@ export interface Banner {
 export interface EventCalendar {
   events: GameEvent[];
   banners: Banner[];
+  /** Banner kommen aus einer eigenen Quelle, die ausfallen darf; dann bleiben die Events sichtbar. */
+  bannersError?: ApiError;
 }
 
 export interface EventAdapter {

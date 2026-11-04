@@ -2,15 +2,15 @@ import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { num, optNum, parseOrThrow } from "../adapters/util";
 import { optStr } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams, uidParams } from "../hoyolab";
 import { challenge, fmtNum, fmtRank, partialTime, plain, scheduleType, serverDate, serverOffset } from "./util";
 import type { Account, Challenge, ChallengeMode, ChallengePeriod, Fact } from "../../model/types";
 
 const BASE = "https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz";
 
 // Shiyu Defense nimmt `role_id`, die neueren Modi wie in genshin.py `uid` und `region`.
-const roleQuery = (a: Account, p: ChallengePeriod) => `server=${a.region}&role_id=${a.uid}&schedule_type=${scheduleType(p)}`;
-const uidQuery = (a: Account, p: ChallengePeriod) => `uid=${a.uid}&region=${a.region}&schedule_type=${scheduleType(p)}`;
+const roleQuery = (a: Account, p: ChallengePeriod) => `${roleParams(a)}&schedule_type=${scheduleType(p)}`;
+const uidQuery = (a: Account, p: ChallengePeriod) => `${uidParams(a)}&schedule_type=${scheduleType(p)}`;
 
 const shiyuSchema = z.object({
   hadal_ver: optStr,

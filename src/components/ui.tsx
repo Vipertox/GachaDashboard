@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { imageFor } from "../assets/registry";
 import { fraction, isFull, liveValue } from "../lib/time";
 import type { Resource } from "../model/types";
@@ -81,17 +81,18 @@ export function ProgressBar({
   height?: number;
   mode?: BarMode;
 }) {
+  // <span> als Block statt <div>: der Balken steht auch innerhalb von Buttons (Event-Zeilen)
   return (
-    <div
-      className="w-full rounded-full overflow-hidden"
+    <span
+      className="block w-full rounded-full overflow-hidden"
       style={{ height, background: "var(--surface-2)" }}
       role="progressbar"
       aria-valuenow={Math.round(frac * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="bar-fill h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent, mode) }} />
-    </div>
+      <span className="bar-fill block h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent, mode) }} />
+    </span>
   );
 }
 
@@ -135,15 +136,22 @@ const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)"
 
 /** Zählt beim ersten Anzeigen kurz von 0 auf den Zielwert hoch und folgt ihm danach direkt. */
 export function useCountUp(target: number, ms = 600): number {
-  const [start] = useState(() => (reducedMotion() ? -Infinity : performance.now()));
-  const [, rerender] = useReducer((x: number) => x + 1, 0);
-  const t = Math.min(1, (performance.now() - start) / ms);
+  const [skip] = useState(reducedMotion);
+  const [progress, setProgress] = useState(skip ? 1 : 0);
+  // Fortschritt kommt aus dem Animationsframe, nicht aus einer Zeitmessung beim Rendern.
   useEffect(() => {
-    if (t >= 1) return;
-    const id = requestAnimationFrame(rerender);
-    return () => cancelAnimationFrame(id);
-  });
-  return t >= 1 ? target : Math.round(target * (1 - (1 - t) ** 3));
+    if (skip) return;
+    const start = performance.now();
+    const animation = { frame: 0 };
+    const tick = (now: number) => {
+      const next = Math.min(1, (now - start) / ms);
+      setProgress(next);
+      if (next < 1) animation.frame = requestAnimationFrame(tick);
+    };
+    animation.frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animation.frame);
+  }, [skip, ms]);
+  return progress >= 1 ? target : Math.round(target * (1 - (1 - progress) ** 3));
 }
 
 export function ValueText({ r, now, className = "" }: { r: Resource; now: number; className?: string }) {
@@ -186,20 +194,52 @@ export function Card({ children, accent, className = "" }: { children: ReactNode
   );
 }
 
+/**
+ * Modales Bottom Sheet auf Basis von <dialog>: Der Browser hält den Fokus im Dialog,
+ * sperrt den Hintergrund und schließt mit Escape; beim Schließen kehrt der Fokus zurück.
+ */
 export function BottomSheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
-  if (!open) return null;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // Überschrift statt erstem Button fokussieren: im Lösch-Dialog wäre das sonst "Löschen".
+      titleRef.current?.focus();
+    } else if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
   return (
-    <div className="fixed inset-0 z-40 flex items-end" role="dialog" aria-modal aria-label={title}>
-      <button className="absolute inset-0 bg-black/50" aria-label="Schließen" onClick={onClose} />
-      <div
-        className="sheet relative w-full max-w-xl mx-auto rounded-t-3xl p-4 safe-bottom"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-      >
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full" style={{ background: "var(--border)" }} />
-        <h2 className="text-lg font-semibold mb-3">{title}</h2>
-        {children}
-      </div>
-    </div>
+    <dialog
+      ref={dialogRef}
+      aria-label={title}
+      className="sheet-dialog"
+      // Escape: Zustand beim Aufrufer führen, statt den Dialog am React-Zustand vorbei zu schließen
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+    >
+      {/* Klick neben das Sheet schließt; Tastatur nutzt Escape */}
+      <button className="absolute inset-0 cursor-default" tabIndex={-1} aria-hidden onClick={onClose} />
+      {open && (
+        <div
+          className="sheet relative w-full max-w-xl mx-auto rounded-t-3xl p-4 safe-bottom"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        >
+          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full" style={{ background: "var(--border)" }} />
+          <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold mb-3 outline-none">
+            {title}
+          </h2>
+          {children}
+        </div>
+      )}
+    </dialog>
   );
 }
 
