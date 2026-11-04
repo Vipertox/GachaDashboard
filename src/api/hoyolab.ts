@@ -39,6 +39,8 @@ export function mapRetcode(retcode: number, message: string): ApiError {
   if (retcode === -100 || retcode === 10001) return new ApiError("auth", message, retcode);
   if (retcode === 10102) return new ApiError("notes_disabled", message, retcode);
   if (retcode === 10101) return new ApiError("rate_limit", message, retcode);
+  // Während eines Spiel-Updates antwortet die Battle Chronicle mit 10307, bis die Server wieder laufen.
+  if (retcode === 10307) return new ApiError("maintenance", "Die Daten erscheinen nach dem Update wieder", retcode);
   return new ApiError("unknown", `${message} (retcode ${retcode})`, retcode);
 }
 

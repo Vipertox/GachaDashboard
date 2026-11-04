@@ -2,6 +2,7 @@ export type ApiErrorKind =
   | "auth" // Token abgelaufen oder ungültig
   | "notes_disabled" // Echtzeit-Notizen in HoYoLAB nicht freigegeben
   | "rate_limit"
+  | "maintenance" // Spiel-Update: HoYoLAB liefert während der Wartung keine Daten
   | "retry" // Kuro: Daten noch nicht bereit
   | "network"
   | "schema" // Antwort passt nicht zum erwarteten Schema
@@ -23,6 +24,7 @@ export const ERROR_TEXT: Record<ApiErrorKind, string> = {
   auth: "Neu anmelden",
   notes_disabled: "Echtzeit-Notizen in HoYoLAB aktivieren",
   rate_limit: "Zu viele Anfragen, später erneut versuchen",
+  maintenance: "Wartung, Server gerade nicht erreichbar",
   retry: "Daten noch nicht bereit",
   network: "Keine Verbindung",
   schema: "Schnittstelle geändert",
