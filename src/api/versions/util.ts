@@ -7,8 +7,22 @@ export const MIN_VERSION_DAYS = 28;
 /** Alle Zeiten der Quellen ohne eigene Zeitzone gelten in UTC+8 (Asien-Server). */
 export const SERVER_TZ = 8;
 
-/** Uhrzeit (UTC+8), zu der ein Update beginnt, wenn eine Quelle nur das Datum nennt. */
-export const UPDATE_HOUR = { hoyoverse: 6, kuro: 10 } as const;
+/**
+ * Beginn der Update-Wartung in UTC+8, laut den offiziellen Ankündigungen:
+ * Hoyoverse "Update Time Begins at 2026/09/28 06:00:00", Kuro "Maintenance Time: 2026-09-30 04:00 - 11:00 (UTC+8)".
+ */
+export const UPDATE_HOUR = { hoyoverse: 6, kuro: 4 } as const;
+
+/**
+ * Nächster Wartungsbeginn nach `d`. Die letzten Banner einer Version enden einige Stunden vor der Wartung
+ * (ZZZ 14:59 Serverzeit, WuWa 11:59 Serverzeit am Vortag), die Wartung folgt zur festen Uhrzeit.
+ */
+export function nextUpdateAfter(d: Date, hour: number): Date {
+  const local = new Date(d.getTime() + SERVER_TZ * 3_600_000);
+  let t = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate(), hour) - SERVER_TZ * 3_600_000;
+  if (t <= d.getTime()) t += 86_400_000;
+  return new Date(t);
+}
 
 const VERSION_RE = /\b(?:Version|Ver\.?|V)\s?(\d+\.\d+)\b/gi;
 
@@ -53,7 +67,8 @@ const MONTHS = ["january", "february", "march", "april", "may", "june", "july", 
  * Ohne Uhrzeit gilt `defaultHour` in UTC+8.
  */
 export function parseWikiDate(raw: string | undefined, defaultHour: number): Date | undefined {
-  const s = raw?.replace(/<!--[\s\S]*?-->/g, "").trim();
+  // Alles ab einem Kommentar zählt nicht, z. B. "<!--2026-10-01 03:59 ?-->".
+  const s = raw?.split("<!--")[0].trim();
   if (!s) return undefined;
   if (/^\d{4}-\d{1,2}-\d{1,2}/.test(s)) {
     const hasTime = /\d{1,2}:\d{2}/.test(s);

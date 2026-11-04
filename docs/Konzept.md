@@ -722,7 +722,7 @@ Die Zeitleiste nutzt dieselben Abfragen wie Events und Herausforderungen (`["eve
 
 ## Countdown
 
-Eigener Punkt **Countdown** in der Navigation (`/countdown`). Pro Spiel zeigt eine Karte die aktuelle und die nächste Version und einen sekundengenauen Countdown bis zum Update. Ohne Profil erscheinen alle vier Spiele, mit Profil dessen sichtbare Spiele. Die Karten sind nach dem nächsten Update sortiert.
+Eigener Punkt **Countdown** in der Navigation (`/countdown`). Pro Spiel zeigt eine Karte die aktuelle und die nächste Version und einen sekundengenauen Countdown bis zum Update. Ohne Profil erscheinen alle vier Spiele, mit Profil dessen sichtbare Spiele in derselben Reihenfolge wie im Dashboard (einstellbar unter Einstellungen).
 
 **Vorbild und Abgrenzung**
 
@@ -732,12 +732,16 @@ gachacountdown.online hat keine Schnittstelle. Die Werte (aktuelle und nächste 
 
 | Rang | Quelle | Spiele | Was sie liefert |
 | --- | --- | --- | --- |
-| 1 | Ankündigungen im Spiel, `getAnnList` auf `sg-hk4e-api.hoyoverse.com` bzw. `sg-hkrpg-api.hoyoverse.com`, Region Asien | Genshin, Star Rail | Ohne Anmeldung. Aktuelle Version aus "Version X.Y … Update Details". Ende ist das früheste Ende aller Ankündigungen dieser Version innerhalb des letzten Tages (= Wartungsbeginn, 06:00 UTC+8). Eine höhere Version in einem Titel ("Version 4.7 Store Update") ist die nächste. Zeiten in `data.timezone` |
-| 1 | News-JSON der offiziellen Website, `hw-media-cdn-mingchao.kurogame.com/…/G152/en/ArticleMenu.json` | Wuthering Waves | Aktuelle Version und Beginn aus den neuesten "Patch Notes". Nächste Version aus jüngeren Titeln mit höherer Nummer, ihr Datum aus "Scheduled for Release on …". Sonst ist das Ende das Ende von "Convene: Phase Ⅱ" aus dem Artikel (`article/<id>.json`, "server time", als UTC+8 gelesen) |
-| 2 | Banner-Kalender von HoYoLAB (mit Konto, dieselbe Abfrage wie Events) | Genshin, Star Rail, ZZZ | Version der laufenden Banner, Ende ist das späteste Bannerende dieser Version. Für ZZZ die einzige offizielle Quelle, eine öffentliche Ankündigungs-Schnittstelle gibt es dort nicht |
-| 3 | Fandom-Wiki, Seiten `Version/X.Y` (Infobox `date` bzw. `release_date`, `next`) | alle | Füllt Lücken. Aktuell ist die höchste Version mit Datum in der Vergangenheit, das Datum der folgenden Seite ist das Ende. Ohne Uhrzeit gilt 06:00 (Hoyoverse) bzw. 10:00 (Kuro) UTC+8 |
+| 1 | Ankündigungen im Spiel, `getAnnList` auf `sg-hk4e-api.hoyoverse.com` bzw. `sg-hkrpg-api.hoyoverse.com`, Region Asien | Genshin, Star Rail | Ohne Anmeldung. Aktuelle Version aus "Version X.Y … Update Details". Sie läuft bis kurz nach dem nächsten Update (Genshin 06:00, Star Rail 07:00 UTC+8), Ende ist der letzte Wartungsbeginn davor. Eine höhere Version in einem Titel ("Version 4.7 Store Update") ist die nächste. Zeiten in `data.timezone` |
+| 1 | News-JSON der offiziellen Website, `hw-media-cdn-mingchao.kurogame.com/…/G152/en/ArticleMenu.json` | Wuthering Waves | Aktuelle Version und Beginn aus den neuesten "Patch Notes". Nächste Version aus jüngeren Titeln mit höherer Nummer, Ende in dieser Rangfolge: "Maintenance Time" aus der "Update Maintenance Notice" der nächsten Version, der Tag aus "Scheduled for Release on …" um 04:00 UTC+8, sonst der nächste Wartungsbeginn nach dem Ende von "Convene: Phase Ⅱ" (`article/<id>.json`) |
+| 2 | Banner-Kalender von HoYoLAB (mit Konto, dieselbe Abfrage wie Events) | Genshin, Star Rail, ZZZ | Version der laufenden Banner. Ende ist der nächste Wartungsbeginn nach dem spätesten Bannerende dieser Version (ZZZ: Banner bis 14:59 Serverzeit, Wartung am nächsten Morgen). Für ZZZ die einzige offizielle Quelle, eine öffentliche Ankündigungs-Schnittstelle gibt es dort nicht |
+| 3 | Fandom-Wiki, Seiten `Version/X.Y` (Infobox `date` bzw. `release_date`, `next`) | alle | Füllt Lücken. Aktuell ist die höchste Version mit Datum in der Vergangenheit, der Tag der folgenden Seite ist das Ende. Eine Uhrzeit im Wiki (WuWa: Freigabe nach der Wartung) wird ignoriert, es gilt der Wartungsbeginn |
 
 Die höchste aktuelle Version aller Quellen ist maßgeblich. Angaben einer Quelle, die noch eine ältere Version meldet, werden nicht übernommen. Jedes Feld kommt von der ranghöchsten Quelle, die es kennt. Ein Ende weniger als 28 Tage nach Versionsbeginn ist nur das Ende der ersten Bannerphase und wird verworfen. Ein Ende, das mehr als einen Tag zurückliegt, auch.
+
+**Uhrzeiten**
+
+Gezählt wird bis zum Beginn der Update-Wartung, nicht bis zur Freigabe. Laut den offiziellen Ankündigungen beginnt sie bei Hoyoverse um 06:00 UTC+8 ("Update Time Begins at 2026/09/28 06:00:00", Dauer etwa 5 Stunden) und bei Kuro um 04:00 UTC+8 ("Maintenance Time: 2026-09-30 04:00 - 2026-09-30 11:00 (UTC+8)"). Beide gelten weltweit gleichzeitig. Die letzten Banner einer Version enden einige Stunden vorher, die Wartung folgt am nächsten Morgen (`nextUpdateAfter`).
 
 **Schätzungen**
 
@@ -754,7 +758,7 @@ Die höchste aktuelle Version aller Quellen ist maßgeblich. Angaben einer Quell
 │ │ 06 │ │ 04 │ │ 19 │ │ 34 │           │
 │ │Tage│ │Std │ │Min │ │Sek │           │
 │ └────┘ └────┘ └────┘ └────┘           │
-│ Update: Di., 10.11.2026, 23:00        │
+│ Wartungsbeginn: Di., 10.11.2026, 23:00│
 │ Quelle: HoYoverse-Ankündigungen       │
 └───────────────────────────────────────┘
 ```

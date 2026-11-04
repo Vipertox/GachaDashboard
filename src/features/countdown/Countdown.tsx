@@ -25,7 +25,10 @@ export function CountdownPage() {
   );
 }
 
-/** Mit Profil: dessen sichtbare Spiele, dazu der Bannerkalender des ersten Kontos je Spiel. */
+/**
+ * Mit Profil: dessen sichtbare Spiele in der Reihenfolge des Dashboards (Einstellungen), dazu der
+ * Bannerkalender des ersten Kontos je Spiel.
+ */
 function WithProfile({ profile }: { profile: Profile }) {
   const refs = visibleGames(profile);
   const games = refs.length ? [...new Set(refs.map((r) => r.game))].filter((g) => VERSION_GAMES.includes(g)) : VERSION_GAMES;
@@ -56,8 +59,6 @@ function Countdowns({ games, banners, icons }: { games: GameId[]; banners: Parti
     const info = q.data ? mergeVersionFacts(game, rankFacts(q.data, fromBanners), new Date(now)) : undefined;
     return { game, info, loading: q.isPending, error: q.error as ApiError | null };
   });
-  // Das nächste Update zuerst; noch ladende und fehlerhafte Spiele ans Ende.
-  rows.sort((a, b) => (a.info?.end.getTime() ?? Infinity) - (b.info?.end.getTime() ?? Infinity));
 
   return (
     <div className="grid gap-3 md:grid-cols-2">
@@ -117,7 +118,7 @@ function CountdownBody({ info, now }: { info: VersionInfo; now: number }) {
       )}
       <div className="text-xs space-y-1" style={{ color: "var(--muted)" }}>
         <p>
-          {info.endEstimated ? "Geschätzt" : "Update"}: {fmtDate(info.end)}
+          {info.endEstimated ? "Geschätzter Wartungsbeginn" : "Wartungsbeginn"}: {fmtDate(info.end)}
           {info.endEstimated && " (übliche Versionslänge, noch keine Ankündigung)"}
         </p>
         <p>

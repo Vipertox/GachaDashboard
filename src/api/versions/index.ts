@@ -2,7 +2,7 @@ import { ApiError } from "../errors";
 import type { Banner, GameId, VersionFacts, VersionInfo } from "../../model/types";
 import { fetchHoyoAnnouncements } from "./hoyoverse";
 import { fetchKuroNews } from "./kuro";
-import { addDays, compareVersion, guessNextVersion, maxVersion, MIN_VERSION_DAYS, UPDATE_HOUR, VERSION_DAYS } from "./util";
+import { addDays, compareVersion, guessNextVersion, maxVersion, MIN_VERSION_DAYS, nextUpdateAfter, UPDATE_HOUR, VERSION_DAYS } from "./util";
 import { fetchWikiFacts } from "./wiki";
 
 /** Spiele mit Countdown, in der Reihenfolge der Seite ohne Profil. */
@@ -66,7 +66,8 @@ export function bannerFacts(banners: Banner[], now = new Date()): VersionFacts |
   const later = banners.map((b) => b.version).filter((v): v is string => !!v && compareVersion(v, current) > 0);
   return {
     current,
-    end: ends.length ? new Date(Math.max(...ends)) : undefined,
+    // Die letzten Banner enden vor der Wartung, z. B. ZZZ 14:59 Serverzeit; die Wartung beginnt um 06:00 UTC+8.
+    end: ends.length ? nextUpdateAfter(new Date(Math.max(...ends)), UPDATE_HOUR.hoyoverse) : undefined,
     next: maxVersion(later),
     source: { label: "HoYoLAB-Bannerkalender", url: "https://www.hoyolab.com" },
   };

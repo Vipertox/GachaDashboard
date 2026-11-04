@@ -2,7 +2,7 @@ import { z } from "zod";
 import { httpJson } from "../http";
 import { parseOrThrow } from "../adapters/util";
 import type { VersionFacts } from "../../model/types";
-import { compareVersion, firstVersion, maxVersion, parseZoned, versionsIn } from "./util";
+import { compareVersion, firstVersion, maxVersion, nextUpdateAfter, parseZoned, UPDATE_HOUR, versionsIn } from "./util";
 
 /**
  * Ankündigungen im Spiel ("Neuigkeiten"), dieselbe Schnittstelle wie im Client.
@@ -43,8 +43,8 @@ const annListSchema = z.object({
 const DAY = 86_400_000;
 
 /**
- * Aktuelle Version aus der Ankündigung "Version X.Y … Update Details". Ihr Ende liegt kurz nach dem Wartungsbeginn,
- * daher gilt das früheste Ende aller Ankündigungen derselben Version am letzten Tag als Versionsende.
+ * Aktuelle Version aus der Ankündigung "Version X.Y … Update Details". Sie läuft bis zum nächsten Update
+ * (Genshin genau bis 06:00, Star Rail bis 07:00 UTC+8); Versionsende ist der Wartungsbeginn davor.
  * Eine höhere Version in einem Titel (z. B. "Version 4.7 Store Update") ist die nächste.
  */
 export function parseHoyoAnnouncements(data: unknown, source: VersionFacts["source"], now = new Date()): VersionFacts {
@@ -64,11 +64,8 @@ export function parseHoyoAnnouncements(data: unknown, source: VersionFacts["sour
   const main = details[0];
   if (!main) return { source };
 
-  const sameVersion = items.filter((a) => versionsIn(a.text).includes(main.version) && a.end);
-  const lastDay = sameVersion
-    .map((a) => a.end!)
-    .filter((e) => main.end && e <= main.end && main.end.getTime() - e.getTime() < DAY);
-  const end = lastDay.length ? new Date(Math.min(...lastDay.map((e) => e.getTime()))) : main.end;
+  // Letzter Wartungsbeginn (06:00 UTC+8) bis zum Ende der Ankündigung, z. B. 07:00 ergibt 06:00 desselben Tages.
+  const end = main.end && nextUpdateAfter(new Date(main.end.getTime() - DAY), UPDATE_HOUR.hoyoverse);
 
   const later = items.flatMap((a) => versionsIn(a.text)).filter((v) => compareVersion(v, main.version) > 0);
   return { current: main.version, start: main.start, end, next: maxVersion(later), source };

@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import type { Banner, VersionFacts } from "../../model/types";
 import { parseHoyoAnnouncements } from "./hoyoverse";
 import { bannerFacts, mergeVersionFacts } from "./index";
-import { parsePhaseEnd, planKuro } from "./kuro";
-import { compareVersion, guessNextVersion, parseWikiDate, parseZoned, versionsIn } from "./util";
+import { parseMaintenanceStart, parsePhaseEnd, planKuro } from "./kuro";
+import { compareVersion, guessNextVersion, nextUpdateAfter, parseWikiDate, parseZoned, versionsIn } from "./util";
 import { infoboxField, parseVersionPage, wikiFacts } from "./wiki";
 
 const src = { label: "Test", url: "https://example.test" };
@@ -28,9 +28,18 @@ describe("util", () => {
     expect(iso(parseZoned("2026-12-15 23:00:00", 1))).toBe("2026-12-15T22:00:00.000Z");
   });
 
+  it("findet den nächsten Wartungsbeginn nach einem Bannerende", () => {
+    // ZZZ: Banner bis 01.12. 14:59:59 Serverzeit (UTC+1), Wartung 02.12. 06:00 UTC+8
+    expect(iso(nextUpdateAfter(new Date("2026-12-01T13:59:59Z"), 6))).toBe("2026-12-01T22:00:00.000Z");
+    // WuWa: Phase II bis 29.09. 11:59 UTC+8, Wartung 30.09. 04:00 UTC+8
+    expect(iso(nextUpdateAfter(new Date("2026-09-29T03:59:00Z"), 4))).toBe("2026-09-29T20:00:00.000Z");
+    // Genau zur Wartung zählt schon die nächste
+    expect(iso(nextUpdateAfter(new Date("2026-12-15T22:00:00Z"), 6))).toBe("2026-12-16T22:00:00.000Z");
+  });
+
   it("liest die Datumsformate der Wikis", () => {
     expect(iso(parseWikiDate("2026-11-04", 6))).toBe("2026-11-03T22:00:00.000Z");
-    expect(iso(parseWikiDate("2026-09-30 11:00", 10))).toBe("2026-09-30T03:00:00.000Z");
+    expect(iso(parseWikiDate("2026-09-30 11:00", 4))).toBe("2026-09-30T03:00:00.000Z");
     expect(iso(parseWikiDate("October 21, 2026", 6))).toBe("2026-10-20T22:00:00.000Z");
     expect(parseWikiDate("<!--2026-10-01 03:59 ?-->", 6)).toBeUndefined();
   });
@@ -97,11 +106,12 @@ describe("Kuro Games News", () => {
   ];
 
   it("nimmt Version aus den Patch Notes und den Beginn der nächsten aus der Vorschau", () => {
-    const { facts, phaseTwoId } = planKuro(menu, new Date("2026-11-04T00:00:00Z"));
+    const { facts, phaseTwoId, maintenanceId } = planKuro(menu, new Date("2026-11-04T00:00:00Z"));
+    expect(maintenanceId).toBeUndefined();
     expect(facts.current).toBe("3.7");
     expect(iso(facts.start)).toBe("2026-09-30T02:00:00.000Z");
     expect(facts.next).toBe("3.8");
-    expect(iso(facts.end)).toBe("2026-11-12T02:00:00.000Z");
+    expect(iso(facts.end)).toBe("2026-11-11T20:00:00.000Z");
     expect(phaseTwoId).toBe(5668);
   });
 
@@ -109,6 +119,16 @@ describe("Kuro Games News", () => {
     const { facts, phaseTwoId } = planKuro(menu.slice(1), new Date("2026-11-04T00:00:00Z"));
     expect(facts).toMatchObject({ current: "3.7", next: undefined, end: undefined });
     expect(phaseTwoId).toBe(5668);
+  });
+
+  it("findet die Wartungsankündigung der nächsten Version", () => {
+    const withNotice = [{ articleId: 5710, articleTitle: "Wuthering Waves Version 3.8 Update Maintenance Notice", startTime: "2026-11-04 11:00:00" }, ...menu];
+    expect(planKuro(withNotice, new Date("2026-11-05T00:00:00Z")).maintenanceId).toBe(5710);
+  });
+
+  it("liest den Wartungsbeginn", () => {
+    const html = "<p>[Maintenance Time &amp; Compensation Details]</p><p>Maintenance Time: 2026-09-30 04:00 - 2026-09-30 11:00 (UTC+8)</p>";
+    expect(iso(parseMaintenanceStart(html))).toBe("2026-09-29T20:00:00.000Z");
   });
 
   it("liest das Ende aus der Laufzeit des Banners", () => {
@@ -121,6 +141,10 @@ describe("Fandom-Wiki", () => {
   it("ignoriert auskommentierte Felder", () => {
     expect(infoboxField("|next        = <!--3.4-->\n", "next")).toBeUndefined();
     expect(infoboxField("|release_date = 2026-11-11\n|date = x", "release_date", "date")).toBe("2026-11-11");
+  });
+
+  it("zählt bis zum Wartungsbeginn, nicht bis zur Freigabe", () => {
+    expect(iso(parseVersionPage("3.7", "|date     = 2026-09-30 11:00", 4).date)).toBe("2026-09-29T20:00:00.000Z");
   });
 
   it("nimmt die neueste begonnene Version und das Datum der folgenden", () => {
@@ -172,8 +196,8 @@ describe("Zusammenführen", () => {
     const b = (version: string, start: string, end: string): Banner => ({
       id: start + end, name: "x", kind: "character", version, start: new Date(start), end: new Date(end), status: "running", items: [],
     });
-    const f = bannerFacts([b("3.3", "2026-10-21T00:00:00Z", "2026-11-11T00:00:00Z"), b("3.3", "2026-11-11T02:00:00Z", "2026-12-01T21:59:59Z"), b("3.3", "2026-10-21T00:00:00Z", "2026-12-01T21:59:59Z")], now)!;
+    const f = bannerFacts([b("3.3", "2026-10-21T00:00:00Z", "2026-11-11T00:00:00Z"), b("3.3", "2026-11-11T11:00:00Z", "2026-12-01T13:59:59Z"), b("3.3", "2026-10-21T01:00:00Z", "2026-11-11T10:59:59Z")], now)!;
     expect(f.current).toBe("3.3");
-    expect(iso(f.end)).toBe("2026-12-01T21:59:59.000Z");
+    expect(iso(f.end)).toBe("2026-12-01T22:00:00.000Z");
   });
 });

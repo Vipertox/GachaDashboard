@@ -8,7 +8,7 @@ const VERSION_PAGE = /^Version\/(\d+\.\d+)$/;
 export function infoboxField(wikitext: string, ...names: string[]): string | undefined {
   for (const name of names) {
     const m = wikitext.match(new RegExp(`^\\|\\s*${name}\\s*=(.*)$`, "m"));
-    const v = m?.[1].replace(/<!--[\s\S]*?(-->|$)/g, "").trim();
+    const v = m?.[1].split("<!--")[0].trim();
     if (v) return v;
   }
   return undefined;
@@ -20,10 +20,15 @@ export interface WikiVersionPage {
   next?: string;
 }
 
-export function parseVersionPage(version: string, wikitext: string, defaultHour: number): WikiVersionPage {
+/**
+ * Das Wiki nennt den Tag der Version, bei WuWa auch die Freigabe nach der Wartung ("2026-09-30 11:00").
+ * Gezählt wird bis zum Wartungsbeginn, daher gilt nur der Tag mit `updateHour` (UTC+8).
+ */
+export function parseVersionPage(version: string, wikitext: string, updateHour: number): WikiVersionPage {
+  const day = infoboxField(wikitext, "release_date", "date")?.replace(/\s+\d{1,2}:\d{2}.*$/, "");
   return {
     version,
-    date: parseWikiDate(infoboxField(wikitext, "release_date", "date"), defaultHour),
+    date: parseWikiDate(day, updateHour),
     next: infoboxField(wikitext, "next")?.match(/\d+\.\d+/)?.[0],
   };
 }
