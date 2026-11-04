@@ -6,6 +6,40 @@ Schweregrade: **H** hoch (Datenverlust, Sicherheitslücke mit realistischem Angr
 
 Ein Befund der Stufe H wurde nicht gefunden.
 
+## Stand der Umsetzung
+
+Die Tabellen unten beschreiben den Stand des Reviews (0.1.9). Was seitdem auf diesem Branch umgesetzt wurde:
+
+| Befunde | Stand | Commit |
+|---|---|---|
+| M-1, M-2, M-3 | behoben | `eb32272` |
+| M-4 | entschärft: Dateirechte, Doku der Einzelbenutzer-Grenze; Ursache bleibt | `acd3832` |
+| M-5, N-5, N-6 | behoben | `1bfc5a5` |
+| M-6, M-7, M-8 | behoben | `9799272` |
+| M-9 | behoben | `1b2f7fe` |
+| M-10, N-16, N-17 | behoben | `23628ef` |
+| M-11, M-12 | behoben | `2732704` |
+| N-1, N-19 | behoben | `acd3832` |
+| N-2, N-3, N-4 | behoben | `5c54e44` |
+| N-8, N-11 | behoben | `79516f1` |
+| N-10 | kein Handlungsbedarf: `^0.0.2` erlaubt nur 0.0.2, Lockfiles halten 0.0.2 | – |
+| N-13 und die API-Sammelzeile (`toRarity`, URL-Kodierung, „morgen“, Wiki-Rate-Limit, `ApiError`) | behoben | `592af7d` |
+| N-14, N-18 und die UI-Sammelzeile (HTML in Buttons, Tab-Rollen, `aria-label`, Touch-Abbruch, Sortierung) | behoben | `95cacf1` |
+| N-15 | behoben, zusammen mit der Einführung von oxlint | `d76a88c` |
+| N-7, N-9, N-12 | offen, siehe Nachtrag unten | – |
+| Rest der Sammelzeilen: verstreute Hilfsfunktionen (`fmt`, `mode()`), Non-null-Assertions nach `filter`, sekündliches Neuberechnen, Keys aus Labels | offen | – |
+
+Prüfstand nach den Änderungen:
+- `npm run typecheck`: fehlerfrei
+- `npm run lint`: oxlint ohne Fehler, zwei bewusste Warnungen
+- `npm test`: 107 Tests grün, einer unter Windows übersprungen
+- `npm run build`: ohne Warnung
+- `cargo test`: 4/4 grün
+- `cargo clippy --all-targets`: ohne Warnung
+- Browser-Variante mit echten Konten (Genshin, Star Rail, ZZZ)
+
+Nicht geprüft: Android-Build, Release-Workflow, Webview-Login in der Desktop-App.
+
 ## Proxy (Browser-Modus)
 
 | ID | Stufe | Fundstelle | Befund | Vorschlag |
