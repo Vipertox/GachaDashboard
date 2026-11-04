@@ -159,11 +159,11 @@ function TaskChips({
   const openText = (n: number) => (n === 0 ? "alle erledigt" : `${n} offen`);
 
   return (
-    <div className={`p-4 pt-3 flex flex-wrap gap-2 ${dim ? "opacity-60" : ""}`}>
+    <div className={`px-4 pt-1.5 pb-2.5 flex flex-wrap items-center gap-x-2 ${dim ? "opacity-60" : ""}`}>
       {showWeekly && (
         <button
           type="button"
-          className="active:opacity-70"
+          className="min-h-11 inline-flex items-center rounded-full active:opacity-70"
           onClick={() => open("weekly")}
           aria-haspopup="dialog"
           aria-label={`Wöchentliche Aufgaben: ${openText(weekly.open)}`}
@@ -175,7 +175,7 @@ function TaskChips({
         (events || eq.isError ? (
           <button
             type="button"
-            className="active:opacity-70"
+            className="min-h-11 inline-flex items-center rounded-full active:opacity-70"
             onClick={() => open("events")}
             aria-haspopup="dialog"
             aria-label={events ? `Events: ${openText(events.open.length)}` : "Events: nicht abrufbar"}
@@ -185,7 +185,7 @@ function TaskChips({
             </Chip>
           </button>
         ) : (
-          <span className="opacity-50" aria-label="Events werden geladen">
+          <span className="min-h-11 inline-flex items-center opacity-50" aria-label="Events werden geladen">
             <Chip done={false}>Events …</Chip>
           </span>
         ))}

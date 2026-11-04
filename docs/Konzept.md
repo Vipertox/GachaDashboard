@@ -121,7 +121,7 @@ Die untere Navigation enthält die häufig genutzten Ansichten Dashboard und Zei
 
 | Screen | Inhalt |
 | --- | --- |
-| Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe |
+| Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe, offene Weekly-Aufgaben und Events, siehe "Weekly und Events auf der Karte" |
 | Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel", dazu Events und Banner, siehe "Events und Banner". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Zeitleiste | Banner, Events und Herausforderungen aller sichtbaren Spiele als Balken über die Zeit, siehe "Zeitleiste". Dieselbe Ansicht für ein Spiel als Tab "Zeitleiste" der Spieldetails |
@@ -135,6 +135,17 @@ Gestaltungsregeln:
 - Abstände zu Notch und Gestenleiste über `env(safe-area-inset-*)`
 - Helles und dunkles Design nach Systemeinstellung
 - Jedes Spiel erhält eine eigene Akzentfarbe am Kartenrand, damit die Karten auf einen Blick unterscheidbar sind
+
+### Weekly und Events auf der Karte
+
+Unter den Daily-Chips zeigt jede Karte zwei Chips: **Wöchentlich · 2 offen** und **Events · 3 offen**. Ist alles erledigt, wird der Chip grün mit Haken. Ein Tipp auf einen Chip öffnet ein Bottom Sheet mit den Einzelheiten. Die Karte bleibt dabei geschlossen.
+
+- **Wöchentlich:** kommt aus dem Abschnitt `weekly` der Notizen-Antwort, es braucht also keinen zusätzlichen Aufruf. Als offen zählt ein Flag mit `done: false`, eine Task mit `done < total` und eine Ressource unter ihrem Maximum. Beispiele sind Wochenboss-Rabatte, Echo of War, Bounty Commission, Simulated Universe, Survey Points und Pioneer Podcast. Das Sheet listet jede Aufgabe mit Stand und, wo es einen Anteil gibt, mit Balken.
+- **Events:** kommen aus dem Event-Kalender (`useEvents`, Query-Schlüssel `["events", …]`, 30 Minuten frisch). Der Cache wird mit Detailseite und Zeitleiste geteilt. Offen ist ein Event, das begonnen hat, nicht erledigt und noch nicht abgelaufen ist. Kommende Events zählen nicht mit. Das Sheet zeigt die offenen Events, das zuerst endende vorn, mit Restzeit, Fortschritt und offener Premiumwährung, darunter den Link **Alle Events** auf die Detailseite.
+- Wuthering Waves liefert nur Banner (`bannersOnly`). Dort fehlt der Event-Chip, und der Kalender wird für das Dashboard gar nicht abgerufen. Läuft in einem Spiel kein Event, entfällt der Chip ebenfalls.
+- Solange der Kalender lädt, steht dort ein blasser Chip **Events …**. Bei einem Fehler zeigt er **Events · ?**, und das Sheet nennt den Fehler. Der Rest der Karte ist davon nicht betroffen.
+- Die Karte führt nur über Kopf und Ressourcenbereich in die Detailseite. Die Chip-Zeile liegt außerhalb dieses Links, da Buttons in einem Link ungültiges HTML sind und beim Antippen sonst auch die Navigation auslösen würden. Die Tippfläche jedes Chips ist 44 px hoch.
+- Zähl-Logik: `src/features/dashboard/taskSummary.ts` (`weeklySummary`, `eventSummary`), Popups: `TaskSheets.tsx`.
 
 ## Detailseite pro Spiel
 
