@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { parseAbyss, parseStygian, parseTheater } from "./genshin";
 import { parseFloors, parsePeak } from "./starrail";
 import { parseAssault, parseShiyu, parseThreshold } from "./zzz";
-import { plain, serverDate, serverOffset } from "./util";
+import { pickPeriod, plain, serverDate, serverOffset } from "./util";
 
 describe("Namen", () => {
   it("entfernt Tags und verschachtelte Reste", () => {
@@ -153,5 +153,39 @@ describe("ZZZ", () => {
     expect(parseAssault({ has_data: false }, "prod_gf_jp").state).toBe("empty");
     const t = parseThreshold({ void_front_battle_abstract_info_brief: { has_ending_record: true, ending_record_name: "Ende A", total_score: 3000, rank_percent: 0 } });
     expect(t.facts.map((f) => f.label)).toEqual(["Punkte", "Ende"]);
+  });
+});
+
+describe("Periodenwahl", () => {
+  interface Entry {
+    id: string;
+    start?: Date;
+  }
+  const at = (day: number) => new Date(Date.UTC(2026, 10, day));
+  const pick = (list: Entry[], period: "current" | "previous") => pickPeriod(list, period, (e) => e.start)?.id;
+  const entries: Entry[] = [{ id: "alt", start: at(1) }, { id: "neu", start: at(15) }, { id: "uralt", start: at(1 - 30) }];
+
+  it("wählt unabhängig von der Reihenfolge der API nach Startzeit", () => {
+    expect(pick(entries, "current")).toBe("neu");
+    expect(pick(entries, "previous")).toBe("alt");
+    expect(pick([...entries].reverse(), "current")).toBe("neu");
+  });
+
+  it("stellt Einträge ohne Startzeit hinten an und lässt sonst die Reihenfolge der API stehen", () => {
+    expect(pick([{ id: "ohne" }, { id: "mit", start: at(1) }], "current")).toBe("mit");
+    expect(pick([{ id: "a" }, { id: "b" }], "current")).toBe("a");
+    expect(pick([{ id: "a" }, { id: "b" }], "previous")).toBe("b");
+    expect(pick([], "current")).toBeUndefined();
+  });
+
+  it("liest Imaginarium Theater auch bei aufsteigend sortierter Antwort richtig", () => {
+    const period = (start: number, rounds: number, difficulty: number) => ({
+      has_data: true,
+      schedule: { start_time: start, end_time: start + 86400 * 30 },
+      stat: { difficulty_id: difficulty, max_round_id: rounds, medal_num: 0, coin_num: 0 },
+    });
+    const data = { is_unlock: true, data: [period(1_700_000_000, 5, 3), period(1_702_600_000, 9, 4)] };
+    expect(parseTheater(data, "current")).toMatchObject({ summary: "Akt 9/10" });
+    expect(parseTheater(data, "previous")).toMatchObject({ summary: "Akt 5/8" });
   });
 });

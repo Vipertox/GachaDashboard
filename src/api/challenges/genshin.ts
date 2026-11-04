@@ -67,7 +67,7 @@ const theaterSchema = z.object({
 /** `role_combat` kennt kein `schedule_type`, die Antwort enthält laufende und vorherige Periode. */
 export function parseTheater(data: unknown, p: ChallengePeriod): Challenge {
   const d = parseOrThrow(theaterSchema, data);
-  const entry = pickPeriod(d.data ?? [], p);
+  const entry = pickPeriod(d.data ?? [], p, (e) => unixDate(e.schedule?.start_time));
   const period = { start: unixDate(entry?.schedule?.start_time), end: unixDate(entry?.schedule?.end_time) };
   if (d.is_unlock === false) return challenge({ ...period, state: "locked" });
   const s = entry?.stat;
@@ -112,7 +112,11 @@ const stygianBest = (m: z.infer<typeof stygianMode>) =>
 export function parseStygian(data: unknown, p: ChallengePeriod): Challenge {
   const d = parseOrThrow(stygianSchema, data);
   // Wie genshin.py: Einträge mit `is_valid: false` sind leere Platzhalter.
-  const entry = pickPeriod((d.data ?? []).filter((e) => e.schedule?.is_valid !== false), p);
+  const entry = pickPeriod(
+    (d.data ?? []).filter((e) => e.schedule?.is_valid !== false),
+    p,
+    (e) => unixDate(e.schedule?.start_time),
+  );
   const period = {
     season: entry?.schedule?.name ?? undefined,
     start: unixDate(entry?.schedule?.start_time),
