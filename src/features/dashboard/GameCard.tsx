@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
-import { useEvents, useGameArt, useGameStatus, useNow } from "../../app/hooks";
+import { useCurrentChallenges, useEvents, useGameArt, useGameStatus, useNow } from "../../app/hooks";
+import { CHALLENGE_MODES } from "../../api/challenges";
 import { EVENT_ADAPTERS } from "../../api/events";
 import { ERROR_TEXT } from "../../api/errors";
 import { artworkStyle, Card, Chip, GameIcon, OverflowDot, ResourceBar, Skeleton, ValueText } from "../../components/ui";
@@ -8,8 +9,8 @@ import { formatClock, formatDuration, isFull } from "../../lib/time";
 import { haptic } from "../../lib/native";
 import { GAME_ACCENT, GAME_META } from "../../model/games";
 import type { GameAccountRef, GameStatus, Profile } from "../../model/types";
-import { eventSummary, weeklySummary } from "./taskSummary";
-import { OpenEventsSheet, WeeklySheet } from "./TaskSheets";
+import { challengeSummary, eventSummary, weeklySummary } from "./taskSummary";
+import { ChallengesSheet, OpenEventsSheet, WeeklySheet } from "./TaskSheets";
 
 export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef }) {
   const meta = GAME_META[gameRef.game];
@@ -109,9 +110,9 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
   );
 }
 
-type SheetKind = "weekly" | "events";
+type SheetKind = "weekly" | "events" | "challenges";
 
-/** Daily-, Weekly- und Event-Chips; ein Tipp auf Weekly oder Events öffnet die Einzelheiten als Bottom Sheet, ohne die Karte zu verlassen. */
+/** Daily-, Weekly-, Event- und Herausforderungen-Chips; ein Tipp auf alle außer Daily öffnet die Einzelheiten als Bottom Sheet, ohne die Karte zu verlassen. */
 function TaskChips({
   profile,
   gameRef,
@@ -138,11 +139,22 @@ function TaskChips({
   const eq = useEvents(profile, gameRef, hasEvents);
   const events = eq.data ? eventSummary(eq.data.events, now) : undefined;
 
+  // Laufende Periode aller Modi; teilt sich den Cache mit dem Tab Herausforderungen und der Zeitleiste.
+  const modes = CHALLENGE_MODES[gameRef.game] ?? [];
+  const cq = useCurrentChallenges(
+    profile,
+    modes.map((mode) => ({ ref: gameRef, mode })),
+  );
+  const challengeResults = modes.map((mode, i) => ({ mode, data: cq[i]?.data, error: cq[i]?.error }));
+  const challenges = challengeSummary(cq, now);
+
   const dailyTasks = status.sections.find((s) => s.kind === "daily")?.tasks ?? [];
 
   const showWeekly = weekly.items.length > 0;
   const showEvents = hasEvents && (!events || events.running > 0);
-  if (dailyTasks.length === 0 && !showWeekly && !showEvents) return <div className="pb-4" />;
+  // Ohne mitgezählten Modus (alle gesperrt) entfällt der Chip; schlagen alle Abrufe fehl, steht "?" da.
+  const showChallenges = modes.length > 0 && (challenges.loading > 0 || challenges.counted > 0 || challenges.failed > 0);
+  if (dailyTasks.length === 0 && !showWeekly && !showEvents && !showChallenges) return <div className="pb-4" />;
 
   const open = (s: SheetKind) => {
     haptic();
@@ -190,6 +202,30 @@ function TaskChips({
             <Chip done={false}>Events …</Chip>
           </span>
         ))}
+      {showChallenges &&
+        (challenges.loading > 0 ? (
+          <span className="min-h-11 inline-flex items-center opacity-50" aria-label="Herausforderungen werden geladen">
+            <Chip done={false}>Herausforderungen …</Chip>
+          </span>
+        ) : (
+          <button
+            type="button"
+            className="min-h-11 inline-flex items-center rounded-full active:opacity-70"
+            onClick={() => open("challenges")}
+            aria-haspopup="dialog"
+            aria-label={
+              challenges.counted > 0 ? `Herausforderungen: ${openText(challenges.open)}` : "Herausforderungen: nicht abrufbar"
+            }
+          >
+            <Chip done={challenges.counted > 0 && challenges.open === 0}>
+              {challenges.counted > 0 ? (
+                <>Herausforderungen{challenges.open > 0 && ` · ${challenges.open} offen`}</>
+              ) : (
+                "Herausforderungen · ?"
+              )}
+            </Chip>
+          </button>
+        ))}
       <WeeklySheet open={sheet === "weekly"} onClose={close} title={`${name} · Wöchentlich`} summary={weekly} accent={accent} />
       {hasEvents && (
         <OpenEventsSheet
@@ -198,6 +234,17 @@ function TaskChips({
           title={`${name} · Offene Events`}
           events={events?.open ?? []}
           error={events ? undefined : (eq.error ?? undefined)}
+          now={now}
+          accent={accent}
+          detailPath={detailPath}
+        />
+      )}
+      {modes.length > 0 && (
+        <ChallengesSheet
+          open={sheet === "challenges"}
+          onClose={close}
+          title={`${name} · Herausforderungen`}
+          results={challengeResults}
           now={now}
           accent={accent}
           detailPath={detailPath}

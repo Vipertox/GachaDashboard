@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { eventSummary, weeklySummary } from "./taskSummary";
-import type { DetailSection, GameEvent } from "../../model/types";
+import { challengeDone, challengeSummary, eventSummary, weeklySummary } from "./taskSummary";
+import type { Challenge, DetailSection, GameEvent } from "../../model/types";
 
 const section = (part: Partial<DetailSection>): DetailSection => ({
   kind: "weekly",
@@ -56,5 +56,34 @@ describe("Offene Events", () => {
 
   it("übergeht abgelaufene Events aus einem veralteten Stand", () => {
     expect(eventSummary([ev("vorbei", "running", -1)], now)).toEqual({ open: [], running: 0 });
+  });
+});
+
+describe("Herausforderungen", () => {
+  const now = Date.UTC(2026, 10, 4);
+  const end = new Date(now + 5 * 86400_000);
+  const ch = (part: Partial<Challenge>): Challenge => ({ state: "ok", facts: [], end, ...part });
+
+  it("wertet vollen Fortschritt und gespielte Modi ohne Maximum als erledigt", () => {
+    expect(challengeDone(ch({ progress: { current: 36, max: 36, unit: "Sterne" } }))).toBe(true);
+    expect(challengeDone(ch({ progress: { current: 30, max: 36, unit: "Sterne" } }))).toBe(false);
+    expect(challengeDone(ch({ summary: "Stufe 5 · 98 s" }))).toBe(true);
+    expect(challengeDone(ch({ state: "empty" }))).toBe(false);
+  });
+
+  it("zählt offene, ladende und fehlerhafte Modi, ohne gesperrte und abgelaufene", () => {
+    const s = challengeSummary(
+      [
+        { data: ch({ progress: { current: 30, max: 36, unit: "Sterne" } }), isError: false },
+        { data: ch({ state: "empty" }), isError: false },
+        { data: ch({ progress: { current: 12, max: 12, unit: "Sterne" } }), isError: false },
+        { data: ch({ state: "locked" }), isError: false },
+        { data: ch({ state: "empty", end: new Date(now - 1000) }), isError: false },
+        { isError: true },
+        { isError: false },
+      ],
+      now,
+    );
+    expect(s).toEqual({ counted: 3, open: 2, loading: 1, failed: 1 });
   });
 });

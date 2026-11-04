@@ -2,9 +2,11 @@ import { Link } from "react-router-dom";
 import { BottomSheet, GameIcon, ProgressBar } from "../../components/ui";
 import { imageFor } from "../../assets/registry";
 import type { ApiError } from "../../api/errors";
-import type { GameEvent } from "../../model/types";
+import { formatDuration } from "../../lib/time";
+import type { Challenge, ChallengeMode, GameEvent } from "../../model/types";
+import { challengeErrorText, endingSoon as challengeEndingSoon, STATE_TEXT } from "../game-detail/Challenges";
 import { CurrencyBadge, endingSoon, eventErrorText, progressText, whenText } from "../game-detail/Events";
-import type { WeeklySummary } from "./taskSummary";
+import { challengeCounts, challengeDone, type WeeklySummary } from "./taskSummary";
 
 function StateMark({ done }: { done: boolean }) {
   return (
@@ -112,6 +114,87 @@ export function OpenEventsSheet({
         )}
         <Link to={detailPath} className="inline-flex items-center min-h-11 text-indigo-400 underline" onClick={onClose}>
           Alle Events
+        </Link>
+      </div>
+    </BottomSheet>
+  );
+}
+
+export interface ChallengeResult {
+  mode: ChallengeMode;
+  data?: Challenge;
+  error?: ApiError | null;
+}
+
+function ChallengeRow({ r, now, accent }: { r: ChallengeResult; now: number; accent: string }) {
+  const c = r.data;
+  const counted = !!c && challengeCounts(c, now);
+  const done = counted && challengeDone(c);
+  const soon = !!c && challengeEndingSoon(c, now);
+  const left = c?.end ? c.end.getTime() - now : undefined;
+  let value: string | undefined;
+  if (c?.state === "ok") value = c.progress ? `${c.progress.current}/${c.progress.max} ${c.progress.unit}` : (c.summary ?? "Gespielt");
+  return (
+    <li className="space-y-1.5">
+      <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center gap-2 min-w-0">
+          {counted ? <StateMark done={done} /> : <span aria-hidden style={{ color: "var(--muted)" }}>–</span>}
+          <span className="truncate">{r.mode.label}</span>
+        </span>
+        {value && <span className="shrink-0 font-semibold">{value}</span>}
+      </div>
+      {c?.state === "ok" && c.progress && (
+        <ProgressBar
+          frac={c.progress.max ? Math.min(1, c.progress.current / c.progress.max) : 0}
+          accent={accent}
+          height={6}
+          mode="progress"
+        />
+      )}
+      <div className="text-xs" style={{ color: r.error && !c ? "var(--color-danger)" : soon ? "var(--color-warn)" : "var(--muted)" }}>
+        {!c
+          ? r.error
+            ? challengeErrorText(r.error)
+            : "Lädt …"
+          : [c.state !== "ok" ? STATE_TEXT[c.state] : undefined, left !== undefined && left > 0 ? `${soon ? "⚠ " : ""}endet in ${formatDuration(left)}` : undefined]
+              .filter(Boolean)
+              .join(" · ")}
+      </div>
+    </li>
+  );
+}
+
+export function ChallengesSheet({
+  open,
+  onClose,
+  title,
+  results,
+  now,
+  accent,
+  detailPath,
+}: {
+  open: boolean;
+  onClose: () => void;
+  title: string;
+  results: ChallengeResult[];
+  now: number;
+  accent: string;
+  detailPath: string;
+}) {
+  return (
+    <BottomSheet open={open} onClose={onClose} title={title}>
+      <div className="space-y-3 text-sm">
+        <ul className="space-y-3 max-h-[55vh] overflow-y-auto">
+          {results.map((r) => (
+            <ChallengeRow key={r.mode.key} r={r} now={now} accent={accent} />
+          ))}
+        </ul>
+        <Link
+          to={`${detailPath}?tab=herausforderungen`}
+          className="inline-flex items-center min-h-11 text-indigo-400 underline"
+          onClick={onClose}
+        >
+          Alle Herausforderungen
         </Link>
       </div>
     </BottomSheet>

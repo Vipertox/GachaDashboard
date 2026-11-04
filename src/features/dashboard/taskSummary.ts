@@ -1,4 +1,4 @@
-import type { DetailSection, GameEvent } from "../../model/types";
+import type { Challenge, DetailSection, GameEvent } from "../../model/types";
 
 /** Eine wöchentliche Aufgabe, vereinheitlicht aus Flags, Tasks und Ressourcen des Abschnitts. */
 export interface WeeklyItem {
@@ -56,4 +56,39 @@ export function eventSummary(events: GameEvent[], now: number): EventSummary {
     .filter((e) => e.status === "running")
     .sort((a, b) => (a.end?.getTime() ?? Infinity) - (b.end?.getTime() ?? Infinity));
   return { open, running: active.length };
+}
+
+/**
+ * Erledigt ist ein gespielter Modus mit vollem Fortschritt. Modi ohne Maximum (nur Bestwert,
+ * z. B. Stygian Onslaught oder Deadly Assault) gelten als erledigt, sobald sie gespielt sind.
+ */
+export function challengeDone(c: Challenge): boolean {
+  return c.state === "ok" && (!c.progress || c.progress.current >= c.progress.max);
+}
+
+/** Zählt der Modus mit? Gesperrte Modi und laut Cache schon abgelaufene Perioden nicht. */
+export function challengeCounts(c: Challenge, now: number): boolean {
+  return c.state !== "locked" && (!c.end || c.end.getTime() > now);
+}
+
+export interface ChallengeSummary {
+  /** Mitgezählte Modi mit Daten. */
+  counted: number;
+  open: number;
+  loading: number;
+  failed: number;
+}
+
+/** Stand der laufenden Periode über alle Modi eines Spiels; jeder Eintrag ist das Ergebnis einer Abfrage. */
+export function challengeSummary(results: { data?: Challenge; isError: boolean }[], now: number): ChallengeSummary {
+  const s: ChallengeSummary = { counted: 0, open: 0, loading: 0, failed: 0 };
+  for (const r of results) {
+    if (r.data) {
+      if (!challengeCounts(r.data, now)) continue;
+      s.counted += 1;
+      if (!challengeDone(r.data)) s.open += 1;
+    } else if (r.isError) s.failed += 1;
+    else s.loading += 1;
+  }
+  return s;
 }

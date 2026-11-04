@@ -121,7 +121,7 @@ Die untere Navigation enthält die häufig genutzten Ansichten Dashboard und Zei
 
 | Screen | Inhalt |
 | --- | --- |
-| Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe, offene Weekly-Aufgaben und Events, siehe "Weekly und Events auf der Karte" |
+| Dashboard | Eine Karte pro Spielkonto: Hauptressource mit Balken, Zeit bis voll, wichtigste Daily-Aufgabe, offene Weekly-Aufgaben, Events und Herausforderungen, siehe "Aufgaben-Chips auf der Karte" |
 | Spieldetail | Tab "Übersicht" mit allen Live-Werten des Spiels in den Abschnitten Täglich, Wöchentlich, Laufend und Weitere, siehe "Detailseite pro Spiel", dazu Events und Banner, siehe "Events und Banner". Tab "Figuren" mit dem Raster aller Figuren, siehe "Figurenübersicht". Tab "Herausforderungen" mit den Endgame-Modi, siehe "Herausforderungen" |
 | Figur-Detail | Waffe, Ausrüstung, Sets, Talente und Werte einer Figur, Blättern zur nächsten Figur |
 | Zeitleiste | Banner, Events und Herausforderungen aller sichtbaren Spiele als Balken über die Zeit, siehe "Zeitleiste". Dieselbe Ansicht für ein Spiel als Tab "Zeitleiste" der Spieldetails |
@@ -136,17 +136,18 @@ Gestaltungsregeln:
 - Helles und dunkles Design nach Systemeinstellung
 - Jedes Spiel erhält eine eigene Akzentfarbe am Kartenrand, damit die Karten auf einen Blick unterscheidbar sind
 
-### Weekly und Events auf der Karte
+### Aufgaben-Chips auf der Karte
 
-Daily-, Weekly- und Event-Chips stehen in einer gemeinsamen Reihe unter dem Ressourcenbalken. Auf breiten Karten stehen sie nebeneinander, erst wenn der Platz nicht reicht, rutschen sie in die nächste Zeile. Zu den Daily-Chips kommen **Wöchentlich · 2 offen** und **Events · 3 offen**. Ist alles erledigt, wird der Chip grün mit Haken. Ein Tipp auf Wöchentlich oder Events öffnet ein Bottom Sheet mit den Einzelheiten. Die Karte bleibt dabei geschlossen.
+Daily-, Weekly-, Event- und Herausforderungen-Chips stehen in einer gemeinsamen Reihe unter dem Ressourcenbalken. Auf breiten Karten stehen sie nebeneinander, erst wenn der Platz nicht reicht, rutschen sie in die nächste Zeile. Zu den Daily-Chips kommen **Wöchentlich · 2 offen**, **Events · 3 offen** und **Herausforderungen · 1 offen**. Ist alles erledigt, wird der Chip grün mit Haken. Ein Tipp auf einen Chip außer Daily öffnet ein Bottom Sheet mit den Einzelheiten. Die Karte bleibt dabei geschlossen.
 
 - **Wöchentlich:** kommt aus dem Abschnitt `weekly` der Notizen-Antwort, es braucht also keinen zusätzlichen Aufruf. Als offen zählt ein Flag mit `done: false`, eine Task mit `done < total` und eine Ressource unter ihrem Maximum. Beispiele sind Wochenboss-Rabatte, Echo of War, Bounty Commission, Simulated Universe, Survey Points und Pioneer Podcast. Das Sheet listet jede Aufgabe mit Stand und, wo es einen Anteil gibt, mit Balken.
 - **Battle Pass:** Auf der Höchststufe gibt es nichts mehr zu holen, der Battle Pass gilt dann als erledigt, auch wenn die Wochen-EXP nicht voll ist. Die Adapter nutzen dafür `battlePass()` aus `api/adapters/util.ts`: Unter der Höchststufe entsteht ein Balken mit der Wochen-EXP, auf der Höchststufe ein erledigtes Flag „Höchststufe N“. Bisher liefert nur Wuthering Waves Battle-Pass-Daten (Pioneer Podcast, Höchststufe 70 als Konstante, da `queryRole` sie nicht nennt). Die Notizen-Endpunkte von Genshin, Star Rail und ZZZ enthalten ihren Battle Pass nicht.
 - **Events:** kommen aus dem Event-Kalender (`useEvents`, Query-Schlüssel `["events", …]`, 30 Minuten frisch). Der Cache wird mit Detailseite und Zeitleiste geteilt. Offen ist ein Event, das begonnen hat, nicht erledigt und noch nicht abgelaufen ist. Kommende Events zählen nicht mit. Das Sheet zeigt die offenen Events, das zuerst endende vorn, mit Restzeit, Fortschritt und offener Premiumwährung, darunter den Link **Alle Events** auf die Detailseite.
 - Wuthering Waves liefert nur Banner (`bannersOnly`). Dort fehlt der Event-Chip, und der Kalender wird für das Dashboard gar nicht abgerufen. Läuft in einem Spiel kein Event, entfällt der Chip ebenfalls.
 - Solange der Kalender lädt, steht dort ein blasser Chip **Events …**. Bei einem Fehler zeigt er **Events · ?**, und das Sheet nennt den Fehler. Der Rest der Karte ist davon nicht betroffen.
+- **Herausforderungen:** laufende Periode aller Modi des Spiels über `useCurrentChallenges`, ein Aufruf pro Modus. Der Cache wird mit dem Tab Herausforderungen und der Zeitleiste geteilt und ist 30 Minuten frisch. Offen ist ein Modus, der in dieser Periode noch nicht gespielt ist oder dessen Fortschritt nicht voll ist. Modi ohne Maximum, die nur einen Bestwert liefern (Stygian Onslaught, Deadly Assault, Threshold Simulation), gelten als erledigt, sobald sie gespielt sind. Gesperrte Modi und laut Cache abgelaufene Perioden zählen nicht mit. Das Sheet zeigt pro Modus Stand, Balken und Restzeit, mit ⚠ bei einem offenen Modus, der in weniger als drei Tagen endet, darunter den Link **Alle Herausforderungen** (`?tab=herausforderungen`). Solange ein Modus lädt, steht dort **Herausforderungen …**. Fallen alle Abrufe aus, zeigt der Chip **Herausforderungen · ?**, einzelne Fehler nennt das Sheet beim jeweiligen Modus. Wuthering Waves hat keine Herausforderungen und damit keinen Chip.
 - Die Karte führt nur über Kopf und Ressourcenbereich in die Detailseite. Die Chip-Zeile liegt außerhalb dieses Links, da Buttons in einem Link ungültiges HTML sind und beim Antippen sonst auch die Navigation auslösen würden. Auch die Daily-Chips stehen dort, damit alle Chips eine Reihe bilden. Die Tippfläche jedes Chips ist 44 px hoch.
-- Zähl-Logik: `src/features/dashboard/taskSummary.ts` (`weeklySummary`, `eventSummary`), Popups: `TaskSheets.tsx`.
+- Zähl-Logik: `src/features/dashboard/taskSummary.ts` (`weeklySummary`, `eventSummary`, `challengeSummary`), Popups: `TaskSheets.tsx`.
 
 ## Detailseite pro Spiel
 
