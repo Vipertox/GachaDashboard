@@ -1,4 +1,12 @@
-import { QueryClient, useQueries, useQuery, useQueryClient, type UseQueryOptions } from "@tanstack/react-query";
+import {
+  QueryClient,
+  keepPreviousData,
+  useQueries,
+  useQuery,
+  useQueryClient,
+  type UseQueryOptions,
+  type UseQueryResult,
+} from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { ADAPTERS } from "../api/adapters";
 import { CHARACTER_ADAPTERS, DETAIL_CHUNK } from "../api/characters";
@@ -170,13 +178,22 @@ export interface CharacterDetails {
   error?: ApiError;
 }
 
-/** Lädt die Details aller Figuren der Liste in Blöcken nach. */
-export function useCharacterDetails(profile: Profile, ref: GameAccountRef, roster: Roster | undefined) {
+/** Figurenliste samt Ladezeitpunkt; die Details hängen an genau diesem Stand. */
+export type RosterQuery = Pick<UseQueryResult<Roster, ApiError>, "data" | "dataUpdatedAt">;
+
+/**
+ * Lädt die Details aller Figuren der Liste in Blöcken nach. Der Stand der Liste
+ * gehört in den Schlüssel: Lädt die Liste neu, laden auch die Details neu (bei
+ * Star Rail kommen sie ohnehin mit der Liste); bis dahin bleiben die alten sichtbar.
+ */
+export function useCharacterDetails(profile: Profile, ref: GameAccountRef, rosterQuery: RosterQuery) {
   const qc = useQueryClient();
   const adapter = CHARACTER_ADAPTERS[ref.game];
+  const roster = rosterQuery.data;
   const ids = roster?.characters.map((c) => c.id) ?? [];
   return useQuery<CharacterDetails, ApiError>({
-    queryKey: ["characters", profile.id, ref.game, ref.uid, ids.join(",")],
+    queryKey: ["characters", profile.id, ref.game, ref.uid, rosterQuery.dataUpdatedAt],
+    placeholderData: keepPreviousData,
     queryFn: async ({ signal }) => {
       const byId: Record<string, Character> = {};
       if (roster?.details) {
@@ -204,12 +221,13 @@ export function useCharacterDetails(profile: Profile, ref: GameAccountRef, roste
 }
 
 /** Details einer Figur: aus dem Vorladen, sonst einzeln beim Öffnen (ZZZ). */
-export function useCharacter(profile: Profile, ref: GameAccountRef, roster: Roster | undefined, id: string) {
+export function useCharacter(profile: Profile, ref: GameAccountRef, rosterQuery: RosterQuery, id: string) {
   const qc = useQueryClient();
   const adapter = CHARACTER_ADAPTERS[ref.game];
-  const bulk = useCharacterDetails(profile, ref, roster);
+  const roster = rosterQuery.data;
+  const bulk = useCharacterDetails(profile, ref, rosterQuery);
   const single = useQuery<Character | null, ApiError>({
-    queryKey: ["character", profile.id, ref.game, ref.uid, id],
+    queryKey: ["character", profile.id, ref.game, ref.uid, id, rosterQuery.dataUpdatedAt],
     queryFn: async ({ signal }) => {
       try {
         const [c] = await adapter!.fetchDetails(await loadAccount(qc, profile, ref), [id], signal);

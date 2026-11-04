@@ -282,7 +282,7 @@ function Body({ profile, gameRef, id }: { profile: Profile; gameRef: GameAccount
     if (next) navigate(`/game/${gameRef.game}/${gameRef.uid}/figur/${next.id}`, { replace: true });
   };
 
-  const { character: c, error: detailError, loaded } = useCharacter(profile, gameRef, roster.data, id);
+  const { character: c, error: detailError, loaded } = useCharacter(profile, gameRef, roster, id);
   const error = roster.error ?? detailError;
   return (
     <div

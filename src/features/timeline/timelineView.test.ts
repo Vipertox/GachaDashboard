@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
-import { barSpan, dayTicks, endingSoon, fromCalendar, fromChallenge, itemOrder, timelineWindow, type TimelineItem } from "./timelineView";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { barSpan, dayTicks, endingSoon, fromCalendar, fromChallenge, itemOrder, loadTimelinePrefs, timelineWindow, type TimelineItem } from "./timelineView";
 import type { Challenge, ChallengeMode } from "../../model/types";
 
 // Lokale Zeit, damit die Tagesgrenzen unabhängig von der Zeitzone des Testrechners stimmen.
@@ -123,5 +123,22 @@ describe("Quellen", () => {
   it("gilt bei vollem Fortschritt als erledigt", () => {
     const c = challenge({ progress: { current: 36, max: 36, unit: "Sterne" } });
     expect(fromChallenge("genshin", mode, c, now)).toMatchObject({ status: "done", progress: 1 });
+  });
+});
+
+describe("Gespeicherte Zeitleisten-Einstellungen", () => {
+  const stored = (value: string | null) => vi.stubGlobal("localStorage", { getItem: () => value });
+  afterEach(() => vi.unstubAllGlobals());
+
+  it("übernimmt nur bekannte Arten und Spiele", () => {
+    stored(JSON.stringify({ hiddenKinds: ["event", "quatsch", 3], hiddenGames: ["zzz", "unbekannt"] }));
+    expect(loadTimelinePrefs()).toEqual({ hiddenKinds: ["event"], hiddenGames: ["zzz"] });
+  });
+
+  it("stürzt bei falsch getypten oder kaputten Einträgen nicht ab", () => {
+    for (const raw of [JSON.stringify({ hiddenKinds: null }), JSON.stringify({ hiddenGames: "zzz" }), "null", "{kaputt"]) {
+      stored(raw);
+      expect(loadTimelinePrefs()).toEqual({ hiddenKinds: [], hiddenGames: [] });
+    }
   });
 });

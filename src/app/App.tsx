@@ -7,6 +7,7 @@ import { GameDetail } from "../features/game-detail/GameDetail";
 import { Settings } from "../features/settings/Settings";
 import { TimelinePage } from "../features/timeline/Timeline";
 import { UpdateBanner } from "../features/settings/Updates";
+import { RouteErrorBoundary } from "./ErrorBoundary";
 import { useApp } from "./state";
 
 function GearIcon() {
@@ -150,14 +151,16 @@ export function App() {
             {loadError}
           </p>
         )}
-        <Routes>
-          <Route path="/" element={<Dashboard />} />
-          <Route path="/game/:game/:uid" element={<GameDetail />} />
-          <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
-          <Route path="/zeitleiste" element={<TimelinePage />} />
-          <Route path="/accounts" element={<Accounts />} />
-          <Route path="/settings" element={<Settings />} />
-        </Routes>
+        <RouteErrorBoundary>
+          <Routes>
+            <Route path="/" element={<Dashboard />} />
+            <Route path="/game/:game/:uid" element={<GameDetail />} />
+            <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
+            <Route path="/zeitleiste" element={<TimelinePage />} />
+            <Route path="/accounts" element={<Accounts />} />
+            <Route path="/settings" element={<Settings />} />
+          </Routes>
+        </RouteErrorBoundary>
       </main>
       <Nav />
     </HashRouter>

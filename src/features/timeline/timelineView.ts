@@ -1,4 +1,4 @@
-import type { Banner, Challenge, ChallengeMode, EventCalendar, EventStatus, GameEvent, GameId } from "../../model/types";
+import { GAME_IDS, type Banner, type Challenge, type ChallengeMode, type EventCalendar, type EventStatus, type GameEvent, type GameId } from "../../model/types";
 
 export type TimelineKind = "banner" | "event" | "challenge";
 
@@ -176,11 +176,21 @@ export interface TimelinePrefs {
 
 const DEFAULT: TimelinePrefs = { hiddenKinds: [], hiddenGames: [] };
 
-/** Reine Anzeige-Einstellung; fehlt der Speicher, ist alles sichtbar. */
+/** Nur bekannte Werte übernehmen; ein alter oder kaputter Eintrag darf die Seite nicht abstürzen lassen. */
+function knownValues<T extends string>(value: unknown, known: readonly T[]): T[] {
+  return Array.isArray(value) ? value.filter((v): v is T => known.includes(v as T)) : [];
+}
+
+/** Reine Anzeige-Einstellung; fehlt der Speicher oder ist er unlesbar, ist alles sichtbar. */
 export function loadTimelinePrefs(): TimelinePrefs {
   try {
     const raw = localStorage.getItem("timeline");
-    return raw ? { ...DEFAULT, ...(JSON.parse(raw) as Partial<TimelinePrefs>) } : DEFAULT;
+    if (!raw) return DEFAULT;
+    const stored = JSON.parse(raw) as Partial<Record<keyof TimelinePrefs, unknown>> | null;
+    return {
+      hiddenKinds: knownValues(stored?.hiddenKinds, KINDS),
+      hiddenGames: knownValues(stored?.hiddenGames, GAME_IDS),
+    };
   } catch {
     return DEFAULT;
   }

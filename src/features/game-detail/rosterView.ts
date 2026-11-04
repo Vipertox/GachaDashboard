@@ -17,11 +17,22 @@ export interface RosterPrefs {
 
 const DEFAULT: RosterPrefs = { sort: "level", element: "", role: "" };
 
-/** Reine Anzeige-Einstellung pro Spiel; fehlt der Speicher, gelten die Standardwerte. */
+const isSortKey = (v: unknown): v is SortKey => typeof v === "string" && Object.hasOwn(SORT_LABEL, v);
+
+/**
+ * Reine Anzeige-Einstellung pro Spiel; fehlt der Speicher, gelten die Standardwerte.
+ * Unbekannte oder falsch getypte Werte (alter oder kaputter Eintrag) fallen einzeln auf den Standard zurück.
+ */
 export function loadPrefs(game: GameId): RosterPrefs {
   try {
     const raw = localStorage.getItem(`roster:${game}`);
-    return raw ? { ...DEFAULT, ...(JSON.parse(raw) as Partial<RosterPrefs>) } : DEFAULT;
+    if (!raw) return DEFAULT;
+    const stored = JSON.parse(raw) as Partial<Record<keyof RosterPrefs, unknown>> | null;
+    return {
+      sort: isSortKey(stored?.sort) ? stored.sort : DEFAULT.sort,
+      element: typeof stored?.element === "string" ? stored.element : DEFAULT.element,
+      role: typeof stored?.role === "string" ? stored.role : DEFAULT.role,
+    };
   } catch {
     return DEFAULT;
   }
