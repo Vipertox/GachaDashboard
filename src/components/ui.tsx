@@ -81,17 +81,18 @@ export function ProgressBar({
   height?: number;
   mode?: BarMode;
 }) {
+  // <span> als Block statt <div>: der Balken steht auch innerhalb von Buttons (Event-Zeilen)
   return (
-    <div
-      className="w-full rounded-full overflow-hidden"
+    <span
+      className="block w-full rounded-full overflow-hidden"
       style={{ height, background: "var(--surface-2)" }}
       role="progressbar"
       aria-valuenow={Math.round(frac * 100)}
       aria-valuemin={0}
       aria-valuemax={100}
     >
-      <div className="bar-fill h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent, mode) }} />
-    </div>
+      <span className="bar-fill block h-full rounded-full" style={{ width: `${frac * 100}%`, background: barColor(frac, accent, mode) }} />
+    </span>
   );
 }
 

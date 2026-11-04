@@ -275,7 +275,9 @@ function Body({ profile, gameRef, id }: { profile: Profile; gameRef: GameAccount
   const roster = useRoster(profile, gameRef);
   const touchX = useRef<number | undefined>(undefined);
 
-  const order = applyPrefs(roster.data?.characters ?? [], loadPrefs(gameRef.game));
+  // Einmal beim Öffnen lesen statt bei jedem Rendern aus localStorage
+  const [prefs] = useState(() => loadPrefs(gameRef.game));
+  const order = applyPrefs(roster.data?.characters ?? [], prefs);
   const idx = order.findIndex((c) => c.id === id);
   const go = (delta: number) => {
     const next = order[idx + delta];
@@ -297,7 +299,7 @@ function Body({ profile, gameRef, id }: { profile: Profile; gameRef: GameAccount
     >
       {idx >= 0 && (
         <div className="flex items-center justify-between text-sm" style={{ color: "var(--muted)" }}>
-          <button className="min-h-11 min-w-11 disabled:opacity-30" disabled={idx === 0} onClick={() => go(-1)} aria-label="Vorherige Figur">
+          <button className="min-h-11 min-w-11 disabled:opacity-30" disabled={idx === 0} onClick={() => go(-1)} aria-label={`Vorherige Figur: ${order[idx - 1]?.name ?? "keine"}`}>
             ‹ {order[idx - 1]?.name ?? ""}
           </button>
           <span>
@@ -307,7 +309,7 @@ function Body({ profile, gameRef, id }: { profile: Profile; gameRef: GameAccount
             className="min-h-11 min-w-11 disabled:opacity-30"
             disabled={idx === order.length - 1}
             onClick={() => go(1)}
-            aria-label="Nächste Figur"
+            aria-label={`Nächste Figur: ${order[idx + 1]?.name ?? "keine"}`}
           >
             {order[idx + 1]?.name ?? ""} ›
           </button>

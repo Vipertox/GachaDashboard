@@ -229,9 +229,9 @@ describe("Kleinere Korrekturen der API-Schicht", () => {
     process.env.TZ = "Europe/Berlin";
     try {
       // 25.10.2026: Umstellung auf Winterzeit, der Tag hat 25 Stunden
-      const now = new Date(2026, 9, 25, 0, 30).getTime();
-      expect(formatClock(new Date(2026, 9, 26, 0, 10), now)).toMatch(/^morgen /);
-      expect(formatClock(new Date(2026, 9, 25, 23, 50), now)).not.toMatch(/morgen/);
+      const changeDay = new Date(2026, 9, 25, 0, 30).getTime();
+      expect(formatClock(new Date(2026, 9, 26, 0, 10), changeDay)).toMatch(/^morgen /);
+      expect(formatClock(new Date(2026, 9, 25, 23, 50), changeDay)).not.toMatch(/morgen/);
     } finally {
       process.env.TZ = previous;
     }

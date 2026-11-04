@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from "react";
+import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { HashRouter, NavLink, Route, Routes } from "react-router-dom";
-import { Accounts } from "../features/accounts/Accounts";
+import { Skeleton } from "../components/ui";
 import { Dashboard } from "../features/dashboard/Dashboard";
-import { CharacterView } from "../features/game-detail/CharacterView";
-import { GameDetail } from "../features/game-detail/GameDetail";
-import { Settings } from "../features/settings/Settings";
-import { TimelinePage } from "../features/timeline/Timeline";
 import { UpdateBanner } from "../features/settings/Updates";
 import { RouteErrorBoundary } from "./ErrorBoundary";
 import { useApp } from "./state";
+
+// Startseite direkt, die übrigen Seiten als eigene Chunks erst beim ersten Aufruf
+const Accounts = lazy(() => import("../features/accounts/Accounts").then((m) => ({ default: m.Accounts })));
+const CharacterView = lazy(() => import("../features/game-detail/CharacterView").then((m) => ({ default: m.CharacterView })));
+const GameDetail = lazy(() => import("../features/game-detail/GameDetail").then((m) => ({ default: m.GameDetail })));
+const Settings = lazy(() => import("../features/settings/Settings").then((m) => ({ default: m.Settings })));
+const TimelinePage = lazy(() => import("../features/timeline/Timeline").then((m) => ({ default: m.TimelinePage })));
 
 function GearIcon() {
   return (
@@ -173,6 +176,7 @@ export function App() {
           </p>
         )}
         <RouteErrorBoundary>
+          <Suspense fallback={<Skeleton className="h-40" />}>
           <Routes>
             <Route path="/" element={<Dashboard />} />
             <Route path="/game/:game/:uid" element={<GameDetail />} />
@@ -181,6 +185,7 @@ export function App() {
             <Route path="/accounts" element={<Accounts />} />
             <Route path="/settings" element={<Settings />} />
           </Routes>
+          </Suspense>
         </RouteErrorBoundary>
       </main>
       <Nav />
