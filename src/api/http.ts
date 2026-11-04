@@ -46,7 +46,7 @@ export async function httpRequest(req: HttpRequest): Promise<HttpResponse> {
   } catch (e) {
     if (e instanceof ApiError) throw e;
     if (e instanceof DOMException && e.name === "AbortError") throw e;
-    throw new ApiError("network", e instanceof Error ? e.message : "Netzwerkfehler");
+    throw new ApiError("network", e instanceof Error ? e.message : "Netzwerkfehler", undefined, { cause: e });
   }
 }
 

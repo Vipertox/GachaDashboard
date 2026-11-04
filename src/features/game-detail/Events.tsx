@@ -46,8 +46,9 @@ function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accen
   const when = whenText(e, now);
   return (
     <li>
+      {/* Im Button nur Inline-Elemente (als Block gesetzt); <div> ist dort kein gültiges HTML */}
       <button className="w-full text-left space-y-1.5 min-h-11 active:opacity-70" onClick={onOpen}>
-        <div className="flex items-center justify-between gap-3">
+        <span className="flex items-center justify-between gap-3">
           <span className="flex items-center gap-2 min-w-0">
             <span aria-hidden style={{ color: done ? "var(--color-ok)" : "var(--muted)" }}>
               {done ? "✓" : "○"}
@@ -60,7 +61,7 @@ function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accen
             )}
           </span>
           {e.progress && <span className="shrink-0 text-sm font-semibold">{progressText(e.progress)}</span>}
-        </div>
+        </span>
         {e.progress && e.status !== "upcoming" && (
           <ProgressBar
             frac={e.progress.max ? Math.min(1, e.progress.current / e.progress.max) : 0}
@@ -70,13 +71,13 @@ function EventRow({ e, now, accent, onOpen }: { e: GameEvent; now: number; accen
           />
         )}
         {(done || when || e.currency) && (
-          <div className="flex items-center justify-between gap-3 text-xs">
+          <span className="flex items-center justify-between gap-3 text-xs">
             <span style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
               {soon && "⚠ "}
               {[done ? "Erledigt" : undefined, when].filter(Boolean).join(" · ")}
             </span>
             {e.currency && <CurrencyBadge c={e.currency} />}
-          </div>
+          </span>
         )}
       </button>
     </li>
@@ -267,7 +268,7 @@ const fmtDay = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", mont
 /** Eine Version zum Aufklappen; Versionen mit laufenden Bannern sind anfangs offen. */
 function BannerGroupBlock({ g, now }: { g: BannerGroup; now: number }) {
   const [open, setOpen] = useState(g.running);
-  const firstStart = g.banners.map((b) => b.start?.getTime()).filter((t): t is number => t !== undefined).sort()[0];
+  const firstStart = g.banners.map((b) => b.start?.getTime()).filter((t): t is number => t !== undefined).sort((a, b) => a - b)[0];
   const status = g.running ? "läuft" : firstStart !== undefined ? `ab ${fmtDay(new Date(firstStart))}` : "demnächst";
   return (
     <li>
@@ -364,6 +365,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
   const upcoming = events.filter((e) => e.status === "upcoming").sort(byTime);
   const shown = all ? current : current.slice(0, VISIBLE);
   const bannerGroups = groupBanners(q.data?.banners ?? []);
+  const bannersError = q.data?.bannersError;
   const sums = currencySummary(events);
 
   return (
@@ -416,13 +418,19 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
           </div>
         </Card>
       </section>
-      {bannerGroups.length > 0 && (
+      {(bannerGroups.length > 0 || bannersError) && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
             Banner
           </h2>
           <Card>
-            <BannerGroups groups={bannerGroups} now={now} />
+            {bannersError ? (
+              <p className="p-4 text-sm" style={{ color: "var(--muted)" }}>
+                Banner nicht verfügbar – {eventErrorText(bannersError)}
+              </p>
+            ) : (
+              <BannerGroups groups={bannerGroups} now={now} />
+            )}
           </Card>
         </section>
       )}

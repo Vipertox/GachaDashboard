@@ -33,7 +33,7 @@ export async function loadState(): Promise<PersistedState> {
   }
   return {
     profileState: raw?.profileState ?? EMPTY.profileState,
-    settings: { ...DEFAULT_SETTINGS, ...(raw?.settings ?? {}) },
+    settings: { ...DEFAULT_SETTINGS, ...raw?.settings },
   };
 }
 

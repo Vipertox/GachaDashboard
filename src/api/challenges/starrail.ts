@@ -2,13 +2,13 @@ import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { optNum, parseOrThrow } from "../adapters/util";
 import { optStr } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { challenge, fmtNum, partialTime, pickPeriod, plain, scheduleType, serverDate, serverOffset } from "./util";
 import type { Account, Challenge, ChallengeMode, ChallengePeriod, Fact } from "../../model/types";
 
 const BASE = "https://bbs-api-os.hoyolab.com/game_record/hkrpg/api";
 
-const query = (account: Account) => `server=${account.region}&role_id=${account.uid}`;
+const query = (account: Account) => roleParams(account);
 
 const season = z.object({ name_mi18n: optStr, begin_time: partialTime, end_time: partialTime });
 
@@ -57,11 +57,11 @@ const peakSchema = z.object({
     .nullable(),
 });
 
-/** Anomaly Arbitration liefert alle Perioden in `challenge_peak_records`, die neueste zuerst. */
+/** Anomaly Arbitration liefert alle Perioden in `challenge_peak_records`; gewählt wird nach Startzeit. */
 export function parsePeak(data: unknown, p: ChallengePeriod, region: string): Challenge {
   const d = parseOrThrow(peakSchema, data);
   const offset = serverOffset(region);
-  const r = pickPeriod(d.challenge_peak_records ?? [], p);
+  const r = pickPeriod(d.challenge_peak_records ?? [], p, (e) => serverDate(e.group?.begin_time, offset));
   const period = {
     season: plain(r?.group?.name_mi18n) || undefined,
     start: serverDate(r?.group?.begin_time, offset),

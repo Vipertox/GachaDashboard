@@ -19,7 +19,7 @@ Ich bestätige den Eingang in der Regel innerhalb von 7 Tagen und melde mich mit
 
 ## Besonders relevant
 
-- Umgang mit Zugangsdaten (HoYoLAB-Cookies, Kuro-`oauthCode`) in App und lokalem Proxy
+- Umgang mit Zugangsdaten (HoYoLAB-Cookies, Kuro-`oauthCode`) in App und lokalem Proxy. Bekannte Grenze: Der Browser-Modus schützt nicht gegen andere Benutzer desselben Rechners (siehe README, „Lokaler Proxy“); Meldungen dazu bitte nur, wenn sie darüber hinausgehen
 - Die Liste der erlaubten Hosts in `proxy/server.ts` und `src-tauri/capabilities/default.json`. Das Wuthering Waves Wiki wird ohne Zugangsdaten abgefragt
 - Der Auto-Updater und die Signatur der Releases
 - Abhängigkeiten mit bekannten Schwachstellen

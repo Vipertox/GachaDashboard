@@ -1,7 +1,9 @@
 import { md5 } from "js-md5";
+import { z } from "zod";
+import { optNum, parseOrThrow } from "./adapters/util";
 import { ApiError } from "./errors";
 import { httpJson } from "./http";
-import type { GameId } from "../model/types";
+import type { Account, GameId } from "../model/types";
 
 const OVERSEAS_SALT = "6s25p5ox5y14umn1p61aqyyvbvvl3lrt";
 
@@ -66,7 +68,7 @@ async function hoyoRequest(
   signal?: AbortSignal,
 ): Promise<unknown> {
   const headers = hoyoHeaders(creds);
-  const json = (await httpJson(
+  const json = await httpJson(
     body
       ? {
           url,
@@ -76,15 +78,15 @@ async function hoyoRequest(
           signal,
         }
       : { url, headers, signal },
-  )) as {
-    retcode?: number;
-    message?: string;
-    data?: unknown;
-  };
-  if (typeof json?.retcode !== "number") throw new ApiError("schema", "Antwort ohne retcode");
-  if (json.retcode !== 0) throw mapRetcode(json.retcode, json.message ?? "Fehler");
-  return json.data;
+  );
+  const envelope = envelopeSchema.safeParse(json);
+  if (!envelope.success) throw new ApiError("schema", "Antwort ohne retcode");
+  const { retcode, message, data } = envelope.data;
+  if (retcode !== 0) throw mapRetcode(retcode, message ?? "Fehler");
+  return data;
 }
+
+const envelopeSchema = z.object({ retcode: z.number(), message: z.string().nullish(), data: z.unknown() });
 
 export const GAME_BIZ: Partial<Record<GameId, string>> = {
   genshin: "hk4e_global",
@@ -100,26 +102,30 @@ export interface GameRole {
   level: number;
 }
 
-interface RawRole {
-  game_biz?: string;
-  game_uid?: string | number;
-  region?: string;
-  nickname?: string;
-  level?: number;
-}
+const roleSchema = z.object({
+  game_biz: z.string().nullish(),
+  // Text oder Zahl; ein Objekt o. Ä. wäre sonst als "[object Object]" zur UID geworden
+  game_uid: z.union([z.string(), z.number()]).nullish(),
+  region: z.string().nullish(),
+  nickname: z.string().nullish(),
+  level: optNum,
+});
+const rolesSchema = z.object({ list: z.array(roleSchema) });
+
+type RawRole = z.input<typeof roleSchema>;
 
 /** Pro Spiel das erste Konto; mehrere Server je Spiel sind in Version 1 nicht vorgesehen. */
 export function pickRoles(list: RawRole[]): GameRole[] {
   const out: GameRole[] = [];
   for (const [game, biz] of Object.entries(GAME_BIZ) as [GameId, string][]) {
     const first = list.find((r) => r.game_biz === biz && r.game_uid && r.region);
-    if (first) {
+    if (first?.game_uid && first.region) {
       out.push({
         game,
         uid: String(first.game_uid),
-        region: first.region!,
+        region: first.region,
         nickname: first.nickname ?? "",
-        level: first.level ?? 0,
+        level: Number(first.level ?? 0) || 0,
       });
     }
   }
@@ -131,11 +137,18 @@ export async function fetchGameRoles(
   creds: HoyoCredentials,
   signal?: AbortSignal,
 ): Promise<GameRole[]> {
-  const data = (await hoyoGet(
+  const data = await hoyoGet(
     "https://api-account-os.hoyolab.com/account/binding/api/getUserGameRolesByCookie",
     creds,
     signal,
-  )) as { list?: RawRole[] } | null;
-  if (!Array.isArray(data?.list)) throw new ApiError("schema", "Schnittstelle geändert: list");
-  return pickRoles(data.list);
+  );
+  return pickRoles(parseOrThrow(rolesSchema, data).list);
 }
+
+/** `server` und `role_id` der Spielendpunkte, kodiert. */
+export const roleParams = (account: Pick<Account, "uid" | "region">) =>
+  new URLSearchParams({ server: account.region, role_id: account.uid }).toString();
+
+/** `uid` und `region` (ZZZ-Kalender und einige ZZZ-Modi), kodiert. */
+export const uidParams = (account: Pick<Account, "uid" | "region">) =>
+  new URLSearchParams({ uid: account.uid, region: account.region }).toString();

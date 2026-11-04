@@ -1,10 +1,11 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, renameSync, statSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
-import { Entry } from "@napi-rs/keyring";
+import { AsyncEntry } from "@napi-rs/keyring";
 import { Hono, type Context } from "hono";
+import { secureHeaders } from "hono/secure-headers";
 import { hoyolabBrowserLogin } from "./login";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +14,21 @@ const RUNTIME = join(ROOT, "proxy", ".runtime");
 const SETTINGS_FILE = join(RUNTIME, "settings.json");
 const PORT = Number(process.env.PROXY_PORT ?? 8787);
 const KEYRING_SERVICE = "GachaDashboard";
+
+const UPSTREAM_TIMEOUT_MS = 20_000;
+
+/**
+ * Token und Profile nur für den eigenen Benutzer lesbar. Geschrieben wird in eine
+ * Temp-Datei und dann umbenannt, damit ein Abbruch keine halbe Datei hinterlässt.
+ * Rechte wirken unter Linux/macOS; unter Windows setzt Node damit nur das
+ * Schreibschutz-Attribut, dort schützen die Rechte des Benutzerordners.
+ */
+export function writePrivateFile(file: string, content: string): void {
+  const temp = `${file}.tmp`;
+  writeFileSync(temp, content, { encoding: "utf8", mode: 0o600 });
+  chmodSync(temp, 0o600);
+  renameSync(temp, file);
+}
 
 /** Nur diese Hosts darf der Proxy ansprechen. */
 export const ALLOWED_HOSTS = new Set([
@@ -63,6 +79,26 @@ export function createApp(token: string): Hono {
     await next();
   });
 
+  // Gleiche Grenzen wie die CSP der Tauri-App; externe Daten laufen nur über /api/fetch.
+  // Verbietet zudem das Einbetten in fremde Seiten (Clickjacking).
+  app.use(
+    "*",
+    secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+      xFrameOptions: "DENY",
+      // Läuft nur über http auf 127.0.0.1; HSTS wäre dort wirkungslos.
+      strictTransportSecurity: false,
+    }),
+  );
+
   const api = new Hono();
   api.use("*", async (c, next) => {
     if (!tokenMatches(token, c.req.header("x-proxy-token"))) return c.text("Unauthorized", 401);
@@ -88,9 +124,14 @@ export function createApp(token: string): Hono {
         headers: body.headers,
         body: method === "POST" ? body.body : undefined,
         redirect: "manual",
+        // Hängt der Upstream, endet die Anfrage; bricht die Seite ab, wird das weitergereicht.
+        signal: AbortSignal.any([AbortSignal.timeout(UPSTREAM_TIMEOUT_MS), c.req.raw.signal]),
       });
       return c.json({ status: res.status, text: await res.text() });
     } catch (e) {
+      if (e instanceof DOMException && e.name === "TimeoutError") {
+        return c.text(`Upstream antwortet nicht innerhalb von ${UPSTREAM_TIMEOUT_MS / 1000} s`, 504);
+      }
       return c.text(`Upstream-Fehler: ${e instanceof Error ? e.message : "unbekannt"}`, 502);
     }
   });
@@ -108,24 +149,36 @@ export function createApp(token: string): Hono {
     return KEY_PATTERN.test(key) ? key : null;
   };
 
-  // Tokens liegen im OS-Schlüsselspeicher, nie in einer Datei.
-  api.get("/credentials/:key{.+}", (c) => {
+  // Tokens liegen im OS-Schlüsselspeicher, nie in einer Datei. Asynchron, damit eine
+  // Freigabe-Abfrage des Schlüsselbunds (macOS) nicht den ganzen Proxy blockiert.
+  const keyringError = (c: Context, e: unknown) =>
+    c.text(`Schlüsselspeicher: ${e instanceof Error ? e.message : "unbekannter Fehler"}`, 500);
+
+  api.get("/credentials/:key{.+}", async (c) => {
     const key = keyOf(c);
     if (!key) return c.text("Ungültiger Schlüssel", 400);
-    return c.json({ value: new Entry(KEYRING_SERVICE, key).getPassword() });
+    try {
+      return c.json({ value: await new AsyncEntry(KEYRING_SERVICE, key).getPassword() });
+    } catch (e) {
+      return keyringError(c, e);
+    }
   });
   api.put("/credentials/:key{.+}", async (c) => {
     const key = keyOf(c);
     const body = (await c.req.json().catch(() => null)) as { value?: string } | null;
     if (!key || typeof body?.value !== "string") return c.text("Ungültige Anfrage", 400);
-    new Entry(KEYRING_SERVICE, key).setPassword(body.value);
+    try {
+      await new AsyncEntry(KEYRING_SERVICE, key).setPassword(body.value);
+    } catch (e) {
+      return keyringError(c, e);
+    }
     return c.json({ ok: true });
   });
-  api.delete("/credentials/:key{.+}", (c) => {
+  api.delete("/credentials/:key{.+}", async (c) => {
     const key = keyOf(c);
     if (!key) return c.text("Ungültiger Schlüssel", 400);
     try {
-      new Entry(KEYRING_SERVICE, key).deletePassword();
+      await new AsyncEntry(KEYRING_SERVICE, key).deletePassword();
     } catch {
       // nichts gespeichert
     }
@@ -135,13 +188,20 @@ export function createApp(token: string): Hono {
   // Profil-Einstellungen: keine Tokens, keine Spieldaten.
   api.get("/settings", (c) => {
     if (!existsSync(SETTINGS_FILE)) return c.json({});
-    return c.body(readFileSync(SETTINGS_FILE, "utf8"), 200, { "content-type": "application/json" });
+    const raw = readFileSync(SETTINGS_FILE, "utf8");
+    try {
+      JSON.parse(raw);
+    } catch {
+      // Nicht still als leer behandeln: das nächste Speichern würde die Profile überschreiben.
+      return c.text(`Einstellungsdatei ist beschädigt: ${SETTINGS_FILE}`, 500);
+    }
+    return c.body(raw, 200, { "content-type": "application/json" });
   });
   api.put("/settings", async (c) => {
     const body = await c.req.json().catch(() => null);
-    if (!body || typeof body !== "object") return c.text("Ungültige Anfrage", 400);
+    if (!body || typeof body !== "object" || Array.isArray(body)) return c.text("Ungültige Anfrage", 400);
     mkdirSync(RUNTIME, { recursive: true });
-    writeFileSync(SETTINGS_FILE, JSON.stringify(body, null, 2), "utf8");
+    writePrivateFile(SETTINGS_FILE, JSON.stringify(body, null, 2));
     return c.json({ ok: true });
   });
 
@@ -180,7 +240,7 @@ export function createApp(token: string): Hono {
 function main() {
   const token = randomBytes(24).toString("hex");
   mkdirSync(RUNTIME, { recursive: true });
-  writeFileSync(join(RUNTIME, "token"), token, "utf8");
+  writePrivateFile(join(RUNTIME, "token"), token);
   serve({ fetch: createApp(token).fetch, hostname: "127.0.0.1", port: PORT }, (info) => {
     console.log(`Proxy lauscht auf http://127.0.0.1:${info.port}`);
   });

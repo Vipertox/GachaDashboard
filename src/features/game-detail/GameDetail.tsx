@@ -241,13 +241,13 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
   if (EVENT_ADAPTERS[game] || CHALLENGE_MODES[game]) tabList.push(["zeitleiste", "Zeitleiste"]);
   const tab = tabList.find(([key]) => key === params.get("tab"))?.[0] ?? "uebersicht";
   const openTab = (key: Tab) => setParams(key === "uebersicht" ? {} : { tab: key }, { replace: true });
+  // Navigation zwischen Bereichen statt ARIA-Tabs: role="tablist" verspricht Pfeiltasten und tabpanel
   const tabs = (
-    <div className="flex rounded-xl p-1 gap-1" role="tablist" style={{ background: "var(--surface-2)" }}>
+    <nav className="flex rounded-xl p-1 gap-1" aria-label="Bereiche" style={{ background: "var(--surface-2)" }}>
       {tabList.map(([key, label]) => (
         <button
           key={key}
-          role="tab"
-          aria-selected={tab === key}
+          aria-current={tab === key ? "page" : undefined}
           className="flex-1 min-w-0 min-h-10 px-1 rounded-lg text-sm font-medium truncate"
           style={tab === key ? { background: "var(--surface)", boxShadow: `inset 0 -2px 0 ${accent}` } : { color: "var(--muted)" }}
           onClick={() => openTab(key)}
@@ -255,7 +255,7 @@ function Body({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef 
           {label}
         </button>
       ))}
-    </div>
+    </nav>
   );
 
   const s = q.data;

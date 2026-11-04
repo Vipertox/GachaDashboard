@@ -31,12 +31,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [loadError, setLoadError] = useState<string>();
   const [ps, setPs] = useState<ProfileState>({ profiles: [], activeProfileId: "" });
   const [settings, setSettings] = useState<AppSettings>(DEFAULT_SETTINGS);
+  // Stand für die Aktionen unten. Wird nicht beim Rendern, sondern bei jeder Änderung sofort
+  // gesetzt, damit mehrere Aktionen im selben Handler aufeinander aufbauen statt sich zu überschreiben.
   const latest = useRef({ ps, settings });
-  latest.current = { ps, settings };
 
   useEffect(() => {
     loadState()
       .then((s) => {
+        latest.current = { ps: s.profileState, settings: s.settings };
         setPs(s.profileState);
         setSettings(s.settings);
       })
@@ -45,6 +47,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const commit = useCallback((nextPs: ProfileState, nextSettings: AppSettings) => {
+    latest.current = { ps: nextPs, settings: nextSettings };
     setPs(nextPs);
     setSettings(nextSettings);
     saveState({ profileState: nextPs, settings: nextSettings }).catch((e) =>

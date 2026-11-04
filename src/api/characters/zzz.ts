@@ -1,14 +1,13 @@
 import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { num, optNum, parseOrThrow } from "../adapters/util";
-import { hoyoGet } from "../hoyolab";
-import { fmtValue, groupSets, optStr, str } from "./util";
+import { hoyoGet, roleParams } from "../hoyolab";
+import { fmtValue, groupSets, optStr, rarity, str, toRarity } from "./util";
 import type { Account, Character, CharacterAdapter, CharacterSummary, GearPiece, Stat } from "../../model/types";
 
 const BASE = "https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz";
 
 // ZZZ liefert Seltenheiten als Buchstaben.
-const RARITY: Record<string, number> = { S: 5, A: 4, B: 3 };
 const ELEMENT: Record<string, string> = {
   "200": "physical",
   "201": "fire",
@@ -26,10 +25,6 @@ const SKILL_LABEL: Record<number, string> = {
   6: "Unterstützung",
 };
 const SKILL_ORDER = [0, 2, 6, 1, 3, 5];
-
-const rarity = z.union([z.string(), z.number()]).optional().nullable();
-const toRarity = (r: string | number | null | undefined) =>
-  typeof r === "number" ? r : (RARITY[String(r ?? "").toUpperCase()] ?? 0);
 
 const prop = z.object({
   property_name: optStr,
@@ -183,7 +178,7 @@ export function parseZzzDetails(data: unknown): Character[] {
 }
 
 function query(account: Account) {
-  return `server=${account.region}&role_id=${account.uid}`;
+  return roleParams(account);
 }
 
 export const zzzCharacters: CharacterAdapter = {

@@ -55,7 +55,17 @@ export function challenge(part: Partial<Challenge>): Challenge {
   return c;
 }
 
-/** Vorherige Periode aus einer Liste, die beide Perioden enthält (Imaginarium Theater, Stygian Onslaught). */
-export function pickPeriod<T>(list: T[], period: ChallengePeriod): T | undefined {
-  return list[period === "previous" ? 1 : 0];
+/**
+ * Laufende oder vorherige Periode aus einer Liste mehrerer Perioden (Imaginarium Theater, Stygian Onslaught,
+ * Anomaly Arbitration). Die Reihenfolge der API ist nicht zugesichert, daher nach Startzeit absteigend;
+ * Einträge ohne Startzeit kommen ans Ende, ohne Startzeiten bleibt die Reihenfolge der API (stabile Sortierung).
+ */
+export function pickPeriod<T>(list: T[], period: ChallengePeriod, startOf: (entry: T) => Date | undefined): T | undefined {
+  const start = (entry: T) => startOf(entry)?.getTime() ?? -Infinity;
+  const newestFirst = [...list].sort((a, b) => {
+    const diff = start(b) - start(a);
+    // -Infinity - -Infinity ergibt NaN; gleich behandeln, damit die Sortierung stabil bleibt
+    return Number.isNaN(diff) ? 0 : diff;
+  });
+  return newestFirst[period === "previous" ? 1 : 0];
 }

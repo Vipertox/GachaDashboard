@@ -115,7 +115,7 @@ Die Schnittstellen liefern die Restzeit bis voll in Sekunden. Der Adapter rechne
 
 Das Dashboard ist ein einspaltiger Kartenstapel im Hochformat. Alle wichtigen Aktionen liegen im unteren Bildschirmdrittel und sind mit dem Daumen erreichbar.
 
-Die untere Navigation enthält die häufig genutzten Ansichten Dashboard und Zeitleiste. Konten und Einstellungen liegen im Profilmenü rechts in der Kopfzeile, wie bei einem Kontomenü üblich. Ein Tipp auf den Profilnamen öffnet es. Oben stehen die Profile zum Wechseln, unter einer Trennlinie folgen "Konten verwalten" und "Einstellungen" mit Symbol und Text. Auf dem Smartphone erscheint das Menü als Bottom Sheet, ab `md` als Dropdown unter dem Button. Es schließt sich nach einer Auswahl, bei einem Tipp daneben oder mit Esc. Ohne Profil heißt der Button "Menü" und enthält nur Konten und Einstellungen.
+Die untere Navigation enthält die häufig genutzten Ansichten Dashboard und Zeitleiste. Konten und Einstellungen liegen im Profilmenü rechts in der Kopfzeile, wie bei einem Kontomenü üblich. Ein Tipp auf den Profilnamen öffnet es. Oben stehen die Profile zum Wechseln, unter einer Trennlinie folgen "Konten verwalten" und "Einstellungen" mit Symbol und Text. Auf dem Smartphone erscheint das Menü als Bottom Sheet, ab `md` als Dropdown unter dem Button. Es schließt sich nach einer Auswahl, bei einem Tipp daneben, mit Esc oder wenn der Fokus das Menü per Tab verlässt. Beim Öffnen springt der Fokus auf den ersten Eintrag, nach Esc zurück auf den Button. Es ist bewusst kein ARIA-Menü, sondern eine einfache Aufklappliste aus Buttons und Links. Bottom Sheets wie die Event-Details sind modale `<dialog>`-Elemente: Der Fokus bleibt darin, Esc schließt, danach kehrt er zum Auslöser zurück. Ohne Profil heißt der Button "Menü" und enthält nur Konten und Einstellungen.
 
 &#91;embedded content: Dashboard-Skizze · Smartphone, Hochformat\]
 
@@ -462,7 +462,7 @@ Alle Endpunkte gehören zur Battle Chronicle und nutzen dieselbe Authentifizieru
 | Zenless Zone Zero | Threshold Simulation | `GET …/zzz/void_front_battle_period_abstract_info?uid=&region=&schedule_type=` | Punkte, Rangliste, erreichtes Ende. Die Antwort enthält keine Laufzeit |
 | Wuthering Waves | – | – | Die Kuro-Schnittstelle liefert nichts zu Tower of Adversity oder Whimpering Wastes. Der Tab wird ausgeblendet |
 
-`schedule_type` ist 1 für die laufende und 2 für die vorherige Periode. Imaginarium Theater, Stygian Onslaught und Anomaly Arbitration kennen diesen Parameter nicht oder anders. Ihre Antwort enthält mehrere Perioden als Liste, die neueste zuerst. Bei Stygian Onslaught werden wie in genshin.py Einträge mit `is_valid: false` übergangen.
+`schedule_type` ist 1 für die laufende und 2 für die vorherige Periode. Imaginarium Theater, Stygian Onslaught und Anomaly Arbitration kennen diesen Parameter nicht oder anders. Ihre Antwort enthält mehrere Perioden als Liste. Die App sortiert sie nach Startzeit, statt sich auf die Reihenfolge der Antwort zu verlassen: die jüngste ist die laufende, die zweitjüngste die vorherige. Bei Stygian Onslaught werden wie in genshin.py Einträge mit `is_valid: false` übergangen.
 
 **Zeiten**
 
@@ -870,7 +870,7 @@ Der Code gibt Zugriff auf Kontodaten bis hin zum Geburtsdatum. Er wird deshalb g
 
 `tauri-plugin-secure-keystore` deckt genau Windows und Android ab und hat die schlankeste API (`setItem`, `getItem`, `deleteItem`). Das offizielle Stronghold-Plugin scheidet aus, weil es nicht mehr empfohlen wird und mit Tauri 3 entfallen soll ([Diskussion #7846](https://github.zerozr99.workers.dev/orgs/tauri-apps/discussions/7846)). Alle Alternativen sind junge Community-Plugins. Der Zugriff liegt deshalb ausschließlich im Modul `credentials/`, ein Wechsel auf [tauri-plugin-keyring](https://github.com/charlesportwoodii/tauri-plugin-keyring) betrifft dann nur diese Stelle. [tauri-plugin-keyring-store](https://docs.rs/crate/tauri-plugin-keyring-store/latest) wird wegen seiner Export-Funktionen nicht verwendet.
 
-Der lokale Proxy im Browser-Modus lauscht nur auf `127.0.0.1`. Jede Anfrage muss ein Zufallstoken mitschicken, das der Proxy beim Start erzeugt und in die ausgelieferte Seite einsetzt. So kann keine andere Webseite im selben Browser den Proxy missbrauchen.
+Der lokale Proxy im Browser-Modus lauscht nur auf `127.0.0.1` und nimmt nur Anfragen an `127.0.0.1` oder `localhost` an (gegen DNS-Rebinding). Jede API-Anfrage muss ein Zufallstoken mitschicken, das der Proxy beim Start erzeugt und in die ausgelieferte Seite einsetzt, und eine fremde Origin wird abgewiesen. Dazu kommen eine CSP wie in der App und ein Einbettungsverbot. So kann keine andere Webseite im selben Browser den Proxy missbrauchen. Gegen andere Benutzer desselben Rechners schützt das nicht, weil jeder die Seite samt Token abrufen kann. Der Browser-Modus ist deshalb nur für Rechner mit einem Benutzer gedacht. Die Endpunkte beschreibt die README unter „Lokaler Proxy“.
 
 ## Profile und Kontowechsel
 
@@ -958,14 +958,18 @@ Fast der gesamte Code ist TypeScript. Rust wird nur für das Tauri-Grundgerüst,
 | App-Rahmen | Tauri 2 | Windows und Android aus einer Codebasis |
 | Token-Ablage | tauri-plugin-secure-keystore | Windows Credential Manager und Android Keystore |
 | Externe Links | tauri-plugin-opener | Öffnet Links wie den Prydwen-Build-Guide im Systembrowser, das Webview kann das nicht selbst |
+| Linter | oxlint | `typescript-eslint` unterstützt TypeScript 7 nicht; Regeln in `.oxlintrc.json` |
 
 ```
 gacha-dashboard/
 ├─ src/
-│  ├─ app/            # Routing, Layout, Provider
+│  ├─ app/            # Routing (Seiten per lazy nachgeladen), Layout, Provider, Error Boundary
+│  ├─ components/     # gemeinsame UI-Bausteine (Karte, Balken, Bottom Sheet)
 │  ├─ features/
 │  │  ├─ dashboard/   # Karten, Fortschrittsbalken
-│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken, Prydwen-Link, Herausforderungen
+│  │  ├─ game-detail/ # Detailansicht, Figurenraster (Roster), Figur-Detail, Ausrüstungslücken, Prydwen-Link, Herausforderungen, Events
+│  │  ├─ timeline/    # Zeitleiste über alle Spiele
+│  │  ├─ settings/    # Einstellungen, Updates
 │  │  └─ accounts/    # Einrichtung, Token-Eingabe
 │  ├─ api/
 │  │  ├─ http.ts      # fetch-Abstraktion: Tauri oder Proxy
@@ -977,6 +981,9 @@ gacha-dashboard/
 │  │  ├─ challenges/  # Herausforderungen: genshin.ts, starrail.ts, zzz.ts
 │  │  └─ events/      # Event-Kalender und Banner: genshin.ts, starrail.ts, zzz.ts, wuwa.ts (nur Banner aus dem Wiki)
 │  ├─ credentials/    # Token lesen/schreiben je Betriebsart
+│  ├─ storage/        # Profil- und App-Einstellungen je Betriebsart
+│  ├─ lib/            # Zeitformatierung, native Befehle, Updater
+│  ├─ assets/         # Bild-Registry, Wiki-Symbole
 │  └─ model/          # GameStatus, Character, GAME_META, GAME_TERMS
 ├─ proxy/             # lokaler Proxy für den Browser-Modus
 └─ src-tauri/         # Tauri-Konfiguration, Rust-Befehle (u. a. Kuro-Code aus dem Launcher-Cache)
@@ -1005,15 +1012,16 @@ Die App fragt die Server sparsam an und rechnet dazwischen lokal weiter. Fehler 
 | Live-Notizen nicht freigegeben | `retcode` 10102 | Hinweis, die Echtzeit-Notizen in HoYoLAB zu aktivieren |
 | Zu viele Anfragen | `retcode` 10101 | Letzten Stand behalten, später erneut versuchen |
 | Wartung beim Spiel-Update | `retcode` 10307 | "Wartung, Server gerade nicht erreichbar", kein sofortiger Neuversuch. Der nächste Abruf im Intervall lädt nach dem Update wieder |
-| Netzwerkfehler | Exception | Letzten Stand grau markieren mit Zeitpunkt des Abrufs |
-| Unbekannte Antwort | Schema-Prüfung schlägt fehl | Karte zeigt "Schnittstelle geändert" |
+| Netzwerkfehler | Exception, im Browser-Modus auch keine Antwort binnen 20 s | Letzten Stand grau markieren mit Zeitpunkt des Abrufs |
+| Unbekannte Antwort | Schema-Prüfung schlägt fehl, auch bei `null` oder leerem Text in einem Pflichtfeld | Karte zeigt "Schnittstelle geändert" |
+| Banner nicht abrufbar (ZZZ-Kanäle) | Abruf- oder Schemafehler nur beim Banner-Endpunkt | Events bleiben sichtbar, der Abschnitt Banner nennt den Grund |
 | Figurendaten nicht öffentlich | `retcode` 10102 im Figuren-Tab | Hinweis, in HoYoLAB unter Datenschutz die Charakterdetails freizugeben |
 | Figurendetails abgebrochen | Fehler beim Vorladen eines Blocks | Bereits geladene Details behalten, Hinweis über dem Raster |
 | Unbekannter Wert | ID fehlt in `property_map` bzw. `property_info` | Wert mit roher ID anzeigen statt abzubrechen |
 
 Fehler im Figuren-Tab betreffen nie den Übersicht-Tab und die Dashboard-Karte.
 
-Die Retcodes entsprechen den Werten, die Community-Bibliotheken und die Community-Doku zur Kuro-Schnittstelle nennen. Sie müssen bei der Umsetzung geprüft werden. Für die Schema-Prüfung der Antworten eignet sich `zod`, damit Änderungen der inoffiziellen APIs sofort auffallen.
+Die Retcodes entsprechen den Werten, die Community-Bibliotheken und die Community-Doku zur Kuro-Schnittstelle nennen. Sie müssen bei der Umsetzung geprüft werden. Die Antworten prüft `zod`, damit Änderungen der inoffiziellen APIs sofort auffallen. Die Bausteine `str` und `num` wandeln bewusst nicht still um: Ein fehlendes Pflichtfeld wird nicht zum Text "undefined" oder zur Zahl 0.
 
 ## Umsetzungsplan, Build und offene Punkte
 
@@ -1030,6 +1038,7 @@ Die Umsetzung beginnt im Browser mit einem Spiel und wird dann schrittweise auf 
 - [x] Zeitleiste für Banner, Events und Herausforderungen, global und je Spiel
 - [x] Konten und Einstellungen aus der unteren Navigation ins Profilmenü der Kopfzeile verschieben
 - [x] Banner für Wuthering Waves aus dem Fandom-Wiki, in Übersicht und Zeitleiste
+- [x] Code-Review mit Fixes ([Code-Review.md](Code-Review.md)), Linter oxlint in der CI
 - [ ] Endpunkte und Höchstwerte der Herausforderungen sowie die Event-Kalender mit echten Antworten prüfen
 - [ ] Element- und Pfadsymbole als Bilder statt Buchstaben-Plaketten
 - [ ] Rust-Befehl "Aus Launcher übernehmen" für Windows

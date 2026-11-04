@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
 import { parseGenshinEvents } from "./genshin";
 import { parseStarRailEvents } from "./starrail";
-import { parseZzzBanners, parseZzzEvents } from "./zzz";
+import { ApiError } from "../errors";
+import { loadOptionalBanners, parseZzzBanners, parseZzzEvents } from "./zzz";
 
 // Fixtures nach den Feldnamen aus genshin.py, gekürzt. Beim Durchstich durch echte Antworten ersetzen.
 
@@ -185,5 +186,40 @@ describe("ZZZ", () => {
       now,
     );
     expect(banners.map((b) => b.kind)).toEqual(["character", "weapon", "other"]);
+  });
+});
+
+describe("ZZZ-Kanäle als Beiwerk", () => {
+  const gacha = {
+    avatar_gacha_schedule_list: [{ gacha_type: "GACHA_TYPE_CHARACTER_UP", start_ts: ts(-1), end_ts: ts(10) }],
+    weapon_gacha_schedule_list: [],
+  };
+
+  it("liefert die Banner ohne Hinweis, wenn alles passt", async () => {
+    const result = await loadOptionalBanners(async () => gacha, now);
+    expect(result.banners).toHaveLength(1);
+    expect(result.bannersError).toBeUndefined();
+  });
+
+  it("macht aus einem Schemafehler einen Hinweis statt den Kalender abzubrechen", async () => {
+    const result = await loadOptionalBanners(async () => ({ avatar_gacha_schedule_list: "kaputt" }), now);
+    expect(result.banners).toEqual([]);
+    expect(result.bannersError).toMatchObject({ kind: "schema" });
+  });
+
+  it("reicht Abruffehler wie Rate-Limit als Hinweis weiter", async () => {
+    const result = await loadOptionalBanners(async () => {
+      throw new ApiError("rate_limit", "zu viele");
+    }, now);
+    expect(result.bannersError).toMatchObject({ kind: "rate_limit" });
+  });
+
+  it("lässt einen Abbruch durch", async () => {
+    const abort = new DOMException("abgebrochen", "AbortError");
+    await expect(
+      loadOptionalBanners(async () => {
+        throw abort;
+      }, now),
+    ).rejects.toBe(abort);
   });
 });

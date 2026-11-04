@@ -50,7 +50,10 @@ export function formatClock(date: Date, now: number): string {
   const time = date.toLocaleTimeString("de-DE", { hour: "2-digit", minute: "2-digit" });
   const sameDay = new Date(now).toDateString() === date.toDateString();
   if (sameDay) return time;
-  const tomorrow = new Date(now + 86400000).toDateString() === date.toDateString();
+  // Kalendertag statt +24 h: am Tag der Zeitumstellung hat der Tag 23 oder 25 Stunden
+  const next = new Date(now);
+  next.setDate(next.getDate() + 1);
+  const tomorrow = next.toDateString() === date.toDateString();
   if (tomorrow) return `morgen ${time}`;
   return `${date.toLocaleDateString("de-DE", { weekday: "short", day: "2-digit", month: "2-digit" })} ${time}`;
 }

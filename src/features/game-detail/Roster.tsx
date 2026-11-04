@@ -103,7 +103,7 @@ function FilterChip({ active, onClick, children }: { active: boolean; onClick: (
 export function Roster({ profile, gameRef, status }: { profile: Profile; gameRef: GameAccountRef; status?: GameStatus }) {
   const terms = GAME_TERMS[gameRef.game];
   const roster = useRoster(profile, gameRef);
-  const details = useCharacterDetails(profile, gameRef, roster.data);
+  const details = useCharacterDetails(profile, gameRef, roster);
   const [prefs, setPrefs] = useState<RosterPrefs>(() => loadPrefs(gameRef.game));
   const update = (p: Partial<RosterPrefs>) => {
     const next = { ...prefs, ...p };

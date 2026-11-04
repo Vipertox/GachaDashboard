@@ -27,6 +27,11 @@ function usePullToRefresh(onRefresh: () => Promise<unknown>) {
         const dy = e.touches[0].clientY - startY.current;
         setPull(dy > 0 ? Math.min(dy * 0.5, 100) : 0);
       },
+      // Abgebrochene Geste (Systemgeste, Anruf): Hinweis nicht stehen lassen
+      onTouchCancel() {
+        startY.current = null;
+        setPull(0);
+      },
       async onTouchEnd() {
         const triggered = pull >= threshold;
         startY.current = null;

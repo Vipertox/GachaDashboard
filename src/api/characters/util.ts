@@ -1,8 +1,12 @@
 import { z } from "zod";
 import type { GearPiece, GearSet, Stat } from "../../model/types";
 
-export const str = z.coerce.string();
-export const optStr = z.coerce.string().optional().nullable();
+/**
+ * Text oder Zahl (IDs kommen je nach Endpunkt als beides), sonst Schemafehler.
+ * Bewusst ohne `z.coerce`: das machte aus fehlenden Feldern den Text "undefined".
+ */
+export const str = z.union([z.string(), z.number()]).transform(String);
+export const optStr = str.optional().nullable();
 
 /** HoYoLAB liefert Werte als Text mit Dezimalpunkt ("46.6%"); angezeigt wird mit Komma. */
 export function fmtValue(v: string | number | null | undefined): string {
@@ -58,3 +62,9 @@ export function splitStats(stats: Stat[], order: string[]): { stats: Stat[]; mor
   const main = order.map((k) => stats.find((s) => s.key === k)).filter((s): s is Stat => !!s);
   return { stats: main, moreStats: stats.filter((s) => !main.includes(s)) };
 }
+
+/** Seltenheit als Zahl, Zahl-Text oder Buchstabe (ZZZ: S, A, B). */
+export const rarity = z.union([z.string(), z.number()]).optional().nullable();
+const RARITY_LETTER: Record<string, number> = { S: 5, A: 4, B: 3 };
+export const toRarity = (r: string | number | null | undefined) =>
+  typeof r === "number" ? r : (RARITY_LETTER[String(r ?? "").toUpperCase()] ?? (Number(r) || 0));
