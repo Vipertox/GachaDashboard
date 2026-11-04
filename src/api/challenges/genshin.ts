@@ -2,13 +2,13 @@ import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { num, optNum, parseOrThrow } from "../adapters/util";
 import { optStr } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { challenge, fmtNum, pickPeriod, scheduleType, unixDate } from "./util";
 import type { Account, Challenge, ChallengeMode, ChallengePeriod, Fact } from "../../model/types";
 
 const BASE = "https://bbs-api-os.hoyolab.com/game_record/genshin/api";
 
-const query = (account: Account) => `server=${account.region}&role_id=${account.uid}`;
+const query = (account: Account) => roleParams(account);
 
 // Spiral Abyss: Etagen 9–12 mit je 3 Kammern zu 3 Sternen.
 const ABYSS_MAX_STARS = 36;

@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fetchWithCredentials } from "./credentialsForAccount";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { makeResource, nonEmpty, num, optNum, parseOrThrow, section, timer } from "./util";
 import type { Account, GameAdapter, GameStatus } from "../../model/types";
 
@@ -144,7 +144,7 @@ export const starrailAdapter: GameAdapter = {
   fetchStatus: (account, signal) =>
     fetchWithCredentials(account, async (creds) => {
       const data = await hoyoGet(
-        `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/note?server=${account.region}&role_id=${account.uid}`,
+        `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/note?${roleParams(account)}`,
         creds,
         signal,
       );

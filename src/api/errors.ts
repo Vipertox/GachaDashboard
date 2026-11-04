@@ -11,11 +11,13 @@ export type ApiErrorKind =
 
 export class ApiError extends Error {
   constructor(
-    public kind: ApiErrorKind,
+    public readonly kind: ApiErrorKind,
     message: string,
-    public code?: number,
+    public readonly code?: number,
+    /** Ursprünglicher Fehler, z. B. aus fetch; bleibt in der Konsole nachvollziehbar. */
+    options?: { cause?: unknown },
   ) {
-    super(message);
+    super(message, options);
     this.name = "ApiError";
   }
 }

@@ -2,13 +2,13 @@ import { z } from "zod";
 import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { optNum, parseOrThrow } from "../adapters/util";
 import { optStr } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { challenge, fmtNum, partialTime, pickPeriod, plain, scheduleType, serverDate, serverOffset } from "./util";
 import type { Account, Challenge, ChallengeMode, ChallengePeriod, Fact } from "../../model/types";
 
 const BASE = "https://bbs-api-os.hoyolab.com/game_record/hkrpg/api";
 
-const query = (account: Account) => `server=${account.region}&role_id=${account.uid}`;
+const query = (account: Account) => roleParams(account);
 
 const season = z.object({ name_mi18n: optStr, begin_time: partialTime, end_time: partialTime });
 

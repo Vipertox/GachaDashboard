@@ -3,7 +3,7 @@ import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { optNum, parseOrThrow } from "../adapters/util";
 import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, uidParams } from "../hoyolab";
 import { bannerStatus, eventStatus, isCurrent, rarity, toRarity } from "./util";
 import { ApiError } from "../errors";
 import type { Banner, BannerKind, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
@@ -129,7 +129,7 @@ export const zzzEvents: EventAdapter = {
   // Events und Kanäle sind zwei Endpunkte.
   fetchCalendar: (account, signal) =>
     fetchWithCredentials(account, async (creds) => {
-      const q = `uid=${account.uid}&region=${account.region}`;
+      const q = uidParams(account);
       const [events, banners] = await Promise.all([
         hoyoGet(`${BASE}/activity_calendar?${q}`, creds, signal),
         loadOptionalBanners(() => hoyoGet(`${BASE}/gacha_calendar?${q}`, creds, signal)),

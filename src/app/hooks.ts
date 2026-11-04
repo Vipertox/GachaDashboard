@@ -64,7 +64,7 @@ export function statusKey(profileId: string, ref: Pick<GameAccountRef, "game" | 
 function asApiError(e: unknown): unknown {
   if (e instanceof ApiError) return e;
   if (e instanceof DOMException && e.name === "AbortError") return e;
-  return new ApiError("unknown", e instanceof Error ? e.message : String(e));
+  return new ApiError("unknown", e instanceof Error ? e.message : String(e), undefined, { cause: e });
 }
 
 /** Zugangsdaten aus dem sicheren Speicher, einmal pro Profil gelesen. */

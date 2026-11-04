@@ -10,6 +10,8 @@ const API = `${WIKI}/api.php`;
 /** Wikis verlangen einen eigenen User-Agent, damit sich Zugriffe zuordnen lassen. */
 const USER_AGENT = "GachaDashboard (https://github.com/Vipertox/GachaDashboard)";
 
+const RATE_LIMIT_CODES = new Set(["ratelimited", "maxlag"]);
+
 const errorSchema = z.object({ error: z.object({ code: z.string(), info: z.string().optional() }).optional() });
 
 async function query(params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
@@ -17,7 +19,9 @@ async function query(params: Record<string, string>, signal?: AbortSignal): Prom
   const json = await httpJson({ url: `${API}?${qs}`, headers: { "user-agent": USER_AGENT }, signal });
   const err = errorSchema.safeParse(json);
   if (err.success && err.data.error) {
-    throw new ApiError("unknown", `Wiki: ${err.data.error.info ?? err.data.error.code}`);
+    // MediaWiki meldet Drosselung mit eigenen Codes; die Anzeige rät dann zum späteren Versuch.
+    const kind = RATE_LIMIT_CODES.has(err.data.error.code) ? "rate_limit" : "unknown";
+    throw new ApiError(kind, `Wiki: ${err.data.error.info ?? err.data.error.code}`);
   }
   return json;
 }

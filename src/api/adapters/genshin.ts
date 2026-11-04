@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fetchWithCredentials } from "./credentialsForAccount";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { makeResource, nonEmpty, num, optNum, parseOrThrow, section, timer } from "./util";
 import type { Account, GameAdapter, GameStatus } from "../../model/types";
 
@@ -147,7 +147,7 @@ export const genshinAdapter: GameAdapter = {
   fetchStatus: (account, signal) =>
     fetchWithCredentials(account, async (creds) => {
       const data = await hoyoGet(
-        `https://bbs-api-os.hoyolab.com/game_record/genshin/api/dailyNote?server=${account.region}&role_id=${account.uid}`,
+        `https://bbs-api-os.hoyolab.com/game_record/genshin/api/dailyNote?${roleParams(account)}`,
         creds,
         signal,
       );

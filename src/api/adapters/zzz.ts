@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { fetchWithCredentials } from "./credentialsForAccount";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { makeResource, nonEmpty, num, optNum, parseOrThrow, section } from "./util";
 import type { Account, GameAdapter, GameStatus } from "../../model/types";
 
@@ -98,7 +98,7 @@ export const zzzAdapter: GameAdapter = {
   fetchStatus: (account, signal) =>
     fetchWithCredentials(account, async (creds) => {
       const data = await hoyoGet(
-        `https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz/note?server=${account.region}&role_id=${account.uid}`,
+        `https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz/note?${roleParams(account)}`,
         creds,
         signal,
       );

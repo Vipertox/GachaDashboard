@@ -3,7 +3,7 @@ import { fetchWithCredentials } from "../adapters/credentialsForAccount";
 import { optNum, parseOrThrow } from "../adapters/util";
 import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
-import { hoyoGet } from "../hoyolab";
+import { hoyoGet, roleParams } from "../hoyolab";
 import { bannerStatus, currencyFromRewards, eventStatus, isCurrent, multiline, rarity, rewardSchema, toRarity } from "./util";
 import type { Banner, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
 
@@ -109,7 +109,7 @@ export const starrailEvents: EventAdapter = {
     fetchWithCredentials(account, async (creds) =>
       parseStarRailEvents(
         await hoyoGet(
-          `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/get_act_calender?server=${account.region}&role_id=${account.uid}`,
+          `https://bbs-api-os.hoyolab.com/game_record/hkrpg/api/get_act_calender?${roleParams(account)}`,
           creds,
           signal,
         ),

@@ -5,7 +5,9 @@ import { num, optNum, parseOrThrow } from "./util";
 import { parseGameArt } from "../gameArt";
 import { generateDs, mapRetcode, pickRoles } from "../hoyolab";
 import { findPlayerId } from "../kuro";
-import { liveValue } from "../../lib/time";
+import { formatClock, liveValue } from "../../lib/time";
+import { ApiError } from "../errors";
+import { toRarity } from "../characters/util";
 import { parseGenshin } from "./genshin";
 import { parseStarRail } from "./starrail";
 import { parseWuwa } from "./wuwa";
@@ -218,5 +220,42 @@ describe("Schema-Bausteine", () => {
     expect(() => parseOrThrow(z.object({ current_resin: num }), { current_resin: null })).toThrow(
       expect.objectContaining({ kind: "schema" }),
     );
+  });
+});
+
+describe("Kleinere Korrekturen der API-Schicht", () => {
+  it("erkennt 'morgen' auch am Tag der Zeitumstellung (25-Stunden-Tag)", () => {
+    const previous = process.env.TZ;
+    process.env.TZ = "Europe/Berlin";
+    try {
+      // 25.10.2026: Umstellung auf Winterzeit, der Tag hat 25 Stunden
+      const now = new Date(2026, 9, 25, 0, 30).getTime();
+      expect(formatClock(new Date(2026, 9, 26, 0, 10), now)).toMatch(/^morgen /);
+      expect(formatClock(new Date(2026, 9, 25, 23, 50), now)).not.toMatch(/morgen/);
+    } finally {
+      process.env.TZ = previous;
+    }
+  });
+
+  it("liest Seltenheit als Zahl, Zahl-Text oder Buchstabe", () => {
+    expect(toRarity(5)).toBe(5);
+    expect(toRarity("5")).toBe(5);
+    expect(toRarity("s")).toBe(5);
+    expect(toRarity("A")).toBe(4);
+    expect(toRarity(null)).toBe(0);
+  });
+
+  it("übernimmt nur Rollen mit verwertbarer UID und Region", () => {
+    expect(pickRoles([{ game_biz: "hk4e_global", game_uid: 7001, region: "os_euro", nickname: "V", level: "60" }])).toEqual([
+      { game: "genshin", uid: "7001", region: "os_euro", nickname: "V", level: 60 },
+    ]);
+    expect(pickRoles([{ game_biz: "hk4e_global", game_uid: "7001", region: null }])).toEqual([]);
+  });
+
+  it("gibt den ursprünglichen Fehler als cause weiter", () => {
+    const original = new TypeError("fetch failed");
+    const err = new ApiError("network", "fetch failed", undefined, { cause: original });
+    expect(err.cause).toBe(original);
+    expect(err.kind).toBe("network");
   });
 });
