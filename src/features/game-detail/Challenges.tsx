@@ -190,7 +190,7 @@ export function ChallengeSummary({ profile, gameRef, onOpen }: { profile: Profil
       <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
         Herausforderungen
       </h2>
-      <button className="block w-full text-left active:opacity-70" onClick={onOpen}>
+      <button className="block w-full text-left active:opacity-70" onClick={onOpen} aria-label="Herausforderungen öffnen">
         <Card>
           <ul className="p-4 space-y-2">
             {modes.map((m) => (

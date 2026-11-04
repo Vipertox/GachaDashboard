@@ -1,0 +1,24 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  // Die Standard-Plugins (eslint, typescript, unicorn, oxc) müssen mitgenannt werden,
+  // weil "plugins" die Voreinstellung ersetzt.
+  "plugins": ["eslint", "typescript", "unicorn", "oxc", "react", "jsx-a11y", "vitest"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn"
+  },
+  "rules": {
+    "react/rules-of-hooks": "error",
+    "react/exhaustive-deps": "warn",
+    // Neue JSX-Transformation ("jsx": "react-jsx"): React muss nicht im Scope sein.
+    "react/react-in-jsx-scope": "off",
+    // Schlägt toSorted() vor; das ist ES2023, tsconfig zielt mit "lib" auf ES2022.
+    "unicorn/no-array-sort": "off",
+    // Reine Stilfrage (Hilfsfunktionen in Komponenten nach außen ziehen); bewusst noch aus.
+    "unicorn/consistent-function-scoping": "off",
+    // Hinweis statt Fehler: role="progressbar" auf gestaltetem div und role="group" sind gültiges ARIA;
+    // der verbleibende Treffer für role="dialog" ist Review-Befund M-11.
+    "jsx-a11y/prefer-tag-over-role": "warn"
+  },
+  "ignorePatterns": ["dist/**", "src-tauri/**", "node_modules/**"]
+}

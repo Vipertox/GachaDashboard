@@ -1,4 +1,4 @@
-import { useEffect, useReducer, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
 import { imageFor } from "../assets/registry";
 import { fraction, isFull, liveValue } from "../lib/time";
 import type { Resource } from "../model/types";
@@ -135,15 +135,22 @@ const reducedMotion = () => window.matchMedia("(prefers-reduced-motion: reduce)"
 
 /** Zählt beim ersten Anzeigen kurz von 0 auf den Zielwert hoch und folgt ihm danach direkt. */
 export function useCountUp(target: number, ms = 600): number {
-  const [start] = useState(() => (reducedMotion() ? -Infinity : performance.now()));
-  const [, rerender] = useReducer((x: number) => x + 1, 0);
-  const t = Math.min(1, (performance.now() - start) / ms);
+  const [skip] = useState(reducedMotion);
+  const [progress, setProgress] = useState(skip ? 1 : 0);
+  // Fortschritt kommt aus dem Animationsframe, nicht aus einer Zeitmessung beim Rendern.
   useEffect(() => {
-    if (t >= 1) return;
-    const id = requestAnimationFrame(rerender);
-    return () => cancelAnimationFrame(id);
-  });
-  return t >= 1 ? target : Math.round(target * (1 - (1 - t) ** 3));
+    if (skip) return;
+    const start = performance.now();
+    const animation = { frame: 0 };
+    const tick = (now: number) => {
+      const next = Math.min(1, (now - start) / ms);
+      setProgress(next);
+      if (next < 1) animation.frame = requestAnimationFrame(tick);
+    };
+    animation.frame = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(animation.frame);
+  }, [skip, ms]);
+  return progress >= 1 ? target : Math.round(target * (1 - (1 - progress) ** 3));
 }
 
 export function ValueText({ r, now, className = "" }: { r: Resource; now: number; className?: string }) {

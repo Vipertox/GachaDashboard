@@ -50,7 +50,7 @@ Ohne Dev-Server (gebautes Frontend, vom Proxy ausgeliefert):
 npm start        # http://127.0.0.1:8787
 ```
 
-Weitere Befehle: `npm test`, `npm run typecheck`, `npm run build`.
+Weitere Befehle: `npm test`, `npm run typecheck`, `npm run lint`, `npm run build`.
 
 ### Lokaler Proxy (Browser-Modus)
 

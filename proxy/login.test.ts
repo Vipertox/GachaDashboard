@@ -1,3 +1,4 @@
+import type { rmSync } from "node:fs";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cdpGetCookies, findBrowser, pickTokens, removeProfileLater } from "./login";
 
@@ -71,9 +72,10 @@ describe("DevTools-Cookie-Abfrage", () => {
   it("bricht nach dem Timeout ab, wenn der Browser nicht antwortet", async () => {
     vi.useFakeTimers();
     const pending = cdpGetCookies(asSocket(new FakeSocket()), 5_000);
-    const assertion = expect(pending).rejects.toThrow("antwortet nicht");
+    // Ablehnung schon vorab abfangen, sonst meldet Node sie beim Vorspulen als unbehandelt.
+    pending.catch(() => {});
     await vi.advanceTimersByTimeAsync(5_000);
-    await assertion;
+    await expect(pending).rejects.toThrow("antwortet nicht");
   });
 
   it("übergeht fremde und unlesbare Nachrichten", async () => {
@@ -91,7 +93,7 @@ describe("Aufräumen des Browserprofils", () => {
   it("lässt einen Löschfehler nicht als Ausnahme durch", () => {
     vi.useFakeTimers();
     const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
-    const remove = vi.fn(() => {
+    const remove = vi.fn<typeof rmSync>(() => {
       throw Object.assign(new Error("EBUSY: resource busy or locked"), { code: "EBUSY" });
     });
     removeProfileLater("C:/tmp/gacha-login-test", remove);
