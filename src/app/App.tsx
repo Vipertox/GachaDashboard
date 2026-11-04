@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { HashRouter, NavLink, Route, Routes } from "react-router-dom";
 import { Accounts } from "../features/accounts/Accounts";
 import { Dashboard } from "../features/dashboard/Dashboard";
@@ -32,14 +32,24 @@ function UsersIcon() {
 
 // Profilmenü mit Profilwechsel, Konten und Einstellungen:
 // auf dem Smartphone als Bottom Sheet, ab md als Dropdown unter dem Button
+// Bewusst kein ARIA-Menü (role="menu" verspricht Pfeiltasten-Steuerung), sondern eine
+// Disclosure aus normalen Buttons und Links: Tab-Reihenfolge wie gewohnt, Fokus wird geführt.
 function Header() {
   const { activeProfile, profiles, setActive } = useApp();
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const close = () => setOpen(false);
 
   useEffect(() => {
     if (!open) return;
-    const onKey = (e: KeyboardEvent) => e.key === "Escape" && setOpen(false);
+    // Beim Öffnen auf den ersten Eintrag, damit Tastatur und Screenreader im Menü landen
+    panelRef.current?.querySelector<HTMLElement>("button, a")?.focus();
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open]);
@@ -54,10 +64,11 @@ function Header() {
         <span className="font-bold truncate">Gacha Dashboard</span>
         <div className="relative shrink-0">
           <button
+            ref={triggerRef}
             className="min-h-11 max-w-[60vw] px-3 rounded-xl flex items-center gap-2"
             style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-            aria-haspopup="menu"
             aria-expanded={open}
+            aria-controls="profile-menu"
             onClick={() => setOpen((o) => !o)}
           >
             {activeProfile && <span className="w-3 h-3 rounded-full shrink-0" style={{ background: activeProfile.color }} />}
@@ -66,10 +77,21 @@ function Header() {
           </button>
           {open && (
             <>
-              <button className="fixed inset-0 z-40 bg-black/50 md:bg-transparent cursor-default" aria-label="Schließen" onClick={close} />
+              {/* Nur für Maus und Touch; Tastatur schließt mit Escape oder durch Verlassen des Menüs */}
+              <button
+                className="fixed inset-0 z-40 bg-black/50 md:bg-transparent cursor-default"
+                tabIndex={-1}
+                aria-hidden
+                onClick={close}
+              />
               <div
-                role="menu"
+                ref={panelRef}
+                id="profile-menu"
                 aria-label="Profilmenü"
+                onBlur={(e) => {
+                  // Wandert der Fokus aus dem Menü hinaus (Tab), schließt es
+                  if (!e.currentTarget.contains(e.relatedTarget)) close();
+                }}
                 className="menu-panel fixed inset-x-0 bottom-0 z-50 w-full max-w-xl mx-auto rounded-t-3xl p-4 safe-bottom md:absolute md:inset-x-auto md:bottom-auto md:right-0 md:top-full md:mt-2 md:w-72 md:rounded-2xl md:p-2 md:shadow-xl"
                 style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
               >
@@ -86,8 +108,7 @@ function Header() {
                       {profiles.map((p) => (
                         <li key={p.id}>
                           <button
-                            role="menuitemradio"
-                            aria-checked={p.id === activeProfile?.id}
+                            aria-pressed={p.id === activeProfile?.id}
                             className="w-full min-h-12 px-3 rounded-xl flex items-center gap-3 text-left"
                             style={{ background: p.id === activeProfile?.id ? "var(--surface-2)" : "transparent" }}
                             onClick={() => {
@@ -105,11 +126,11 @@ function Header() {
                     <hr className="my-2" style={{ borderColor: "var(--border)" }} />
                   </>
                 )}
-                <NavLink to="/accounts" role="menuitem" className={link} style={linkStyle} onClick={close}>
+                <NavLink to="/accounts" className={link} style={linkStyle} onClick={close}>
                   <UsersIcon />
                   Konten verwalten
                 </NavLink>
-                <NavLink to="/settings" role="menuitem" className={link} style={linkStyle} onClick={close}>
+                <NavLink to="/settings" className={link} style={linkStyle} onClick={close}>
                   <GearIcon />
                   Einstellungen
                 </NavLink>

@@ -1,4 +1,4 @@
-import { useEffect, useState, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { imageFor } from "../assets/registry";
 import { fraction, isFull, liveValue } from "../lib/time";
 import type { Resource } from "../model/types";
@@ -193,20 +193,52 @@ export function Card({ children, accent, className = "" }: { children: ReactNode
   );
 }
 
+/**
+ * Modales Bottom Sheet auf Basis von <dialog>: Der Browser hält den Fokus im Dialog,
+ * sperrt den Hintergrund und schließt mit Escape; beim Schließen kehrt der Fokus zurück.
+ */
 export function BottomSheet({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
-  if (!open) return null;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const titleRef = useRef<HTMLHeadingElement>(null);
+
+  useEffect(() => {
+    const dialog = dialogRef.current;
+    if (!dialog) return;
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // Überschrift statt erstem Button fokussieren: im Lösch-Dialog wäre das sonst "Löschen".
+      titleRef.current?.focus();
+    } else if (!open && dialog.open) {
+      dialog.close();
+    }
+  }, [open]);
+
   return (
-    <div className="fixed inset-0 z-40 flex items-end" role="dialog" aria-modal aria-label={title}>
-      <button className="absolute inset-0 bg-black/50" aria-label="Schließen" onClick={onClose} />
-      <div
-        className="sheet relative w-full max-w-xl mx-auto rounded-t-3xl p-4 safe-bottom"
-        style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
-      >
-        <div className="mx-auto mb-3 h-1.5 w-10 rounded-full" style={{ background: "var(--border)" }} />
-        <h2 className="text-lg font-semibold mb-3">{title}</h2>
-        {children}
-      </div>
-    </div>
+    <dialog
+      ref={dialogRef}
+      aria-label={title}
+      className="sheet-dialog"
+      // Escape: Zustand beim Aufrufer führen, statt den Dialog am React-Zustand vorbei zu schließen
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+    >
+      {/* Klick neben das Sheet schließt; Tastatur nutzt Escape */}
+      <button className="absolute inset-0 cursor-default" tabIndex={-1} aria-hidden onClick={onClose} />
+      {open && (
+        <div
+          className="sheet relative w-full max-w-xl mx-auto rounded-t-3xl p-4 safe-bottom"
+          style={{ background: "var(--surface)", border: "1px solid var(--border)" }}
+        >
+          <div className="mx-auto mb-3 h-1.5 w-10 rounded-full" style={{ background: "var(--border)" }} />
+          <h2 ref={titleRef} tabIndex={-1} className="text-lg font-semibold mb-3 outline-none">
+            {title}
+          </h2>
+          {children}
+        </div>
+      )}
+    </dialog>
   );
 }
 
