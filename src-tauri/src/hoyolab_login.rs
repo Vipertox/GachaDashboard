@@ -14,11 +14,16 @@ use std::time::Duration;
 
 use serde::Serialize;
 use tauri::webview::PageLoadEvent;
-use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindowBuilder};
+use tauri::{AppHandle, Manager, WebviewUrl, WebviewWindow, WebviewWindowBuilder};
 
 const LABEL: &str = "hoyolab-login";
 const LOGIN_URL: &str = "https://www.hoyolab.com/home";
 const TIMEOUT_SECS: u64 = 600;
+/// So lange wartet ein neuer Login, bis das Fenster des vorigen geschlossen ist.
+const CLOSE_WAIT_MS: u64 = 2000;
+
+/// Es läuft höchstens ein Login; das Fenster-Label ist fest.
+static RUNNING: AtomicBool = AtomicBool::new(false);
 
 #[derive(Serialize)]
 pub struct Tokens {
@@ -26,10 +31,45 @@ pub struct Tokens {
     pub ltoken: String,
 }
 
+/// Nur hoyolab.com selbst und echte Subdomains, nicht etwa "evilhoyolab.com".
+fn is_hoyolab_host(host: &str) -> bool {
+    host == "hoyolab.com" || host.ends_with(".hoyolab.com")
+}
+
+/// Gibt auf jedem Rückweg (auch per `?`) die Sperre frei und schließt das Login-Fenster.
+struct LoginGuard {
+    window: Option<WebviewWindow>,
+}
+
+impl Drop for LoginGuard {
+    fn drop(&mut self) {
+        if let Some(window) = self.window.take() {
+            let _ = window.close();
+        }
+        RUNNING.store(false, Ordering::SeqCst);
+    }
+}
+
 #[tauri::command]
 pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
-    if let Some(existing) = app.get_webview_window(LABEL) {
-        let _ = existing.close();
+    if RUNNING
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_err()
+    {
+        // Zweiter Aufruf: kein zweites Fenster mit demselben Label, sondern das offene nach vorn holen.
+        if let Some(existing) = app.get_webview_window(LABEL) {
+            let _ = existing.set_focus();
+        }
+        return Err("Eine Anmeldung läuft bereits".to_string());
+    }
+    let mut guard = LoginGuard { window: None };
+
+    // close() ist asynchron: das Fenster eines gerade beendeten Logins kann noch existieren.
+    for _ in 0..CLOSE_WAIT_MS / 100 {
+        if app.get_webview_window(LABEL).is_none() {
+            break;
+        }
+        tokio::time::sleep(Duration::from_millis(100)).await;
     }
 
     let loaded = Arc::new(AtomicBool::new(false));
@@ -49,16 +89,14 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
     let window = builder
         .on_page_load(move |_, payload| {
             if matches!(payload.event(), PageLoadEvent::Finished)
-                && payload
-                    .url()
-                    .host_str()
-                    .is_some_and(|h| h.ends_with("hoyolab.com"))
+                && payload.url().host_str().is_some_and(is_hoyolab_host)
             {
                 flag.store(true, Ordering::SeqCst);
             }
         })
         .build()
         .map_err(|e| e.to_string())?;
+    guard.window = Some(window.clone());
 
     let cookie_url = url::Url::parse("https://www.hoyolab.com").map_err(|e| e.to_string())?;
 
@@ -93,11 +131,25 @@ pub async fn hoyolab_webview_login(app: AppHandle) -> Result<Tokens, String> {
             for c in cookies {
                 let _ = window.delete_cookie(c);
             }
-            let _ = window.close();
+            // Fenster schließt der Guard
             return Ok(Tokens { ltuid, ltoken });
         }
     }
 
-    let _ = window.close();
     Err("Zeitüberschreitung bei der Anmeldung".to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn erkennt_nur_hoyolab_und_subdomains() {
+        assert!(is_hoyolab_host("hoyolab.com"));
+        assert!(is_hoyolab_host("www.hoyolab.com"));
+        assert!(is_hoyolab_host("account.hoyolab.com"));
+        assert!(!is_hoyolab_host("evilhoyolab.com"));
+        assert!(!is_hoyolab_host("hoyolab.com.evil.com"));
+        assert!(!is_hoyolab_host(""));
+    }
 }
