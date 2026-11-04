@@ -3,9 +3,20 @@ import { ApiError } from "../errors";
 import { secondsFromNow } from "../../lib/time";
 import type { Countdown, DetailSection, Resource } from "../../model/types";
 
-/** Zahl oder Zahl-String, sonst Fehler. */
-export const num = z.coerce.number();
-export const optNum = z.coerce.number().optional();
+const NUMERIC_TEXT = /^-?\d+(\.\d+)?$/;
+
+/**
+ * Zahl oder Zahl-String, sonst Schemafehler. Bewusst ohne `z.coerce`: das machte
+ * aus `null` und `""` still eine 0 und verdeckte geänderte Schnittstellen.
+ */
+export const num = z.union([z.number(), z.string().trim().regex(NUMERIC_TEXT)]).transform(Number);
+/** Wie `num`; fehlend, `null` und `""` ergeben `undefined`. */
+export const optNum = z
+  .union([z.literal("").transform(() => undefined), num])
+  .nullish()
+  .transform((v) => v ?? undefined)
+  // hält den Schlüssel im abgeleiteten Typ optional (`a?: number`)
+  .optional();
 
 export function parseOrThrow<T extends z.ZodType>(schema: T, data: unknown): z.infer<T> {
   const res = schema.safeParse(data);

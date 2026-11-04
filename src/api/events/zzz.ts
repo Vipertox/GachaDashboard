@@ -5,7 +5,8 @@ import { plain, unixDate } from "../challenges/util";
 import { optStr, str } from "../characters/util";
 import { hoyoGet } from "../hoyolab";
 import { bannerStatus, eventStatus, isCurrent, rarity, toRarity } from "./util";
-import type { Banner, BannerKind, EventAdapter, GameEvent } from "../../model/types";
+import { ApiError } from "../errors";
+import type { Banner, BannerKind, EventAdapter, EventCalendar, GameEvent } from "../../model/types";
 
 const BASE = "https://sg-act-nap-api.hoyolab.com/event/game_record_zzz/api/zzz";
 
@@ -107,16 +108,32 @@ export function parseZzzBanners(data: unknown, now = new Date()): Banner[] {
     .filter((b) => isCurrent(b, now));
 }
 
+/**
+ * Die Kanäle sind nur Beiwerk: Scheitern Abruf oder Schema, bleiben die Events sichtbar
+ * und der Fehler geht als Hinweis an die Anzeige. Abbruch und Programmfehler laufen durch.
+ */
+export async function loadOptionalBanners(
+  load: () => Promise<unknown>,
+  now = new Date(),
+): Promise<Pick<EventCalendar, "banners" | "bannersError">> {
+  try {
+    return { banners: parseZzzBanners(await load(), now) };
+  } catch (e) {
+    if (e instanceof ApiError) return { banners: [], bannersError: e };
+    throw e;
+  }
+}
+
 export const zzzEvents: EventAdapter = {
   game: "zzz",
-  // Events und Kanäle sind zwei Endpunkte; die Kanäle sind nur Beiwerk und dürfen fehlen.
+  // Events und Kanäle sind zwei Endpunkte.
   fetchCalendar: (account, signal) =>
     fetchWithCredentials(account, async (creds) => {
       const q = `uid=${account.uid}&region=${account.region}`;
-      const [events, gacha] = await Promise.all([
+      const [events, banners] = await Promise.all([
         hoyoGet(`${BASE}/activity_calendar?${q}`, creds, signal),
-        hoyoGet(`${BASE}/gacha_calendar?${q}`, creds, signal).catch(() => null),
+        loadOptionalBanners(() => hoyoGet(`${BASE}/gacha_calendar?${q}`, creds, signal)),
       ]);
-      return { events: parseZzzEvents(events), banners: gacha ? parseZzzBanners(gacha) : [] };
+      return { events: parseZzzEvents(events), ...banners };
     }),
 };

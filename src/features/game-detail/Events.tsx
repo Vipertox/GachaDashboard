@@ -364,6 +364,7 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
   const upcoming = events.filter((e) => e.status === "upcoming").sort(byTime);
   const shown = all ? current : current.slice(0, VISIBLE);
   const bannerGroups = groupBanners(q.data?.banners ?? []);
+  const bannersError = q.data?.bannersError;
   const sums = currencySummary(events);
 
   return (
@@ -416,13 +417,19 @@ export function EventsSection({ profile, gameRef, accent }: { profile: Profile; 
           </div>
         </Card>
       </section>
-      {bannerGroups.length > 0 && (
+      {(bannerGroups.length > 0 || bannersError) && (
         <section className="space-y-3">
           <h2 className="text-sm font-semibold uppercase tracking-wide" style={{ color: "var(--muted)" }}>
             Banner
           </h2>
           <Card>
-            <BannerGroups groups={bannerGroups} now={now} />
+            {bannersError ? (
+              <p className="p-4 text-sm" style={{ color: "var(--muted)" }}>
+                Banner nicht verfügbar – {eventErrorText(bannersError)}
+              </p>
+            ) : (
+              <BannerGroups groups={bannerGroups} now={now} />
+            )}
           </Card>
         </section>
       )}

@@ -1,4 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { z } from "zod";
+import { optStr, str } from "../characters/util";
+import { num, optNum, parseOrThrow } from "./util";
 import { parseGameArt } from "../gameArt";
 import { generateDs, pickRoles } from "../hoyolab";
 import { findPlayerId } from "../kuro";
@@ -173,5 +176,37 @@ describe("Spielkarten-Bilder", () => {
   it("liefert bei unerwarteter Antwort nichts statt eines Fehlers", () => {
     expect(parseGameArt(null)).toEqual({});
     expect(parseGameArt({ list: "kaputt" })).toEqual({});
+  });
+});
+
+describe("Schema-Bausteine", () => {
+  const ok = (schema: z.ZodType, value: unknown) => schema.safeParse(value);
+
+  it("num nimmt Zahlen und Zahl-Texte, lehnt null, leeren Text und Fremdes ab", () => {
+    expect(num.parse(5)).toBe(5);
+    expect(num.parse(" 12.5 ")).toBe(12.5);
+    expect(num.parse("-3")).toBe(-3);
+    for (const bad of [null, undefined, "", "abc", "12%", true]) expect(ok(num, bad).success).toBe(false);
+  });
+
+  it("optNum macht aus fehlend, null und leerem Text undefined statt 0", () => {
+    expect(optNum.parse("7")).toBe(7);
+    for (const missing of [null, undefined, ""]) expect(optNum.parse(missing)).toBeUndefined();
+    expect(ok(optNum, "abc").success).toBe(false);
+    expect(z.object({ a: optNum }).parse({})).toEqual({});
+  });
+
+  it("str nimmt Text und Zahl, lehnt fehlende Werte ab statt 'undefined' zu liefern", () => {
+    expect(str.parse("Furina")).toBe("Furina");
+    expect(str.parse(10000089)).toBe("10000089");
+    for (const bad of [null, undefined, true, {}]) expect(ok(str, bad).success).toBe(false);
+    expect(optStr.parse(null)).toBeNull();
+    expect(optStr.parse(undefined)).toBeUndefined();
+  });
+
+  it("ein fehlendes Pflichtfeld wird zum Schemafehler", () => {
+    expect(() => parseOrThrow(z.object({ current_resin: num }), { current_resin: null })).toThrow(
+      expect.objectContaining({ kind: "schema" }),
+    );
   });
 });
