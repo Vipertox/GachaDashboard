@@ -138,13 +138,14 @@ Gestaltungsregeln:
 
 ### Weekly und Events auf der Karte
 
-Unter den Daily-Chips zeigt jede Karte zwei Chips: **Wöchentlich · 2 offen** und **Events · 3 offen**. Ist alles erledigt, wird der Chip grün mit Haken. Ein Tipp auf einen Chip öffnet ein Bottom Sheet mit den Einzelheiten. Die Karte bleibt dabei geschlossen.
+Daily-, Weekly- und Event-Chips stehen in einer gemeinsamen Reihe unter dem Ressourcenbalken. Auf breiten Karten stehen sie nebeneinander, erst wenn der Platz nicht reicht, rutschen sie in die nächste Zeile. Zu den Daily-Chips kommen **Wöchentlich · 2 offen** und **Events · 3 offen**. Ist alles erledigt, wird der Chip grün mit Haken. Ein Tipp auf Wöchentlich oder Events öffnet ein Bottom Sheet mit den Einzelheiten. Die Karte bleibt dabei geschlossen.
 
 - **Wöchentlich:** kommt aus dem Abschnitt `weekly` der Notizen-Antwort, es braucht also keinen zusätzlichen Aufruf. Als offen zählt ein Flag mit `done: false`, eine Task mit `done < total` und eine Ressource unter ihrem Maximum. Beispiele sind Wochenboss-Rabatte, Echo of War, Bounty Commission, Simulated Universe, Survey Points und Pioneer Podcast. Das Sheet listet jede Aufgabe mit Stand und, wo es einen Anteil gibt, mit Balken.
+- **Battle Pass:** Auf der Höchststufe gibt es nichts mehr zu holen, der Battle Pass gilt dann als erledigt, auch wenn die Wochen-EXP nicht voll ist. Die Adapter nutzen dafür `battlePass()` aus `api/adapters/util.ts`: Unter der Höchststufe entsteht ein Balken mit der Wochen-EXP, auf der Höchststufe ein erledigtes Flag „Höchststufe N“. Bisher liefert nur Wuthering Waves Battle-Pass-Daten (Pioneer Podcast, Höchststufe 70 als Konstante, da `queryRole` sie nicht nennt). Die Notizen-Endpunkte von Genshin, Star Rail und ZZZ enthalten ihren Battle Pass nicht.
 - **Events:** kommen aus dem Event-Kalender (`useEvents`, Query-Schlüssel `["events", …]`, 30 Minuten frisch). Der Cache wird mit Detailseite und Zeitleiste geteilt. Offen ist ein Event, das begonnen hat, nicht erledigt und noch nicht abgelaufen ist. Kommende Events zählen nicht mit. Das Sheet zeigt die offenen Events, das zuerst endende vorn, mit Restzeit, Fortschritt und offener Premiumwährung, darunter den Link **Alle Events** auf die Detailseite.
 - Wuthering Waves liefert nur Banner (`bannersOnly`). Dort fehlt der Event-Chip, und der Kalender wird für das Dashboard gar nicht abgerufen. Läuft in einem Spiel kein Event, entfällt der Chip ebenfalls.
 - Solange der Kalender lädt, steht dort ein blasser Chip **Events …**. Bei einem Fehler zeigt er **Events · ?**, und das Sheet nennt den Fehler. Der Rest der Karte ist davon nicht betroffen.
-- Die Karte führt nur über Kopf und Ressourcenbereich in die Detailseite. Die Chip-Zeile liegt außerhalb dieses Links, da Buttons in einem Link ungültiges HTML sind und beim Antippen sonst auch die Navigation auslösen würden. Die Tippfläche jedes Chips ist 44 px hoch.
+- Die Karte führt nur über Kopf und Ressourcenbereich in die Detailseite. Die Chip-Zeile liegt außerhalb dieses Links, da Buttons in einem Link ungültiges HTML sind und beim Antippen sonst auch die Navigation auslösen würden. Auch die Daily-Chips stehen dort, damit alle Chips eine Reihe bilden. Die Tippfläche jedes Chips ist 44 px hoch.
 - Zähl-Logik: `src/features/dashboard/taskSummary.ts` (`weeklySummary`, `eventSummary`), Popups: `TaskSheets.tsx`.
 
 ## Detailseite pro Spiel
@@ -207,7 +208,7 @@ Alle Restzeiten werden beim Laden in feste Zeitpunkte umgerechnet und lokal im S
 | Kopf | Waveplate Crystal | `Base.StoreEnergy`, `Base.MaxStoreEnergy` | Zahl, Hinweis bei voll |
 | Täglich | Tagesaktivität | `Base.Liveness`, `Base.LivenessMaxCount` | 80/100, Haken bei voll, nur wenn `Base.LivenessUnlock` |
 | Wöchentlich | Wochenboss-Belohnungen | `Base.WeeklyInstCount` | "2 übrig" |
-| Wöchentlich | Pioneer Podcast | `BattlePass.WeekExp`, `BattlePass.WeekMaxExp`, `BattlePass.Level` | Balken mit Stufe, nur wenn `BattlePass.IsOpen` |
+| Wöchentlich | Pioneer Podcast | `BattlePass.WeekExp`, `BattlePass.WeekMaxExp`, `BattlePass.Level` | Balken mit Stufe, nur wenn `BattlePass.IsOpen`. Ab Stufe 70 erledigtes Flag „Höchststufe 70“ statt Balken |
 | Sammlung | Musiktitel | Summe von `MusicData.Albums[].Count` und `TotalCount` | Balken, z. B. 272 / 347 |
 | Sammlung | Fahrzeug | `MotorData.Level`, `MotorData.Exp`, `MotorData.NextExp` | Balken "bis Stufe 19" |
 | Sammlung | Schatztruhen, vollständige Alben, Sticker, Skins | `Base.Boxes`, `MusicData.Albums`, `MotorData.Stickers`, `MotorData.Skins` | Kennwerte, Truhen mit Aufteilung nach Stufe |

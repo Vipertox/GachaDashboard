@@ -65,6 +65,37 @@ export function section(kind: DetailSection["kind"], part: Partial<DetailSection
   return { kind, resources: [], tasks: [], flags: [], timers: [], facts: [], ...part };
 }
 
+/**
+ * Battle Pass für den Abschnitt Wöchentlich. Unter der Höchststufe zählt die Wochen-EXP als Balken;
+ * auf der Höchststufe gibt es nichts mehr zu holen, dann steht er als erledigtes Flag da.
+ */
+export function battlePass(bp: {
+  label: string;
+  iconKey: string;
+  level: number;
+  maxLevel: number;
+  weekExp?: number;
+  weekMaxExp?: number;
+  now: Date;
+}): Pick<DetailSection, "resources" | "flags"> {
+  if (bp.level >= bp.maxLevel) {
+    return { resources: [], flags: [{ label: bp.label, done: true, text: `Höchststufe ${bp.maxLevel}` }] };
+  }
+  if (!bp.weekMaxExp) return { resources: [], flags: [] };
+  return {
+    resources: [
+      makeResource({
+        label: `${bp.label} (Stufe ${bp.level})`,
+        iconKey: bp.iconKey,
+        current: bp.weekExp ?? 0,
+        max: bp.weekMaxExp,
+        now: bp.now,
+      }),
+    ],
+    flags: [],
+  };
+}
+
 export function nonEmpty(s: DetailSection): boolean {
   return s.resources.length + s.tasks.length + s.flags.length + s.timers.length + s.facts.length > 0;
 }

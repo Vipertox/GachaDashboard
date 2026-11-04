@@ -71,11 +71,11 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
 
   const p = status.primary;
   const full = isFull(p, now);
-  const daily = status.sections.find((s) => s.kind === "daily");
+
 
   return (
     <Card accent={accent}>
-      {/* Nur Kopf und Stand führen in die Detailseite; die Aufgaben-Chips öffnen Popups und liegen deshalb außerhalb des Links */}
+      {/* Nur Kopf und Stand führen in die Detailseite; die Chips öffnen teils Popups und liegen deshalb außerhalb des Links */}
       <Link to={detailPath} onClick={() => haptic()} className="block active:opacity-80">
         {header}
         <div className={`p-4 pb-0 space-y-3 ${stale ? "opacity-60" : ""}`}>
@@ -97,30 +97,21 @@ export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: Game
               ? "Voll"
               : `Voll um ${formatClock(p.fullAt, now)} · in ${formatDuration(p.fullAt.getTime() - now)}`}
           </div>
-          {daily && daily.tasks.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {daily.tasks.map((t) => (
-                <Chip key={t.label} done={t.done >= t.total} iconKey={t.iconKey}>
-                  {t.label} {t.done}/{t.total}
-                </Chip>
-              ))}
-            </div>
-          )}
-          {stale && (
-            <div className="text-xs" style={{ color: "var(--color-warn)" }}>
-              {ERROR_TEXT[q.error.kind]} · Stand von {status.fetchedAt.toLocaleTimeString("de-DE")}
-            </div>
-          )}
         </div>
       </Link>
       <TaskChips profile={profile} gameRef={gameRef} status={status} now={now} accent={accent} detailPath={detailPath} dim={stale} />
+      {stale && (
+        <div className="px-4 pb-4 -mt-1 text-xs" style={{ color: "var(--color-warn)" }}>
+          {ERROR_TEXT[q.error.kind]} · Stand von {status.fetchedAt.toLocaleTimeString("de-DE")}
+        </div>
+      )}
     </Card>
   );
 }
 
 type SheetKind = "weekly" | "events";
 
-/** Weekly- und Event-Chips; ein Tipp öffnet die Einzelheiten als Bottom Sheet, ohne die Karte zu verlassen. */
+/** Daily-, Weekly- und Event-Chips; ein Tipp auf Weekly oder Events öffnet die Einzelheiten als Bottom Sheet, ohne die Karte zu verlassen. */
 function TaskChips({
   profile,
   gameRef,
@@ -147,9 +138,11 @@ function TaskChips({
   const eq = useEvents(profile, gameRef, hasEvents);
   const events = eq.data ? eventSummary(eq.data.events, now) : undefined;
 
+  const dailyTasks = status.sections.find((s) => s.kind === "daily")?.tasks ?? [];
+
   const showWeekly = weekly.items.length > 0;
   const showEvents = hasEvents && (!events || events.running > 0);
-  if (!showWeekly && !showEvents) return <div className="pb-4" />;
+  if (dailyTasks.length === 0 && !showWeekly && !showEvents) return <div className="pb-4" />;
 
   const open = (s: SheetKind) => {
     haptic();
@@ -159,7 +152,15 @@ function TaskChips({
   const openText = (n: number) => (n === 0 ? "alle erledigt" : `${n} offen`);
 
   return (
+    // Eine Reihe für alle Chips: auf breiten Karten stehen sie nebeneinander, erst bei Platzmangel rutschen sie in die nächste Zeile
     <div className={`px-4 pt-1.5 pb-2.5 flex flex-wrap items-center gap-x-2 ${dim ? "opacity-60" : ""}`}>
+      {dailyTasks.map((t) => (
+        <span key={t.label} className="min-h-11 inline-flex items-center">
+          <Chip done={t.done >= t.total} iconKey={t.iconKey}>
+            {t.label} {t.done}/{t.total}
+          </Chip>
+        </span>
+      ))}
       {showWeekly && (
         <button
           type="button"
