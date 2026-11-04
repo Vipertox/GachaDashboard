@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { HashRouter, NavLink, Route, Routes } from "react-router-dom";
 import { Accounts } from "../features/accounts/Accounts";
 import { Dashboard } from "../features/dashboard/Dashboard";
+import { CountdownPage } from "../features/countdown/Countdown";
 import { CharacterView } from "../features/game-detail/CharacterView";
 import { GameDetail } from "../features/game-detail/GameDetail";
 import { Settings } from "../features/settings/Settings";
@@ -132,6 +133,7 @@ function Nav() {
       <div className="max-w-5xl mx-auto flex">
         <NavLink to="/" end className={item}>Dashboard</NavLink>
         <NavLink to="/zeitleiste" className={item}>Zeitleiste</NavLink>
+        <NavLink to="/countdown" className={item}>Countdown</NavLink>
       </div>
     </nav>
   );
@@ -155,6 +157,7 @@ export function App() {
           <Route path="/game/:game/:uid" element={<GameDetail />} />
           <Route path="/game/:game/:uid/figur/:id" element={<CharacterView />} />
           <Route path="/zeitleiste" element={<TimelinePage />} />
+          <Route path="/countdown" element={<CountdownPage />} />
           <Route path="/accounts" element={<Accounts />} />
           <Route path="/settings" element={<Settings />} />
         </Routes>

@@ -159,6 +159,15 @@ describe("Zusammenführen", () => {
     expect(iso(v.end)).toBe("2026-12-01T22:00:00.000Z");
   });
 
+  it("verwirft ein Ende, das nur die erste Bannerphase abschließt", () => {
+    const phaseOne: VersionFacts = { current: "3.3", end: new Date("2026-11-11T03:59:00Z"), source: { label: "Banner", url: "" } };
+    const zzzWiki: VersionFacts = { current: "3.3", start: new Date("2026-10-20T22:00:00Z"), source: { label: "Wiki", url: "" } };
+    const v = mergeVersionFacts("zzz", [phaseOne, zzzWiki], now)!;
+    expect(v.endEstimated).toBe(true);
+    expect(iso(v.end)).toBe("2026-12-01T22:00:00.000Z");
+    expect(v.sources.map((s) => s.label)).toEqual(["Wiki"]);
+  });
+
   it("nimmt aus dem Banner-Kalender das späteste Ende der laufenden Version", () => {
     const b = (version: string, start: string, end: string): Banner => ({
       id: start + end, name: "x", kind: "character", version, start: new Date(start), end: new Date(end), status: "running", items: [],

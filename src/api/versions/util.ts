@@ -1,6 +1,9 @@
 /** Übliche Länge einer Version in Tagen, für Schätzungen ohne Quelle. */
 export const VERSION_DAYS = 42;
 
+/** Kürzer läuft keine Version; ein früheres Ende stammt aus einer einzelnen Bannerphase. */
+export const MIN_VERSION_DAYS = 28;
+
 /** Alle Zeiten der Quellen ohne eigene Zeitzone gelten in UTC+8 (Asien-Server). */
 export const SERVER_TZ = 8;
 

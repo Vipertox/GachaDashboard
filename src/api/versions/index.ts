@@ -2,7 +2,7 @@ import { ApiError } from "../errors";
 import type { Banner, GameId, VersionFacts, VersionInfo } from "../../model/types";
 import { fetchHoyoAnnouncements } from "./hoyoverse";
 import { fetchKuroNews } from "./kuro";
-import { addDays, compareVersion, guessNextVersion, maxVersion, UPDATE_HOUR, VERSION_DAYS } from "./util";
+import { addDays, compareVersion, guessNextVersion, maxVersion, MIN_VERSION_DAYS, UPDATE_HOUR, VERSION_DAYS } from "./util";
 import { fetchWikiFacts } from "./wiki";
 
 /** Spiele mit Countdown, in der Reihenfolge der Seite ohne Profil. */
@@ -36,12 +36,21 @@ async function settle(p: Promise<VersionFacts> | undefined): Promise<VersionFact
   }
 }
 
-/** Offizielle Quelle und Wiki, beide parallel; das Wiki füllt nur Lücken. */
-export async function fetchVersionFacts(game: GameId, signal?: AbortSignal): Promise<VersionFacts[]> {
+export interface FetchedFacts {
+  official?: VersionFacts;
+  wiki?: VersionFacts;
+}
+
+/** Offizielle Quelle und Wiki parallel; ein Fehler nur einer Quelle bleibt folgenlos. */
+export async function fetchVersionFacts(game: GameId, signal?: AbortSignal): Promise<FetchedFacts> {
   const [official, wiki] = await Promise.all([settle(OFFICIAL[game]?.(signal)), settle(fetchWikiFacts(game, DEFAULT_HOUR[game], signal))]);
-  const out = [official, wiki].filter((f): f is VersionFacts => !!f);
-  if (out.length === 0) throw new ApiError("network", "Keine Quelle für die Version erreichbar");
-  return out;
+  if (!official && !wiki) throw new ApiError("network", "Keine Quelle für die Version erreichbar");
+  return { official, wiki };
+}
+
+/** Rangfolge: offizielle Ankündigungen, dann der Bannerkalender von HoYoLAB, zuletzt das Wiki. */
+export function rankFacts(fetched: FetchedFacts, banners?: VersionFacts): VersionFacts[] {
+  return [fetched.official, banners, fetched.wiki].filter((f): f is VersionFacts => !!f);
 }
 
 /**
@@ -52,7 +61,8 @@ export function bannerFacts(banners: Banner[], now = new Date()): VersionFacts |
   const running = banners.filter((b) => b.version && b.start && b.start <= now && (!b.end || b.end > now));
   const current = maxVersion(running.map((b) => b.version!));
   if (!current) return undefined;
-  const ends = running.filter((b) => b.version === current && b.end).map((b) => b.end!.getTime());
+  // Auch schon angekündigte Banner der zweiten Phase zählen mit.
+  const ends = banners.filter((b) => b.version === current && b.end).map((b) => b.end!.getTime());
   const later = banners.map((b) => b.version).filter((v): v is string => !!v && compareVersion(v, current) > 0);
   return {
     current,
@@ -72,14 +82,15 @@ export function mergeVersionFacts(game: GameId, ranked: VersionFacts[], now = ne
   if (!current) return undefined;
   const same = ranked.filter((f) => f.current === current);
   const used = new Set<VersionFacts>();
-  const pick = <K extends "start" | "end" | "next">(key: K): VersionFacts[K] => {
-    const f = same.find((x) => x[key] !== undefined && (key !== "end" || x.end! > addDays(now, -1)));
+  const pick = <K extends "start" | "end" | "next">(key: K, ok: (f: VersionFacts) => boolean = () => true): VersionFacts[K] => {
+    const f = same.find((x) => x[key] !== undefined && ok(x));
     if (f) used.add(f);
     return f?.[key];
   };
   const start = pick("start");
   const next = pick("next");
-  let end = pick("end");
+  // Ein Ende kurz nach dem Beginn ist nur das Ende der ersten Bannerphase, kein Versionsende.
+  let end = pick("end", (f) => f.end! > addDays(now, -1) && (!start || f.end! >= addDays(start, MIN_VERSION_DAYS)));
   const endEstimated = !end;
   if (!end) {
     // Ohne Beginn bleibt nur die Schätzung ab jetzt; die Anzeige kennzeichnet sie.
