@@ -81,7 +81,7 @@ Ein Befund der Stufe H wurde nicht gefunden.
 
 ## Empfohlene Reihenfolge
 
-1. M-1 bis M-3 (Proxy-Stabilität beim Login) – klein, lokal, gut testbar.
+1. M-1 bis M-3 (Proxy-Stabilität beim Login) – klein, lokal, gut testbar. **Behoben** auf diesem Branch, mit Tests in `proxy/login.test.ts`.
 2. M-6, M-7, M-8 (Schema-Strenge) – verhindert stille Falschanzeigen bei API-Änderungen.
 3. M-10 (Neu laden) und N-16/N-17 (Absturzschutz).
 4. M-4 und N-1 (Härtung Browser-Modus), M-5 (Rust-Login).
