@@ -720,6 +720,53 @@ Die Zeitleiste zeigt Banner, Events und die laufenden Perioden der Herausforderu
 
 Die Zeitleiste nutzt dieselben Abfragen wie Events und Herausforderungen (`["events", …]` und `["challenge", …, mode, "current"]`), nur gebündelt über `useQueries`. Was die Detailseite schon geladen hat, erscheint sofort. Ein Fehler beim Event-Kalender steht als Zeile unter dem Spiel. Bei den Herausforderungen erscheint ein Hinweis nur, wenn alle Modi eines Spiels scheitern.
 
+## Countdown
+
+Eigener Punkt **Countdown** in der Navigation (`/countdown`). Pro Spiel zeigt eine Karte die aktuelle und die nächste Version und einen sekundengenauen Countdown bis zum Update. Ohne Profil erscheinen alle vier Spiele, mit Profil dessen sichtbare Spiele. Die Karten sind nach dem nächsten Update sortiert.
+
+**Vorbild und Abgrenzung**
+
+gachacountdown.online hat keine Schnittstelle. Die Werte (aktuelle und nächste Version, `fecha_inicio`, `duracion_dias`) stehen von Hand gepflegt als Props in der statischen Astro-Seite, die Uhrzeit ist pauschal. Das Dashboard liest stattdessen die Quellen selbst.
+
+**Quellen, in dieser Rangfolge**
+
+| Rang | Quelle | Spiele | Was sie liefert |
+| --- | --- | --- | --- |
+| 1 | Ankündigungen im Spiel, `getAnnList` auf `sg-hk4e-api.hoyoverse.com` bzw. `sg-hkrpg-api.hoyoverse.com`, Region Asien | Genshin, Star Rail | Ohne Anmeldung. Aktuelle Version aus "Version X.Y … Update Details". Ende ist das früheste Ende aller Ankündigungen dieser Version innerhalb des letzten Tages (= Wartungsbeginn, 06:00 UTC+8). Eine höhere Version in einem Titel ("Version 4.7 Store Update") ist die nächste. Zeiten in `data.timezone` |
+| 1 | News-JSON der offiziellen Website, `hw-media-cdn-mingchao.kurogame.com/…/G152/en/ArticleMenu.json` | Wuthering Waves | Aktuelle Version und Beginn aus den neuesten "Patch Notes". Nächste Version aus jüngeren Titeln mit höherer Nummer, ihr Datum aus "Scheduled for Release on …". Sonst ist das Ende das Ende von "Convene: Phase Ⅱ" aus dem Artikel (`article/<id>.json`, "server time", als UTC+8 gelesen) |
+| 2 | Banner-Kalender von HoYoLAB (mit Konto, dieselbe Abfrage wie Events) | Genshin, Star Rail, ZZZ | Version der laufenden Banner, Ende ist das späteste Bannerende dieser Version. Für ZZZ die einzige offizielle Quelle, eine öffentliche Ankündigungs-Schnittstelle gibt es dort nicht |
+| 3 | Fandom-Wiki, Seiten `Version/X.Y` (Infobox `date` bzw. `release_date`, `next`) | alle | Füllt Lücken. Aktuell ist die höchste Version mit Datum in der Vergangenheit, das Datum der folgenden Seite ist das Ende. Ohne Uhrzeit gilt 06:00 (Hoyoverse) bzw. 10:00 (Kuro) UTC+8 |
+
+Die höchste aktuelle Version aller Quellen ist maßgeblich. Angaben einer Quelle, die noch eine ältere Version meldet, werden nicht übernommen. Jedes Feld kommt von der ranghöchsten Quelle, die es kennt. Ein Ende weniger als 28 Tage nach Versionsbeginn ist nur das Ende der ersten Bannerphase und wird verworfen. Ein Ende, das mehr als einen Tag zurückliegt, auch.
+
+**Schätzungen**
+
+- Nennt keine Quelle die nächste Version, wird die Nebenversion hochgezählt und als "(vermutet)" gekennzeichnet. Nach x.8 kann auch eine neue Hauptversion folgen.
+- Nennt keine Quelle das Ende, gilt Beginn + 42 Tage, gekennzeichnet als "Geschätzt … (übliche Versionslänge, noch keine Ankündigung)".
+
+**Darstellung**
+
+```
+┌───────────────────────────────────────┐
+│ (H) Honkai: Star Rail                 │
+│ [Aktuell v4.6] → [Demnächst v4.7]     │
+│ ┌────┐ ┌────┐ ┌────┐ ┌────┐           │
+│ │ 06 │ │ 04 │ │ 19 │ │ 34 │           │
+│ │Tage│ │Std │ │Min │ │Sek │           │
+│ └────┘ └────┘ └────┘ └────┘           │
+│ Update: Di., 10.11.2026, 23:00        │
+│ Quelle: HoYoverse-Ankündigungen       │
+└───────────────────────────────────────┘
+```
+
+- Zahlen in der Akzentfarbe des Spiels. Der Sekundentakt kommt aus `useNow`.
+- Ist das Ende erreicht, steht dort "Update läuft – vX.Y erscheint in Kürze", bis eine Quelle die neue Version meldet.
+- Die Quellen sind verlinkt, Wiki-Inhalte stehen unter CC BY-SA.
+
+**Laden**
+
+`["versions", game]` lädt offizielle Quelle und Wiki parallel, eine Stunde frisch. Fällt nur eine Quelle aus, reicht die andere. Erst wenn beide scheitern, zeigt die Karte einen Fehler. Die Hosts stehen in der Freigabeliste des Proxys und in den Tauri-Capabilities.
+
 ## Visuelle Gestaltung
 
 Jede Karte und jeder Wert bekommt ein passendes Bild, damit Spiele und Ressourcen ohne Lesen erkennbar sind. Dazu kommen spielspezifische Farben, Artwork-Hintergründe und dezente Animationen.

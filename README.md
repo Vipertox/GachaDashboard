@@ -11,6 +11,7 @@ Eine Codebasis für Android, Windows und den lokalen Browser.
 - **Detailseite, Tab Figuren:** Raster aller Figuren mit Element, Duplikaten, Stufe und Waffe, filter- und sortierbar. Ein Tipp öffnet Waffe, Ausrüstung mit Haupt- und Nebenwerten, Sets, Talente und Werte. Hinweise zeigen Lücken in der Ausrüstung, ein Link führt zum Build-Guide der Figur auf [Prydwen](https://www.prydwen.gg/)
 - **Detailseite, Tab Herausforderungen:** Wiederkehrende Endgame-Modi wie Spiral Abyss, Pure Fiction oder Shiyu Defense mit Stand und Restlaufzeit, umschaltbar auf die vorherige Periode. Eine Kurzfassung steht in der Übersicht unter Wöchentlich
 - **Zeitleiste:** Banner, Events und die Perioden der Herausforderungen als Balken auf einer Tagesachse mit Markierung für jetzt, über alle Spiele in der Navigation und je Spiel als eigener Tab. Filter nach Art und Spiel, ein Tipp öffnet Event oder Banner
+- **Countdown:** pro Spiel aktuelle und nächste Version mit Countdown in Tagen, Stunden, Minuten und Sekunden bis zum Update. Daten aus den offiziellen Ankündigungen (HoYoverse, Kuro Games), dem HoYoLAB-Bannerkalender und ersatzweise den Fandom-Wikis
 - **Profile:** Mehrere HoYoLAB-Logins mit Wechsel per Tipp
 
 | Spiel | Live-Werte | Figuren | Herausforderungen | Events und Banner |
