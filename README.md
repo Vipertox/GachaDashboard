@@ -52,6 +52,22 @@ npm start        # http://127.0.0.1:8787
 
 Weitere Befehle: `npm test`, `npm run typecheck`, `npm run build`.
 
+### Lokaler Proxy (Browser-Modus)
+
+Im Browser übernimmt `proxy/server.ts` alles, was die Seite selbst nicht darf: Anfragen an fremde Hosts, Zugriff auf den Schlüsselspeicher und das Speichern der Profile. Er lauscht nur auf `127.0.0.1:8787` (`PROXY_PORT`).
+
+| Endpunkt | Zweck |
+|---|---|
+| `POST /api/fetch` | Leitet eine Anfrage an einen erlaubten Host weiter (`ALLOWED_HOSTS`, nur https, keine Weiterleitungen) |
+| `GET/PUT/DELETE /api/credentials/:key` | Liest, schreibt und löscht Tokens im Schlüsselspeicher des Betriebssystems (Dienst `GachaDashboard`) |
+| `GET/PUT /api/settings` | Profile und App-Einstellungen in `proxy/.runtime/settings.json`, ohne Tokens |
+| `POST /api/hoyolab-login` | Startet Edge oder Chrome mit temporärem Profil und liest die HoYoLAB-Tokens aus |
+| `GET /*` | Liefert das gebaute Frontend aus `dist/` (`npm start`) |
+
+Schutz: Host-Header nur `127.0.0.1`/`localhost` (gegen DNS-Rebinding), für `/api` zusätzlich ein Zufallstoken je Start (`proxy/.runtime/token`, in die Seite eingesetzt) und eine Origin-Prüfung, dazu CSP und Einbettungsverbot.
+
+**Nur für Rechner mit einem Benutzer.** Die Seite bekommt das Token beim Laden. Wer `127.0.0.1:8787` erreicht – auch ein anderer angemeldeter Benutzer desselben Rechners –, kann es abrufen und damit die gespeicherten Tokens lesen. Auf gemeinsam genutzten Rechnern die Desktop-App verwenden.
+
 Für die Tauri-App werden zusätzlich Rust und die [Tauri-Voraussetzungen](https://v2.tauri.app/start/prerequisites/) benötigt: `npm run tauri dev` bzw. `npm run tauri build`. Die Builds für Windows und Android laufen auch über GitHub Actions (`.github/workflows/build.yml`). Die APK aus diesem Workflow ist unsigniert und lässt sich nicht installieren. Signiert wird nur im Release-Workflow (`.github/workflows/release.yml`) mit dem Schlüssel aus dem Environment `release`.
 
 ## Einrichtung

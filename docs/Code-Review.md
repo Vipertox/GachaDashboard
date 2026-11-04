@@ -84,5 +84,5 @@ Ein Befund der Stufe H wurde nicht gefunden.
 1. M-1 bis M-3 (Proxy-Stabilität beim Login) – klein, lokal, gut testbar. **Behoben** auf diesem Branch, mit Tests in `proxy/login.test.ts`.
 2. M-6, M-7, M-8 (Schema-Strenge) – verhindert stille Falschanzeigen bei API-Änderungen. **Behoben** auf diesem Branch, mit Tests in `adapters.test.ts` und `events.test.ts`; gegen echte API-Antworten noch nicht geprüft.
 3. M-10 (Neu laden) und N-16/N-17 (Absturzschutz). **Behoben** auf diesem Branch; N-16 mit Tests, M-10 und N-17 ohne Komponententests und ohne Lauf mit echtem Konto.
-4. M-4 und N-1 (Härtung Browser-Modus), M-5 (Rust-Login).
+4. M-4 und N-1 (Härtung Browser-Modus), M-5 (Rust-Login). **N-1 behoben, M-4 entschärft:** Token- und Einstellungsdatei werden mit `0o600` geschrieben, die Einsatzgrenze (nur Einzelbenutzer-Rechner) und die Proxy-Endpunkte stehen in README und SECURITY. Die Ursache selbst – die Seite holt das Token ohne Prüfung – bleibt, weil der Proxy einen anderen lokalen Benutzer nicht erkennen kann. N-19 ebenfalls behoben. M-5 offen.
 5. Barrierefreiheit M-11/M-12, danach die Aufräumpunkte.

@@ -1,10 +1,11 @@
 import { randomBytes, timingSafeEqual } from "node:crypto";
-import { existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, statSync, writeFileSync } from "node:fs";
 import { dirname, extname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { serve } from "@hono/node-server";
 import { Entry } from "@napi-rs/keyring";
 import { Hono, type Context } from "hono";
+import { secureHeaders } from "hono/secure-headers";
 import { hoyolabBrowserLogin } from "./login";
 
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
@@ -13,6 +14,16 @@ const RUNTIME = join(ROOT, "proxy", ".runtime");
 const SETTINGS_FILE = join(RUNTIME, "settings.json");
 const PORT = Number(process.env.PROXY_PORT ?? 8787);
 const KEYRING_SERVICE = "GachaDashboard";
+
+/**
+ * Token und Profile nur für den eigenen Benutzer lesbar. `mode` gilt nur beim Anlegen,
+ * daher zusätzlich `chmod` für bestehende Dateien. Wirkt unter Linux/macOS; unter Windows
+ * setzt Node damit nur das Schreibschutz-Attribut, dort schützen die Rechte des Benutzerordners.
+ */
+export function writePrivateFile(file: string, content: string): void {
+  writeFileSync(file, content, { encoding: "utf8", mode: 0o600 });
+  chmodSync(file, 0o600);
+}
 
 /** Nur diese Hosts darf der Proxy ansprechen. */
 export const ALLOWED_HOSTS = new Set([
@@ -55,6 +66,26 @@ export function createApp(token: string): Hono {
     if (!isLocalHost(c.req.header("host"))) return c.text("Forbidden", 403);
     await next();
   });
+
+  // Gleiche Grenzen wie die CSP der Tauri-App; externe Daten laufen nur über /api/fetch.
+  // Verbietet zudem das Einbetten in fremde Seiten (Clickjacking).
+  app.use(
+    "*",
+    secureHeaders({
+      contentSecurityPolicy: {
+        defaultSrc: ["'self'"],
+        imgSrc: ["'self'", "data:", "https:"],
+        styleSrc: ["'self'", "'unsafe-inline'"],
+        connectSrc: ["'self'"],
+        objectSrc: ["'none'"],
+        baseUri: ["'self'"],
+        frameAncestors: ["'none'"],
+      },
+      xFrameOptions: "DENY",
+      // Läuft nur über http auf 127.0.0.1; HSTS wäre dort wirkungslos.
+      strictTransportSecurity: false,
+    }),
+  );
 
   const api = new Hono();
   api.use("*", async (c, next) => {
@@ -134,7 +165,7 @@ export function createApp(token: string): Hono {
     const body = await c.req.json().catch(() => null);
     if (!body || typeof body !== "object") return c.text("Ungültige Anfrage", 400);
     mkdirSync(RUNTIME, { recursive: true });
-    writeFileSync(SETTINGS_FILE, JSON.stringify(body, null, 2), "utf8");
+    writePrivateFile(SETTINGS_FILE, JSON.stringify(body, null, 2));
     return c.json({ ok: true });
   });
 
@@ -173,7 +204,7 @@ export function createApp(token: string): Hono {
 function main() {
   const token = randomBytes(24).toString("hex");
   mkdirSync(RUNTIME, { recursive: true });
-  writeFileSync(join(RUNTIME, "token"), token, "utf8");
+  writePrivateFile(join(RUNTIME, "token"), token);
   serve({ fetch: createApp(token).fetch, hostname: "127.0.0.1", port: PORT }, (info) => {
     console.log(`Proxy lauscht auf http://127.0.0.1:${info.port}`);
   });
