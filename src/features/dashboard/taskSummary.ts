@@ -1,4 +1,7 @@
-import type { Challenge, DetailSection, GameEvent } from "../../model/types";
+import { serverOffset } from "../../api/challenges/util";
+import { wuwaOffset } from "../../api/events/wuwa";
+import { challengeEndingSoon, eventEndingSoon } from "../../lib/endingSoon";
+import type { Challenge, DetailSection, GameEvent, GameId } from "../../model/types";
 
 /** Eine wöchentliche Aufgabe, vereinheitlicht aus Flags, Tasks und Ressourcen des Abschnitts. */
 export interface WeeklyItem {
@@ -44,6 +47,8 @@ export interface EventSummary {
   open: GameEvent[];
   /** Laufende Events insgesamt, erledigte eingeschlossen. */
   running: number;
+  /** Offene Events, die in weniger als drei Tagen enden. */
+  endingSoon: number;
 }
 
 /**
@@ -55,7 +60,7 @@ export function eventSummary(events: GameEvent[], now: number): EventSummary {
   const open = active
     .filter((e) => e.status === "running")
     .sort((a, b) => (a.end?.getTime() ?? Infinity) - (b.end?.getTime() ?? Infinity));
-  return { open, running: active.length };
+  return { open, running: active.length, endingSoon: open.filter((e) => eventEndingSoon(e, now)).length };
 }
 
 /**
@@ -77,18 +82,37 @@ export interface ChallengeSummary {
   open: number;
   loading: number;
   failed: number;
+  /** Offene Modi, deren Periode in weniger als drei Tagen endet. */
+  endingSoon: number;
 }
 
 /** Stand der laufenden Periode über alle Modi eines Spiels; jeder Eintrag ist das Ergebnis einer Abfrage. */
 export function challengeSummary(results: { data?: Challenge; isError: boolean }[], now: number): ChallengeSummary {
-  const s: ChallengeSummary = { counted: 0, open: 0, loading: 0, failed: 0 };
+  const s: ChallengeSummary = { counted: 0, open: 0, loading: 0, failed: 0, endingSoon: 0 };
   for (const r of results) {
     if (r.data) {
       if (!challengeCounts(r.data, now)) continue;
       s.counted += 1;
       if (!challengeDone(r.data)) s.open += 1;
+      if (challengeEndingSoon(r.data, now)) s.endingSoon += 1;
     } else if (r.isError) s.failed += 1;
     else s.loading += 1;
   }
   return s;
+}
+
+const HOUR_MS = 3_600_000;
+
+/**
+ * Nächster Wochenreset: in allen vier Spielen montags um 04:00 Serverzeit. Die Server kennen keine Sommerzeit,
+ * die Abweichung kommt aus der Region des Kontos (Wuthering Waves benennt seine Regionen anders).
+ */
+export function weeklyResetAt(game: GameId, region: string, now: number): Date {
+  const offset = (game === "wuwa" ? wuwaOffset(region) : serverOffset(region)) * HOUR_MS;
+  // Mit den UTC-Gettern gelesen ergibt das die Serverzeit.
+  const local = new Date(now + offset);
+  const toMonday = (8 - local.getUTCDay()) % 7;
+  let reset = Date.UTC(local.getUTCFullYear(), local.getUTCMonth(), local.getUTCDate() + toMonday, 4) - offset;
+  if (reset <= now) reset += 7 * 24 * HOUR_MS;
+  return new Date(reset);
 }

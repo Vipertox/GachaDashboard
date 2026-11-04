@@ -6,10 +6,11 @@ import { EVENT_ADAPTERS } from "../../api/events";
 import { ERROR_TEXT } from "../../api/errors";
 import { artworkStyle, Card, Chip, GameIcon, OverflowDot, ResourceBar, Skeleton, ValueText } from "../../components/ui";
 import { formatClock, formatDuration, isFull } from "../../lib/time";
+import { endsSoon } from "../../lib/endingSoon";
 import { haptic } from "../../lib/native";
 import { GAME_ACCENT, GAME_META } from "../../model/games";
 import type { GameAccountRef, GameStatus, Profile } from "../../model/types";
-import { challengeSummary, eventSummary, weeklySummary } from "./taskSummary";
+import { challengeSummary, eventSummary, weeklyResetAt, weeklySummary } from "./taskSummary";
 import { ChallengesSheet, OpenEventsSheet, WeeklySheet } from "./TaskSheets";
 
 export function GameCard({ profile, gameRef }: { profile: Profile; gameRef: GameAccountRef }) {
@@ -133,6 +134,8 @@ function TaskChips({
   const [sheet, setSheet] = useState<SheetKind | null>(null);
   const name = GAME_META[gameRef.game].name;
   const weekly = weeklySummary(status.sections.find((s) => s.kind === "weekly"));
+  const weeklyReset = weeklyResetAt(gameRef.game, gameRef.region, now);
+  const weeklySoon = weekly.open > 0 && endsSoon(weeklyReset, now);
   // Wuthering Waves liefert nur Banner: keine Events zum Erledigen, also auch kein Abruf.
   const adapter = EVENT_ADAPTERS[gameRef.game];
   const hasEvents = !!adapter && !adapter.bannersOnly;
@@ -179,9 +182,9 @@ function TaskChips({
           className="min-h-11 inline-flex items-center rounded-full active:opacity-70"
           onClick={() => open("weekly")}
           aria-haspopup="dialog"
-          aria-label={`Wöchentliche Aufgaben: ${openText(weekly.open)}`}
+          aria-label={`Wöchentliche Aufgaben: ${openText(weekly.open)}${weeklySoon ? ", Wochenreset bald" : ""}`}
         >
-          <Chip done={weekly.open === 0}>Wöchentlich{weekly.open > 0 && ` · ${weekly.open} offen`}</Chip>
+          <Chip done={weekly.open === 0} warn={weeklySoon}>Wöchentlich{weekly.open > 0 && ` · ${weekly.open} offen`}</Chip>
         </button>
       )}
       {showEvents &&
@@ -191,9 +194,9 @@ function TaskChips({
             className="min-h-11 inline-flex items-center rounded-full active:opacity-70"
             onClick={() => open("events")}
             aria-haspopup="dialog"
-            aria-label={events ? `Events: ${openText(events.open.length)}` : "Events: nicht abrufbar"}
+            aria-label={events ? `Events: ${openText(events.open.length)}${events.endingSoon > 0 ? `, ${events.endingSoon} enden bald` : ""}` : "Events: nicht abrufbar"}
           >
-            <Chip done={!!events && events.open.length === 0}>
+            <Chip done={!!events && events.open.length === 0} warn={!!events && events.endingSoon > 0}>
               {events ? <>Events{events.open.length > 0 && ` · ${events.open.length} offen`}</> : "Events · ?"}
             </Chip>
           </button>
@@ -214,10 +217,12 @@ function TaskChips({
             onClick={() => open("challenges")}
             aria-haspopup="dialog"
             aria-label={
-              challenges.counted > 0 ? `Herausforderungen: ${openText(challenges.open)}` : "Herausforderungen: nicht abrufbar"
+              challenges.counted > 0
+                ? `Herausforderungen: ${openText(challenges.open)}${challenges.endingSoon > 0 ? `, ${challenges.endingSoon} enden bald` : ""}`
+                : "Herausforderungen: nicht abrufbar"
             }
           >
-            <Chip done={challenges.counted > 0 && challenges.open === 0}>
+            <Chip done={challenges.counted > 0 && challenges.open === 0} warn={challenges.endingSoon > 0}>
               {challenges.counted > 0 ? (
                 <>Herausforderungen{challenges.open > 0 && ` · ${challenges.open} offen`}</>
               ) : (
@@ -226,7 +231,7 @@ function TaskChips({
             </Chip>
           </button>
         ))}
-      <WeeklySheet open={sheet === "weekly"} onClose={close} title={`${name} · Wöchentlich`} summary={weekly} accent={accent} />
+      <WeeklySheet open={sheet === "weekly"} onClose={close} title={`${name} · Wöchentlich`} summary={weekly} resetAt={weeklyReset} now={now} accent={accent} />
       {hasEvents && (
         <OpenEventsSheet
           open={sheet === "events"}

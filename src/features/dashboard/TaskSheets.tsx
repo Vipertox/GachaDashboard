@@ -4,8 +4,9 @@ import { imageFor } from "../../assets/registry";
 import type { ApiError } from "../../api/errors";
 import { formatDuration } from "../../lib/time";
 import type { Challenge, ChallengeMode, GameEvent } from "../../model/types";
-import { challengeErrorText, endingSoon as challengeEndingSoon, STATE_TEXT } from "../game-detail/Challenges";
-import { CurrencyBadge, endingSoon, eventErrorText, progressText, whenText } from "../game-detail/Events";
+import { challengeEndingSoon, endsSoon, eventEndingSoon } from "../../lib/endingSoon";
+import { challengeErrorText, STATE_TEXT } from "../game-detail/Challenges";
+import { CurrencyBadge, eventErrorText, progressText, whenText } from "../game-detail/Events";
 import { challengeCounts, challengeDone, type WeeklySummary } from "./taskSummary";
 
 function StateMark({ done }: { done: boolean }) {
@@ -21,16 +22,24 @@ export function WeeklySheet({
   onClose,
   title,
   summary,
+  resetAt,
+  now,
   accent,
 }: {
   open: boolean;
   onClose: () => void;
   title: string;
   summary: WeeklySummary;
+  resetAt: Date;
+  now: number;
   accent: string;
 }) {
+  const soon = summary.open > 0 && endsSoon(resetAt, now);
   return (
     <BottomSheet open={open} onClose={onClose} title={title}>
+      <p className="text-xs mb-3" style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
+        {soon && "⚠ "}Wochenreset in {formatDuration(resetAt.getTime() - now)}
+      </p>
       <ul className="space-y-3 text-sm max-h-[60vh] overflow-y-auto">
         {summary.items.map((i) => (
           <li key={i.label} className="space-y-1.5">
@@ -79,7 +88,7 @@ export function OpenEventsSheet({
         ) : (
           <ul className="space-y-3 max-h-[55vh] overflow-y-auto">
             {events.map((e) => {
-              const soon = endingSoon(e, now);
+              const soon = eventEndingSoon(e, now);
               const when = whenText(e, now);
               return (
                 <li key={e.id} className="space-y-1.5">

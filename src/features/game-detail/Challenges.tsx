@@ -4,11 +4,9 @@ import { challengeKey, useChallenge, useNow } from "../../app/hooks";
 import { CHALLENGE_MODES } from "../../api/challenges";
 import { ApiError, ERROR_TEXT } from "../../api/errors";
 import { Card, ProgressBar, Skeleton } from "../../components/ui";
+import { challengeEndingSoon as endingSoon } from "../../lib/endingSoon";
 import { formatDuration } from "../../lib/time";
 import type { Challenge, ChallengeMode, ChallengePeriod, GameAccountRef, Profile } from "../../model/types";
-
-// Ab drei Tagen vor Ende wird ein unvollständiger Modus hervorgehoben.
-const ENDING_SOON_MS = 3 * 86400_000;
 
 /** Fehlertext für Herausforderungen; 10102 heißt hier, dass die Kampfchronik nicht öffentlich ist. */
 export function challengeErrorText(e: ApiError): string {
@@ -18,14 +16,6 @@ export function challengeErrorText(e: ApiError): string {
 }
 
 const fmtDate = (d: Date) => d.toLocaleDateString("de-DE", { day: "2-digit", month: "2-digit" });
-
-/** Läuft noch, endet bald und ist nicht vollständig. */
-export function endingSoon(c: Challenge, now: number): boolean {
-  if (!c.end || c.state === "locked") return false;
-  const left = c.end.getTime() - now;
-  const open = c.state === "empty" || (!!c.progress && c.progress.current < c.progress.max);
-  return left > 0 && left < ENDING_SOON_MS && open;
-}
 
 function periodText(c: Challenge, period: ChallengePeriod, now: number): string | undefined {
   if (!c.end) return undefined;

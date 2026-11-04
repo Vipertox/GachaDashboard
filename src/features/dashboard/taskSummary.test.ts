@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { challengeDone, challengeSummary, eventSummary, weeklySummary } from "./taskSummary";
+import { challengeDone, challengeSummary, eventSummary, weeklyResetAt, weeklySummary } from "./taskSummary";
 import type { Challenge, DetailSection, GameEvent } from "../../model/types";
 
 const section = (part: Partial<DetailSection>): DetailSection => ({
@@ -52,10 +52,11 @@ describe("Offene Events", () => {
     );
     expect(s.open.map((e) => e.id)).toEqual(["bald", "spät", "ohne Ende"]);
     expect(s.running).toBe(4);
+    expect(s.endingSoon).toBe(1);
   });
 
   it("übergeht abgelaufene Events aus einem veralteten Stand", () => {
-    expect(eventSummary([ev("vorbei", "running", -1)], now)).toEqual({ open: [], running: 0 });
+    expect(eventSummary([ev("vorbei", "running", -1)], now)).toEqual({ open: [], running: 0, endingSoon: 0 });
   });
 });
 
@@ -84,6 +85,44 @@ describe("Herausforderungen", () => {
       ],
       now,
     );
-    expect(s).toEqual({ counted: 3, open: 2, loading: 1, failed: 1 });
+    expect(s).toEqual({ counted: 3, open: 2, loading: 1, failed: 1, endingSoon: 0 });
+  });
+});
+
+describe("Bald endende Herausforderungen", () => {
+  const now = Date.UTC(2026, 10, 4);
+  const inDays = (n: number) => new Date(now + n * 86400_000);
+
+  it("zählt nur offene Modi, die in weniger als drei Tagen enden", () => {
+    const s = challengeSummary(
+      [
+        { data: { state: "empty", facts: [], end: inDays(1) }, isError: false },
+        { data: { state: "ok", facts: [], end: inDays(1), progress: { current: 7, max: 9, unit: "Sterne" } }, isError: false },
+        { data: { state: "ok", facts: [], end: inDays(1), progress: { current: 9, max: 9, unit: "Sterne" } }, isError: false },
+        { data: { state: "ok", facts: [], end: inDays(1), summary: "196.095 Punkte" }, isError: false },
+        { data: { state: "empty", facts: [], end: inDays(4) }, isError: false },
+      ],
+      now,
+    );
+    expect(s.endingSoon).toBe(2);
+    expect(s.open).toBe(3);
+  });
+});
+
+describe("Wochenreset", () => {
+  // Mittwoch, 04.11.2026, 00:00 UTC
+  const wed = Date.UTC(2026, 10, 4);
+
+  it("liegt montags um 04:00 Serverzeit", () => {
+    expect(weeklyResetAt("genshin", "os_euro", wed).toISOString()).toBe("2026-11-09T03:00:00.000Z");
+    expect(weeklyResetAt("starrail", "prod_official_usa", wed).toISOString()).toBe("2026-11-09T09:00:00.000Z");
+    expect(weeklyResetAt("zzz", "prod_gf_jp", wed).toISOString()).toBe("2026-11-08T20:00:00.000Z");
+    expect(weeklyResetAt("wuwa", "Europe", wed).toISOString()).toBe("2026-11-09T03:00:00.000Z");
+  });
+
+  it("springt genau zum Reset auf die nächste Woche", () => {
+    const reset = Date.UTC(2026, 10, 9, 3);
+    expect(weeklyResetAt("genshin", "os_euro", reset - 60_000).getTime()).toBe(reset);
+    expect(weeklyResetAt("genshin", "os_euro", reset).getTime()).toBe(reset + 7 * 86400_000);
   });
 });
