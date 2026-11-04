@@ -3,7 +3,7 @@ import { z } from "zod";
 import { optStr, str } from "../characters/util";
 import { num, optNum, parseOrThrow } from "./util";
 import { parseGameArt } from "../gameArt";
-import { generateDs, pickRoles } from "../hoyolab";
+import { generateDs, mapRetcode, pickRoles } from "../hoyolab";
 import { findPlayerId } from "../kuro";
 import { liveValue } from "../../lib/time";
 import { parseGenshin } from "./genshin";
@@ -133,6 +133,16 @@ describe("Wuthering Waves", () => {
     const s = parseWuwa({ Base: { ...base, Energy: 240, EnergyRecoverTime: 0 } }, acc("wuwa"), now);
     expect(s.primary.fullAt).toBeUndefined();
     expect(liveValue(s.primary, now.getTime())).toBe(240);
+  });
+});
+
+describe("HoYoLAB-Retcodes", () => {
+  it("ordnet bekannte Retcodes einer Fehlerart zu", () => {
+    expect(mapRetcode(-100, "x").kind).toBe("auth");
+    expect(mapRetcode(10102, "x").kind).toBe("notes_disabled");
+    expect(mapRetcode(10101, "x").kind).toBe("rate_limit");
+    expect(mapRetcode(10307, "x").kind).toBe("maintenance");
+    expect(mapRetcode(12345, "x")).toMatchObject({ kind: "unknown", message: "x (retcode 12345)" });
   });
 });
 
