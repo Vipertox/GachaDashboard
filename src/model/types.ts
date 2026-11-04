@@ -311,3 +311,27 @@ export interface AppSettings {
 }
 
 export const DEFAULT_SETTINGS: AppSettings = { refreshMinutes: 10, theme: "system" };
+
+/** Angaben einer Quelle zur Spielversion; was fehlt, ergänzt die nächste Quelle. */
+export interface VersionFacts {
+  current?: string;
+  start?: Date;
+  /** Ende der aktuellen Version, zugleich Beginn der nächsten. */
+  end?: Date;
+  next?: string;
+  source: { label: string; url: string };
+}
+
+/** Zusammengeführter Stand für den Countdown. */
+export interface VersionInfo {
+  game: GameId;
+  current?: string;
+  start?: Date;
+  next: string;
+  /** Die Folgeversion nennt noch keine Quelle, sie ist hochgezählt. */
+  nextGuessed: boolean;
+  end: Date;
+  /** Keine Quelle nennt das Ende, es ist aus der üblichen Versionslänge geschätzt. */
+  endEstimated: boolean;
+  sources: { label: string; url: string }[];
+}

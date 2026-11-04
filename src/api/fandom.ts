@@ -5,16 +5,23 @@ import { parseOrThrow } from "./adapters/util";
 
 /** MediaWiki-API des Wuthering Waves Wiki auf Fandom. Öffentlich, ohne Anmeldung, Inhalte unter CC BY-SA. */
 export const WIKI = "https://wutheringwaves.fandom.com";
-const API = `${WIKI}/api.php`;
+
+/** Fandom-Wikis aller Spiele; sie haben dieselbe MediaWiki-API. */
+export const WIKIS = {
+  genshin: "https://genshin-impact.fandom.com",
+  starrail: "https://honkai-star-rail.fandom.com",
+  zzz: "https://zenless-zone-zero.fandom.com",
+  wuwa: WIKI,
+} as const;
 
 /** Wikis verlangen einen eigenen User-Agent, damit sich Zugriffe zuordnen lassen. */
 const USER_AGENT = "GachaDashboard (https://github.com/Vipertox/GachaDashboard)";
 
 const errorSchema = z.object({ error: z.object({ code: z.string(), info: z.string().optional() }).optional() });
 
-async function query(params: Record<string, string>, signal?: AbortSignal): Promise<unknown> {
+async function query(params: Record<string, string>, signal?: AbortSignal, wiki: string = WIKI): Promise<unknown> {
   const qs = new URLSearchParams({ action: "query", format: "json", formatversion: "2", ...params });
-  const json = await httpJson({ url: `${API}?${qs}`, headers: { "user-agent": USER_AGENT }, signal });
+  const json = await httpJson({ url: `${wiki}/api.php?${qs}`, headers: { "user-agent": USER_AGENT }, signal });
   const err = errorSchema.safeParse(json);
   if (err.success && err.data.error) {
     throw new ApiError("unknown", `Wiki: ${err.data.error.info ?? err.data.error.code}`);
@@ -23,8 +30,8 @@ async function query(params: Record<string, string>, signal?: AbortSignal): Prom
 }
 
 /** Link auf eine Wiki-Seite; der Schrägstrich der Unterseiten bleibt erhalten. */
-export function wikiUrl(title: string): string {
-  return `${WIKI}/wiki/${title.replace(/ /g, "_").split("/").map(encodeURIComponent).join("/")}`;
+export function wikiUrl(title: string, wiki: string = WIKI): string {
+  return `${wiki}/wiki/${title.replace(/ /g, "_").split("/").map(encodeURIComponent).join("/")}`;
 }
 
 const membersSchema = z.object({
@@ -38,6 +45,20 @@ export async function recentCategoryMembers(category: string, limit: number, sig
     signal,
   );
   return parseOrThrow(membersSchema, json).query.categorymembers.map((m) => m.title);
+}
+
+const allPagesSchema = z.object({
+  query: z.object({ allpages: z.array(z.object({ title: z.string() })) }),
+});
+
+/** Titel aller Artikel, die mit `prefix` beginnen, ohne Weiterleitungen (höchstens 500). */
+export async function pagesWithPrefix(prefix: string, signal?: AbortSignal, wiki: string = WIKI): Promise<string[]> {
+  const json = await query(
+    { list: "allpages", apprefix: prefix, apnamespace: "0", aplimit: "500", apfilterredir: "nonredirects" },
+    signal,
+    wiki,
+  );
+  return parseOrThrow(allPagesSchema, json).query.allpages.map((p) => p.title);
 }
 
 const contentSchema = z.object({
@@ -55,12 +76,13 @@ const contentSchema = z.object({
 });
 
 /** Wikitext mehrerer Seiten in einem Aufruf (höchstens 50 Titel). */
-export async function pageContents(titles: string[], signal?: AbortSignal): Promise<Map<string, string>> {
+export async function pageContents(titles: string[], signal?: AbortSignal, wiki: string = WIKI): Promise<Map<string, string>> {
   const out = new Map<string, string>();
   if (titles.length === 0) return out;
   const json = await query(
     { prop: "revisions", rvprop: "content", rvslots: "main", titles: titles.slice(0, 50).join("|") },
     signal,
+    wiki,
   );
   for (const p of parseOrThrow(contentSchema, json).query.pages) {
     const text = p.revisions?.[0]?.slots.main.content;
