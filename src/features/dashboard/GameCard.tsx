@@ -231,7 +231,7 @@ function TaskChips({
             </Chip>
           </button>
         ))}
-      <WeeklySheet open={sheet === "weekly"} onClose={close} title={`${name} · Wöchentlich`} summary={weekly} resetAt={weeklyReset} now={now} accent={accent} />
+      <WeeklySheet open={sheet === "weekly"} onClose={close} title={`${name} · Wöchentlich`} summary={weekly} resetAt={weeklyReset} now={now} accent={accent} detailPath={detailPath} />
       {hasEvents && (
         <OpenEventsSheet
           open={sheet === "events"}

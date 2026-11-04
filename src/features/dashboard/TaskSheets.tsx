@@ -25,6 +25,7 @@ export function WeeklySheet({
   resetAt,
   now,
   accent,
+  detailPath,
 }: {
   open: boolean;
   onClose: () => void;
@@ -33,28 +34,35 @@ export function WeeklySheet({
   resetAt: Date;
   now: number;
   accent: string;
+  detailPath: string;
 }) {
   const soon = summary.open > 0 && endsSoon(resetAt, now);
   return (
     <BottomSheet open={open} onClose={onClose} title={title}>
-      <p className="text-xs mb-3" style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
-        {soon && "⚠ "}Wochenreset in {formatDuration(resetAt.getTime() - now)}
-      </p>
-      <ul className="space-y-3 text-sm max-h-[60vh] overflow-y-auto">
-        {summary.items.map((i) => (
-          <li key={i.label} className="space-y-1.5">
-            <div className="flex items-center justify-between gap-3">
-              <span className="flex items-center gap-2 min-w-0">
-                <StateMark done={i.done} />
-                {i.iconKey && imageFor(i.iconKey) && <GameIcon iconKey={i.iconKey} size={20} round />}
-                <span className="truncate">{i.label}</span>
-              </span>
-              {i.text && <span className="shrink-0 font-semibold">{i.text}</span>}
-            </div>
-            {i.frac !== undefined && <ProgressBar frac={i.frac} accent={accent} height={6} mode="progress" />}
-          </li>
-        ))}
-      </ul>
+      <div className="space-y-3 text-sm">
+        <p className="text-xs" style={{ color: soon ? "var(--color-warn)" : "var(--muted)" }}>
+          {soon && "⚠ "}Wochenreset in {formatDuration(resetAt.getTime() - now)}
+        </p>
+        <ul className="space-y-3 max-h-[55vh] overflow-y-auto">
+          {summary.items.map((i) => (
+            <li key={i.label} className="space-y-1.5">
+              <div className="flex items-center justify-between gap-3">
+                <span className="flex items-center gap-2 min-w-0">
+                  <StateMark done={i.done} />
+                  {i.iconKey && imageFor(i.iconKey) && <GameIcon iconKey={i.iconKey} size={20} round />}
+                  <span className="truncate">{i.label}</span>
+                </span>
+                {i.text && <span className="shrink-0 font-semibold">{i.text}</span>}
+              </div>
+              {i.frac !== undefined && <ProgressBar frac={i.frac} accent={accent} height={6} mode="progress" />}
+            </li>
+          ))}
+        </ul>
+        {/* Wöchentliches steht im Übersicht-Tab der Detailseite, dem Standard-Tab */}
+        <Link to={detailPath} className="inline-flex items-center min-h-11 text-indigo-400 underline" onClick={onClose}>
+          Alle Details
+        </Link>
+      </div>
     </BottomSheet>
   );
 }
