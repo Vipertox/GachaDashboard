@@ -1,4 +1,4 @@
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
@@ -66,6 +66,29 @@ describe("Private Dateien", () => {
       expect(readFileSync(file, "utf8")).toBe("neu");
     } finally {
       rmSync(dir, { recursive: true, force: true });
+    }
+  });
+});
+
+describe("Einstellungen", () => {
+  it("schreibt atomar und lässt keine Temp-Datei zurück", () => {
+    const dir = mkdtempSync(join(tmpdir(), "gacha-proxy-test-"));
+    try {
+      const file = join(dir, "settings.json");
+      writePrivateFile(file, '{"a":1}');
+      writePrivateFile(file, '{"a":2}');
+      expect(readFileSync(file, "utf8")).toBe('{"a":2}');
+      expect(existsSync(`${file}.tmp`)).toBe(false);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("lehnt Arrays und Nicht-Objekte ab, bevor etwas geschrieben wird", async () => {
+    const app = createApp("secret");
+    const h = { host: "127.0.0.1:8787", "x-proxy-token": "secret", "content-type": "application/json" };
+    for (const body of ["[]", "42", "null", "kein json"]) {
+      expect((await app.request("/api/settings", { method: "PUT", headers: h, body })).status).toBe(400);
     }
   });
 });
